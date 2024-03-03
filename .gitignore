@@ -1,0 +1,10 @@
+.vs/
+projects/
+/**/obj/
+Properties/
+*.csproj
+*.sln
+*.bin
+tools/MetaXRSimulator/*
+!tools/MetaXRSimulator/put_simulator_here
+**/*.pdb
