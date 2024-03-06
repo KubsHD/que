@@ -16,8 +16,9 @@ namespace Que
             Name = "Game";
             AddTargets(CommonTarget.GetDefaultTargets());
 
+
             SourceFiles.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android\native_app_glue\android_native_app_glue.c"));
-            
+
 
             SourceFilesExtensions.Add(".xml");
             SourceFilesExtensions.Add(".gradle");
@@ -31,7 +32,9 @@ namespace Que
         public override void ConfigureAll(Configuration conf, CommonTarget target)
         {
             base.ConfigureAll(conf, target);
-            
+
+
+
             conf.ProjectFileName = "[project.Name]_[target.DevEnv]_[target.Platform]";
             conf.ProjectPath = Path.Combine(Globals.RootDirectory, @"projects\[project.Name]");
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"game/src"));
@@ -77,11 +80,15 @@ namespace Que
 
             conf.LibraryPaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Lib");
             conf.LibraryFiles.Add("vulkan-1.lib");
+            conf.SourceFilesBuildExclude.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android\native_app_glue\android_native_app_glue.c"));
         }
+
+
 
         public override void ConfigureAgde(Configuration conf, CommonTarget target)
         {
             base.ConfigureAgde(conf, target);
+
 
             conf.IncludePaths.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android")); // For android_native_app_glue.h
             conf.AdditionalLinkerOptions.Add("-llog", "-landroid", "-lvulkan");
