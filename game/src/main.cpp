@@ -3,6 +3,10 @@
 #include <common/OpenXRDebugUtils.h>
 
 #include <memory>
+#include <common/xr_linear_algebra.h>
+
+#include <math.h>
+#include <core/asset.h>
 
 class App {
 public:
@@ -24,6 +28,8 @@ public:
 		create_swapchains();
 		create_reference_space();
 
+		create_resources();
+
 		while (m_applicationRunning)
 		{
 			poll_system_events();
@@ -33,7 +39,8 @@ public:
 				render_frame();
 			}
 		}
-		
+
+		destroy_resources();
 		destroy_reference_space();
 		destroy_swapchains();
 		destroy_session();
@@ -41,6 +48,130 @@ public:
 		destroy_instance();
 	}
 private:
+	
+
+	size_t renderCuboidIndex = 0;
+
+	struct CameraConstants {
+		XrMatrix4x4f viewProj;
+		XrMatrix4x4f modelViewProj;
+		XrMatrix4x4f model;
+		XrVector4f color;
+		XrVector4f pad1;
+		XrVector4f pad2;
+		XrVector4f pad3;
+	};
+	CameraConstants cameraConstants;
+	XrVector4f normals[6] = {
+		{1.00f, 0.00f, 0.00f, 0},
+		{-1.00f, 0.00f, 0.00f, 0},
+		{0.00f, 1.00f, 0.00f, 0},
+		{0.00f, -1.00f, 0.00f, 0},
+		{0.00f, 0.00f, 1.00f, 0},
+		{0.00f, 0.0f, -1.00f, 0} };
+
+	void render_cube(XrPosef pose, XrVector3f scale, XrVector3f color)
+	{
+		XrMatrix4x4f_CreateTranslationRotationScale(&cameraConstants.model, &pose.position, &pose.orientation, &scale);
+
+		XrMatrix4x4f_Multiply(&cameraConstants.modelViewProj, &cameraConstants.viewProj, &cameraConstants.model);
+		cameraConstants.color = { color.x, color.y, color.z, 1.0 };
+		size_t offsetCameraUB = sizeof(CameraConstants) * renderCuboidIndex;
+
+		m_graphicsAPI->SetPipeline(m_pipeline);
+
+		m_graphicsAPI->SetBufferData(m_uniformBuffer_Camera, offsetCameraUB, sizeof(CameraConstants), &cameraConstants);
+		m_graphicsAPI->SetDescriptor({ 0, m_uniformBuffer_Camera, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(CameraConstants) });
+		m_graphicsAPI->SetDescriptor({ 1, m_uniformBuffer_Normals, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(normals) });
+
+		m_graphicsAPI->UpdateDescriptors();
+
+		m_graphicsAPI->SetVertexBuffers(&m_vertexBuffer, 1);
+		m_graphicsAPI->SetIndexBuffer(m_indexBuffer);
+		m_graphicsAPI->DrawIndexed(36);
+
+		renderCuboidIndex++;
+	}
+
+	void create_resources()
+	{
+		// Vertices for a 1x1x1 meter cube. (Left/Right, Top/Bottom, Front/Back)
+		constexpr XrVector4f vertexPositions[] = {
+			{+0.5f, +0.5f, +0.5f, 1.0f},
+			{+0.5f, +0.5f, -0.5f, 1.0f},
+			{+0.5f, -0.5f, +0.5f, 1.0f},
+			{+0.5f, -0.5f, -0.5f, 1.0f},
+			{-0.5f, +0.5f, +0.5f, 1.0f},
+			{-0.5f, +0.5f, -0.5f, 1.0f},
+			{-0.5f, -0.5f, +0.5f, 1.0f},
+			{-0.5f, -0.5f, -0.5f, 1.0f} };
+
+#define CUBE_FACE(V1, V2, V3, V4, V5, V6) vertexPositions[V1], vertexPositions[V2], vertexPositions[V3], vertexPositions[V4], vertexPositions[V5], vertexPositions[V6],
+
+		XrVector4f cubeVertices[] = {
+			CUBE_FACE(2, 1, 0, 2, 3, 1)  // -X
+			CUBE_FACE(6, 4, 5, 6, 5, 7)  // +X
+			CUBE_FACE(0, 1, 5, 0, 5, 4)  // -Y
+			CUBE_FACE(2, 6, 7, 2, 7, 3)  // +Y
+			CUBE_FACE(0, 4, 6, 0, 6, 2)  // -Z
+			CUBE_FACE(1, 3, 7, 1, 7, 5)  // +Z
+		};
+
+		uint32_t cubeIndices[36] = {
+			0, 1, 2, 3, 4, 5,        // -X
+			6, 7, 8, 9, 10, 11,      // +X
+			12, 13, 14, 15, 16, 17,  // -Y
+			18, 19, 20, 21, 22, 23,  // +Y
+			24, 25, 26, 27, 28, 29,  // -Z
+			30, 31, 32, 33, 34, 35,  // +Z
+		};
+
+		if (m_apiType == VULKAN) {
+			std::vector<char> vertexSource = m_asset_manager->read_all_bytes("data/VertexShader.spv");
+			m_vertexShader = m_graphicsAPI->CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
+
+			std::vector<char> fragmentSource = m_asset_manager->read_all_bytes("data/PixelShader.spv");
+			m_fragmentShader = m_graphicsAPI->CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
+		}
+
+		m_vertexBuffer = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 4, sizeof(cubeVertices), &cubeVertices });
+
+		m_indexBuffer = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(cubeIndices), &cubeIndices });
+
+		size_t numberOfCuboids = 2;
+		m_uniformBuffer_Camera = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(CameraConstants) * numberOfCuboids, nullptr });
+		m_uniformBuffer_Normals = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(normals), &normals });
+
+		GraphicsAPI::PipelineCreateInfo pipelineCI;
+
+		pipelineCI.shaders = { m_vertexShader, m_fragmentShader };
+		pipelineCI.vertexInputState.attributes = { {0, 0, GraphicsAPI::VertexType::VEC4, 0, "TEXCOORD"} };
+		pipelineCI.vertexInputState.bindings = { {0, 0, 4 * sizeof(float)} };
+		pipelineCI.inputAssemblyState = { GraphicsAPI::PrimitiveTopology::TRIANGLE_LIST, false };
+		pipelineCI.rasterisationState = { false, false, GraphicsAPI::PolygonMode::FILL, GraphicsAPI::CullMode::BACK, GraphicsAPI::FrontFace::COUNTER_CLOCKWISE, false, 0.0f, 0.0f, 0.0f, 1.0f };
+		pipelineCI.multisampleState = { 1, false, 1.0f, 0xFFFFFFFF, false, false };
+		pipelineCI.depthStencilState = { true, true, GraphicsAPI::CompareOp::LESS_OR_EQUAL, false, false, {}, {}, 0.0f, 1.0f };
+		pipelineCI.colorBlendState = { false, GraphicsAPI::LogicOp::NO_OP, {{true, GraphicsAPI::BlendFactor::SRC_ALPHA, GraphicsAPI::BlendFactor::ONE_MINUS_SRC_ALPHA, GraphicsAPI::BlendOp::ADD, GraphicsAPI::BlendFactor::ONE, GraphicsAPI::BlendFactor::ZERO, GraphicsAPI::BlendOp::ADD, (GraphicsAPI::ColorComponentBit)15}}, {0.0f, 0.0f, 0.0f, 0.0f} };
+		pipelineCI.colorFormats = { m_colorSwapchainInfos[0].swapchainFormat };
+		pipelineCI.depthFormat = m_depthSwapchainInfos[0].swapchainFormat;
+		pipelineCI.layout = { {0, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX},
+							 {1, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX},
+							 {2, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT} };
+		m_pipeline = m_graphicsAPI->CreatePipeline(pipelineCI);
+
+	}
+
+	void destroy_resources()
+	{
+		m_graphicsAPI->DestroyPipeline(m_pipeline);
+		m_graphicsAPI->DestroyShader(m_fragmentShader);
+		m_graphicsAPI->DestroyShader(m_vertexShader);
+		m_graphicsAPI->DestroyBuffer(m_uniformBuffer_Camera);
+		m_graphicsAPI->DestroyBuffer(m_uniformBuffer_Normals);
+		m_graphicsAPI->DestroyBuffer(m_indexBuffer);
+		m_graphicsAPI->DestroyBuffer(m_vertexBuffer);
+	}
+
 	struct RenderLayerInfo;
 
 	void create_reference_space()
@@ -56,6 +187,8 @@ private:
 	{
 		OPENXR_CHECK(xrDestroySpace(m_localSpace), "Failed to destroy ReferenceSpace.");
 	}
+
+	int y = 0;
 
 	bool render_layer(RenderLayerInfo& info)
 	{
@@ -128,6 +261,28 @@ private:
 				m_graphicsAPI->ClearColor(colorSwapchainInfo.imageViews[colorImageIndex], 0.00f, 0.00f, 0.00f, 1.00f);
 			}
 			m_graphicsAPI->ClearDepth(depthSwapchainInfo.imageViews[depthImageIndex], 1.0f);
+
+			m_graphicsAPI->SetRenderAttachments(&colorSwapchainInfo.imageViews[colorImageIndex], 1, depthSwapchainInfo.imageViews[depthImageIndex], width, height, m_pipeline);
+			m_graphicsAPI->SetViewports(&viewport, 1);
+			m_graphicsAPI->SetScissors(&scissor, 1);
+
+			// Compute the view-projection transform.
+			// All matrices (including OpenXR's) are column-major, right-handed.
+			XrMatrix4x4f proj;
+			XrMatrix4x4f_CreateProjectionFov(&proj, m_apiType, views[i].fov, nearZ, farZ);
+			XrMatrix4x4f toView;
+			XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
+			XrMatrix4x4f_CreateTranslationRotationScale(&toView, &views[i].pose.position, &views[i].pose.orientation, &scale1m);
+			XrMatrix4x4f view;
+			XrMatrix4x4f_InvertRigidBody(&view, &toView);
+			XrMatrix4x4f_Multiply(&cameraConstants.viewProj, &proj, &view);
+
+			renderCuboidIndex = 0;
+			// Draw a floor. Scale it by 2 in the X and Z, and 0.1 in the Y,
+			render_cube({ {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, -m_viewHeightM, 0.0f}}, {2.0f, 0.1f, 2.0f}, {0.4f, 0.5f, 0.5f});
+			// Draw a "table".
+			render_cube({ {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, -m_viewHeightM + 0.9f, -0.7f} }, { 1.0f, 0.2f, 1.0f }, { 0.6f, 0.6f, 0.4f });
+
 			m_graphicsAPI->EndRendering();
 
 			// Give the swapchain image back to OpenXR, allowing the compositor to use the image.
@@ -341,6 +496,12 @@ private:
 	}
 
 	void create_instance() {
+#if defined(__ANDROID__)
+		m_asset_manager = std::make_unique<Asset>(androidApp->activity->assetManager);
+
+#else
+		m_asset_manager = std::make_unique<Asset>();
+#endif
 		XrApplicationInfo appInfo{};
 		appInfo.apiVersion = XR_CURRENT_API_VERSION;
 		strcpy(appInfo.applicationName, "OpenXR Tutorial Chapter 2");
@@ -547,11 +708,9 @@ private:
 			}
 		}
 	}
-
-	void poll_system_events()
-	{
-	}
 private:
+
+	std::unique_ptr<Asset> m_asset_manager;
 
 	XrInstance m_xrInstance{};
 	
@@ -603,7 +762,101 @@ private:
 		XrCompositionLayerProjection layerProjection = { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
 		std::vector<XrCompositionLayerProjectionView> layerProjectionViews;
 	};
+
+	// rendering resources
+
+	float m_viewHeightM = 1.5f;
+
+	void* m_vertexBuffer = nullptr;
+	void* m_indexBuffer = nullptr;
+	void* m_uniformBuffer_Camera = nullptr;
+	void* m_uniformBuffer_Normals = nullptr;
+	void* m_vertexShader = nullptr, * m_fragmentShader = nullptr;
+	void* m_pipeline = nullptr;
+
+#if defined(__ANDROID__)
+public:
+	// Stored pointer to the android_app structure from android_main().
+	static android_app* androidApp;
+
+	// Custom data structure that is used by PollSystemEvents().
+	// Modified from https://github.com/KhronosGroup/OpenXR-SDK-Source/blob/d6b6d7a10bdcf8d4fe806b4f415fde3dd5726878/src/tests/hello_xr/main.cpp#L133C1-L189C2
+	struct AndroidAppState {
+		ANativeWindow* nativeWindow = nullptr;
+		bool resumed = false;
+	};
+	static AndroidAppState androidAppState;
+
+	// Processes the next command from the Android OS. It updates AndroidAppState.
+	static void AndroidAppHandleCmd(struct android_app* app, int32_t cmd) {
+		AndroidAppState* appState = (AndroidAppState*)app->userData;
+
+		switch (cmd) {
+			// There is no APP_CMD_CREATE. The ANativeActivity creates the application thread from onCreate().
+			// The application thread then calls android_main().
+		case APP_CMD_START: {
+			break;
+		}
+		case APP_CMD_RESUME: {
+			appState->resumed = true;
+			break;
+		}
+		case APP_CMD_PAUSE: {
+			appState->resumed = false;
+			break;
+		}
+		case APP_CMD_STOP: {
+			break;
+		}
+		case APP_CMD_DESTROY: {
+			appState->nativeWindow = nullptr;
+			break;
+		}
+		case APP_CMD_INIT_WINDOW: {
+			appState->nativeWindow = app->window;
+			break;
+		}
+		case APP_CMD_TERM_WINDOW: {
+			appState->nativeWindow = nullptr;
+			break;
+		}
+		}
+	}
+
+private:
+	void poll_system_events() {
+		// Checks whether Android has requested that application should by destroyed.
+		if (androidApp->destroyRequested != 0) {
+			m_applicationRunning = false;
+			return;
+		}
+		while (true) {
+			// Poll and process the Android OS system events.
+			struct android_poll_source* source = nullptr;
+			int events = 0;
+			// The timeout depends on whether the application is active.
+			const int timeoutMilliseconds = (!androidAppState.resumed && !m_sessionRunning && androidApp->destroyRequested == 0) ? -1 : 0;
+			if (ALooper_pollAll(timeoutMilliseconds, nullptr, &events, (void**)&source) >= 0) {
+				if (source != nullptr) {
+					source->process(androidApp, source);
+				}
+			}
+			else {
+				break;
+			}
+		}
+	}
+#else
+	void poll_system_events() {
+		return;
+	}
+#endif
 };
+
+#if defined(__ANDROID__)
+android_app* App::androidApp = nullptr;
+App::AndroidAppState App::androidAppState = {};
+#endif
 
 void App_Main(GraphicsAPI_Type apiType) {
 	DebugOutput debugOutput;  // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
@@ -626,6 +879,32 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #if defined(XR_OS_ANDROID)
 extern "C" {
 	void android_main(struct android_app* app) {
+		// Allow interaction with JNI and the JVM on this thread.
+		// https://developer.android.com/training/articles/perf-jni#threads
+		JNIEnv* env;
+		app->activity->vm->AttachCurrentThread(&env, nullptr);
+
+		// https://registry.khronos.org/OpenXR/specs/1.0/html/xrspec.html#XR_KHR_loader_init
+		// Load xrInitializeLoaderKHR() function pointer. On Android, the loader must be initialized with variables from android_app *.
+		// Without this, there's is no loader and thus our function calls to OpenXR would fail.
+		XrInstance m_xrInstance = XR_NULL_HANDLE;  // Dummy XrInstance variable for OPENXR_CHECK macro.
+		PFN_xrInitializeLoaderKHR xrInitializeLoaderKHR = nullptr;
+		OPENXR_CHECK(xrGetInstanceProcAddr(XR_NULL_HANDLE, "xrInitializeLoaderKHR", (PFN_xrVoidFunction*)&xrInitializeLoaderKHR), "Failed to get InstanceProcAddr for xrInitializeLoaderKHR.");
+		if (!xrInitializeLoaderKHR) {
+			return;
+		}
+
+		// Fill out an XrLoaderInitInfoAndroidKHR structure and initialize the loader for Android.
+		XrLoaderInitInfoAndroidKHR loaderInitializeInfoAndroid{ XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR };
+		loaderInitializeInfoAndroid.applicationVM = app->activity->vm;
+		loaderInitializeInfoAndroid.applicationContext = app->activity->clazz;
+		OPENXR_CHECK(xrInitializeLoaderKHR((XrLoaderInitInfoBaseHeaderKHR*)&loaderInitializeInfoAndroid), "Failed to initialize Loader for Android.");
+
+		app->userData = &App::androidAppState;
+		app->onAppCmd = &App::AndroidAppHandleCmd;
+
+		App::androidApp = app;
+
 		App_Main(VULKAN);
 	}
 }

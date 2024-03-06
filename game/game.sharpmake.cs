@@ -22,25 +22,27 @@ namespace Que
 
             SourceFilesExtensions.Add(".xml");
             SourceFilesExtensions.Add(".gradle");
+            SourceFilesExtensions.Add(".glsl");
+
+            var platformPath = Path.Combine(Globals.RootDirectory, "platform");
+            AdditionalSourceRootPaths.Add(platformPath);
 
             // Show resource files in project
             var projectPath = Path.Combine(Globals.RootDirectory, "projects", Name);
-            AdditionalSourceRootPaths.Add(projectPath);
+
             CopyAndroidResources(projectPath);
+
         }
 
         public override void ConfigureAll(Configuration conf, CommonTarget target)
         {
             base.ConfigureAll(conf, target);
 
-
-
             conf.ProjectFileName = "[project.Name]_[target.DevEnv]_[target.Platform]";
             conf.ProjectPath = Path.Combine(Globals.RootDirectory, @"projects\[project.Name]");
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"game/src"));
 
             conf.Options.Add(Options.Agde.Compiler.CppLanguageStandard.Cpp17);
-
 
             if (target.Platform == Platform.win64)
             {
@@ -58,11 +60,12 @@ namespace Que
             // vulkan common
             conf.IncludePaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Include");
 
-
             conf.VcxprojUserFile = new Configuration.VcxprojUserFileSettings
             {
-                LocalDebuggerEnvironment = "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json"),
+                LocalDebuggerWorkingDirectory = "$(TargetDir)",
+                //LocalDebuggerEnvironment = "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json"),
                 //LocalDebuggerEnvironment = "XR_RUNTIME_JSON=" + "C:\\Program Files (x86)\\Steam\\steamapps\\common\\SteamVR\\steamxr_win64.json",
+
             };
 
             // if not set, no precompile option will be used.
@@ -72,6 +75,16 @@ namespace Que
             conf.CustomProperties.Add("CustomOptimizationProperty", $"Custom-{target.Optimization}");
 
             conf.AddPublicDependency<OpenXRProject>(target);
+            //conf.AddPublicDependency<EASTLProject>(target);
+
+            conf.Output = Configuration.OutputType.Exe;
+        }
+
+        public override void PostResolve()
+        {
+            base.PostResolve();
+
+
         }
 
         public override void ConfigureWin64(Configuration conf, CommonTarget target)
