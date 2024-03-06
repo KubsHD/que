@@ -10,6 +10,7 @@
 
 class Asset {
 public:
+	Asset() = default;
 	Asset(void* android_ass);
 	~Asset();
 

@@ -29,8 +29,7 @@ namespace Que
 
             // Show resource files in project
             var projectPath = Path.Combine(Globals.RootDirectory, "projects", Name);
-
-            CopyAndroidResources(projectPath);
+            GenerateCopyAndroidResourcesBatchFile(projectPath);
 
         }
 
@@ -41,6 +40,7 @@ namespace Que
             conf.ProjectFileName = "[project.Name]_[target.DevEnv]_[target.Platform]";
             conf.ProjectPath = Path.Combine(Globals.RootDirectory, @"projects\[project.Name]");
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"game/src"));
+
 
             conf.Options.Add(Options.Agde.Compiler.CppLanguageStandard.Cpp17);
 
@@ -57,16 +57,25 @@ namespace Que
                 conf.Defines.Add("XR_OS_ANDROID");
             }
 
+            // glm include
+            conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps/glm"));
+
             // vulkan common
             conf.IncludePaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Include");
 
             conf.VcxprojUserFile = new Configuration.VcxprojUserFileSettings
             {
                 LocalDebuggerWorkingDirectory = "$(TargetDir)",
-                //LocalDebuggerEnvironment = "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json"),
-                //LocalDebuggerEnvironment = "XR_RUNTIME_JSON=" + "C:\\Program Files (x86)\\Steam\\steamapps\\common\\SteamVR\\steamxr_win64.json",
-
+                LocalDebuggerEnvironment = File.Exists(Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json")) ? "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json") : "",
             };
+
+            var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
+
+            // compile shaders with glslc 
+            conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
+            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=vertex -o $(OutDir)data\\VertexShader.spv {realProjectPath}\\data\\VertexShader.glsl");
+            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=fragment -o $(OutDir)data\\PixelShader.spv {realProjectPath}\\data\\PixelShader.glsl");
+
 
             // if not set, no precompile option will be used.
             //conf.PrecompHeader = "pch.h";
@@ -108,22 +117,36 @@ namespace Que
 
             conf.TargetPath = Path.Combine(conf.TargetPath, GetABI(target));
             conf.TargetFileName = LowerName;
+
+            // copy android resources before build
+            conf.EventPreBuild.Add($"call {Path.Combine(Globals.RootDirectory, @"projects\[project.Name]\copy_resources.bat")}");
+
         }
 
-        private void CopyAndroidResources(string projectPath)
+        private void GenerateCopyAndroidResourcesBatchFile(string projectPath)
         {
-            string dstPath = Path.Combine(projectPath, @"src\main");
-            if (!Directory.Exists(dstPath))
-            {
-                Directory.CreateDirectory(dstPath);
-            }
-            string srcManifestFile = Path.Combine(SharpmakeCsProjectPath, @"..\platform\meta\resources\AndroidManifest.xml");
-            string dstManifestFile = Path.Combine(dstPath, "AndroidManifest.xml");
-            Util.ForceCopy(srcManifestFile, dstManifestFile);
+            //string dstPath = Path.Combine(projectPath, @"src\main");
+            //if (!Directory.Exists(dstPath))
+            //{
+            //    Directory.CreateDirectory(dstPath);
+            //}
+            //string srcManifestFile = Path.Combine(SharpmakeCsProjectPath, @"..\platform\meta\resources\AndroidManifest.xml");
+            //string dstManifestFile = Path.Combine(dstPath, "AndroidManifest.xml");
+            //Util.ForceCopy(srcManifestFile, dstManifestFile);
 
-            // Copy module build gradle file to project folder
-            string srcModulePath = Path.Combine(SharpmakeCsProjectPath, @"..\platform\meta\gradle\app");
-            AndroidUtil.DirectoryCopy(srcModulePath, projectPath);
+            //// Copy module build gradle file to project folder
+            //string srcModulePath = Path.Combine(SharpmakeCsProjectPath, @"..\platform\meta\gradle\app");
+            //AndroidUtil.DirectoryCopy(srcModulePath, projectPath);
+
+            // translate above code to batch files
+            Directory.CreateDirectory(projectPath + "\\src\\main");
+            string copyResBat = Path.Combine(projectPath, "copy_res.bat");
+            string copyResCmd = $"xcopy /E /Y /I {SharpmakeCsProjectPath}\\..\\platform\\meta\\resources\\AndroidManifest.xml {projectPath}\\src\\main";
+            File.WriteAllText(copyResBat, copyResCmd);
+            File.AppendAllText(copyResBat, "\n");
+            string copyGradeCmd = $"xcopy /E /Y /I {SharpmakeCsProjectPath}\\..\\platform\\meta\\gradle\\app {projectPath}";
+            File.AppendAllText(copyResBat, copyGradeCmd);
+            
         }
 
         private string GetABI(CommonTarget target)
