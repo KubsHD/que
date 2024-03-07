@@ -5,7 +5,7 @@ using System;
 
 namespace Que
 {
- 
+
 
 
     [Sharpmake.Generate]
@@ -62,6 +62,9 @@ namespace Que
 
             // vulkan common
             conf.IncludePaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Include");
+
+            // tracy include
+            conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps/tracy/public"));
 
             conf.VcxprojUserFile = new Configuration.VcxprojUserFileSettings
             {
@@ -146,7 +149,7 @@ namespace Que
             File.AppendAllText(copyResBat, "\n");
             string copyGradeCmd = $"xcopy /E /Y /I {SharpmakeCsProjectPath}\\..\\platform\\meta\\gradle\\app {projectPath}";
             File.AppendAllText(copyResBat, copyGradeCmd);
-            
+
         }
 
         private string GetABI(CommonTarget target)

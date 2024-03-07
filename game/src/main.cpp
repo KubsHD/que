@@ -1,9 +1,9 @@
-#include <app.h>
+#include <game_app.h>
 
 void App_Main(GraphicsAPI_Type apiType) {
 	DebugOutput debugOutput;  // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
 	XR_TUT_LOG("Que MAIN");
-	App app(apiType);
+	GameApp app(apiType);
 
 
 	app.Run();

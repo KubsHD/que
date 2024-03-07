@@ -26,8 +26,17 @@ public:
 	std::function<void()> onRender;
 	std::function<void()> onExit;
 
-private:
+	std::unique_ptr<Scene> m_current_scene;
 	struct RenderLayerInfo;
+	struct FrameRenderInfo;
+
+
+	virtual void init() = 0;
+	virtual void update() = 0;
+	virtual void render(FrameRenderInfo& info) = 0;
+	virtual void destroy() = 0;
+protected:
+	struct SwapchainInfo;
 
 	size_t renderCuboidIndex = 0;
 
@@ -41,17 +50,23 @@ private:
 		XrVector4f pad3;
 	};
 	CameraConstants cameraConstants;
-	XrVector4f normals[6] = {
-		{1.00f, 0.00f, 0.00f, 0},
-		{-1.00f, 0.00f, 0.00f, 0},
-		{0.00f, 1.00f, 0.00f, 0},
-		{0.00f, -1.00f, 0.00f, 0},
-		{0.00f, 0.00f, 1.00f, 0},
-		{0.00f, 0.0f, -1.00f, 0} };
+
+	struct FrameRenderInfo {
+		SwapchainInfo* colorSwapchainInfo;
+		SwapchainInfo* depthSwapchainInfo;
+		
+		uint32_t colorImageIndex;
+		uint32_t depthImageIndex;
+
+		int width;
+		int height;
+		
+	};
+
+private:
 
 
-	void create_resources();
-	void destroy_resources();
+
 
 	void create_reference_space();
 	void destroy_reference_space();
@@ -76,10 +91,9 @@ private:
 
 	void render_frame();
 	bool render_layer(RenderLayerInfo& info);
-	void render_cube(XrPosef pose, XrVector3f scale, XrVector3f color);
 	
 	void poll_events();
-private:
+protected:
 
 	std::unique_ptr<Asset> m_asset_manager;
 
@@ -127,6 +141,8 @@ private:
 	XrEnvironmentBlendMode m_environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_MAX_ENUM;
 
 	XrSpace m_localSpace = XR_NULL_HANDLE;
+	
+	public:
 	struct RenderLayerInfo {
 		XrTime predictedDisplayTime;
 		std::vector<XrCompositionLayerBaseHeader*> layers;
@@ -136,14 +152,6 @@ private:
 
 	// rendering resources
 
-	float m_viewHeightM = 1.5f;
-
-	void* m_vertexBuffer = nullptr;
-	void* m_indexBuffer = nullptr;
-	void* m_uniformBuffer_Camera = nullptr;
-	void* m_uniformBuffer_Normals = nullptr;
-	void* m_vertexShader = nullptr, * m_fragmentShader = nullptr;
-	void* m_pipeline = nullptr;
 
 #if defined(__ANDROID__)
 public:

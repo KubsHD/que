@@ -13,6 +13,7 @@
 class Entity;
 class Collider;
 enum class CollisionTag;
+class GraphicsAPI;
 
 #define RTTI_COMPONENT_NAME(NAME) \
 const char* get_class_name() override { \
