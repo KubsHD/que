@@ -45,10 +45,11 @@ void GameApp::render_cube(XrPosef pose, XrVector3f scale, XrVector3f color)
 void GameApp::render(FrameRenderInfo& info)
 {
 	GraphicsAPI::Viewport viewport = { 0.0f, 0.0f, (float)info.width, (float)info.height, 0.0f, 1.0f };
-	GraphicsAPI::Rect2D scissor = { {(int32_t)0, (int32_t)0}, {info.width,info.height} };
+	GraphicsAPI::Rect2D scissor = { {(int32_t)0, (int32_t)0}, {(uint32_t)info.width,(uint32_t)info.height} };
 	float nearZ = 0.05f;
 	float farZ = 100.0f;
 
+	
 
 	// Rendering code to clear the color and depth image views.
 	m_graphicsAPI->BeginRendering();
@@ -66,6 +67,18 @@ void GameApp::render(FrameRenderInfo& info)
 	m_graphicsAPI->SetRenderAttachments(&info.colorSwapchainInfo->imageViews[info.colorImageIndex], 1, info.depthSwapchainInfo->imageViews[info.depthImageIndex], info.width, info.height, m_pipeline);
 	m_graphicsAPI->SetViewports(&viewport, 1);
 	m_graphicsAPI->SetScissors(&scissor, 1);
+
+		// Compute the view-projection transform.
+	// All matrices (including OpenXR's) are column-major, right-handed.
+	XrMatrix4x4f proj;
+	XrMatrix4x4f_CreateProjectionFov(&proj, m_apiType, info.view.fov, nearZ, farZ);
+	XrMatrix4x4f toView;
+	XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
+	XrMatrix4x4f_CreateTranslationRotationScale(&toView, &info.view.pose.position, &info.view.pose.orientation, &scale1m);
+	XrMatrix4x4f view;
+	XrMatrix4x4f_InvertRigidBody(&view, &toView);
+	XrMatrix4x4f_Multiply(&cameraConstants.viewProj, &proj, &view);
+
 
 	renderCuboidIndex = 0;
 	// Draw a floor. Scale it by 2 in the X and Z, and 0.1 in the Y,

@@ -135,7 +135,8 @@ bool App::render_layer(RenderLayerInfo& info)
 		frameRenderInfo.height = height;
 		frameRenderInfo.colorImageIndex = colorImageIndex;
 		frameRenderInfo.depthImageIndex = depthImageIndex;
-		
+		frameRenderInfo.view = views[i];
+
 		render(frameRenderInfo);
 
 

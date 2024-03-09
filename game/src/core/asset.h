@@ -8,6 +8,8 @@
 
 #include <vector>
 
+class GraphicsAPI;
+
 class Asset {
 public:
 	Asset() = default;
@@ -15,6 +17,8 @@ public:
 	~Asset();
 
 	std::vector<char> read_all_bytes(String path);
+	
+	static void load_texture_from_file(GraphicsAPI& gapi, String path);
 
 private:
 #if defined(__ANDROID__)

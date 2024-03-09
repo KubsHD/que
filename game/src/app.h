@@ -35,8 +35,26 @@ public:
 	virtual void update() = 0;
 	virtual void render(FrameRenderInfo& info) = 0;
 	virtual void destroy() = 0;
+	struct SwapchainInfo {
+		XrSwapchain swapchain = XR_NULL_HANDLE;
+		int64_t swapchainFormat = 0;
+		std::vector<void*> imageViews;
+	};
+
+
+	struct FrameRenderInfo {
+		SwapchainInfo* colorSwapchainInfo;
+		SwapchainInfo* depthSwapchainInfo;
+
+		uint32_t colorImageIndex;
+		uint32_t depthImageIndex;
+
+		int width;
+		int height;
+
+		XrView view;
+	};
 protected:
-	struct SwapchainInfo;
 
 	size_t renderCuboidIndex = 0;
 
@@ -51,17 +69,7 @@ protected:
 	};
 	CameraConstants cameraConstants;
 
-	struct FrameRenderInfo {
-		SwapchainInfo* colorSwapchainInfo;
-		SwapchainInfo* depthSwapchainInfo;
-		
-		uint32_t colorImageIndex;
-		uint32_t depthImageIndex;
 
-		int width;
-		int height;
-		
-	};
 
 private:
 
@@ -127,11 +135,7 @@ protected:
 	XrViewConfigurationType m_viewConfiguration = XR_VIEW_CONFIGURATION_TYPE_MAX_ENUM;
 	std::vector<XrViewConfigurationView> m_viewConfigurationViews;
 
-	struct SwapchainInfo {
-		XrSwapchain swapchain = XR_NULL_HANDLE;
-		int64_t swapchainFormat = 0;
-		std::vector<void*> imageViews;
-	};
+
 	std::vector<SwapchainInfo> m_colorSwapchainInfos = {};
 	std::vector<SwapchainInfo> m_depthSwapchainInfos = {};
 

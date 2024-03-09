@@ -8,6 +8,9 @@
 #include "GraphicsAPI.h"
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
+
+#include <lib/vk_mem_alloc.h>
+
 class GraphicsAPI_Vulkan : public GraphicsAPI {
 public:
     GraphicsAPI_Vulkan();
@@ -133,6 +136,8 @@ private:
     VkPipeline setPipeline = VK_NULL_HANDLE;
     std::unordered_map<VkCommandBuffer, std::vector<VkDescriptorSet>> cmdBufferDescriptorSets;
     std::vector<std::tuple<VkWriteDescriptorSet, VkDescriptorBufferInfo, VkDescriptorImageInfo>> writeDescSets;
+
+    VmaAllocator m_allocator;
 
 };
 #endif

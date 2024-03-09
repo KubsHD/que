@@ -18,6 +18,7 @@ namespace Que
 
 
             SourceFiles.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android\native_app_glue\android_native_app_glue.c"));
+            SourceFiles.Add(Path.Combine(Globals.RootDirectory, @"deps\tracy\public\TracyClient.cpp"));
 
 
             SourceFilesExtensions.Add(".xml");
@@ -36,6 +37,8 @@ namespace Que
         public override void ConfigureAll(Configuration conf, CommonTarget target)
         {
             base.ConfigureAll(conf, target);
+
+            conf.Defines.Add("TRACY_ENABLE");
 
             conf.ProjectFileName = "[project.Name]_[target.DevEnv]_[target.Platform]";
             conf.ProjectPath = Path.Combine(Globals.RootDirectory, @"projects\[project.Name]");
@@ -72,13 +75,7 @@ namespace Que
                 LocalDebuggerEnvironment = File.Exists(Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json")) ? "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json") : "",
             };
 
-            var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
-
-            // compile shaders with glslc 
-            conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
-            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=vertex -o $(OutDir)data\\VertexShader.spv {realProjectPath}\\data\\VertexShader.glsl");
-            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=fragment -o $(OutDir)data\\PixelShader.spv {realProjectPath}\\data\\PixelShader.glsl");
-
+   
 
             // if not set, no precompile option will be used.
             //conf.PrecompHeader = "pch.h";
@@ -106,6 +103,14 @@ namespace Que
             conf.LibraryPaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Lib");
             conf.LibraryFiles.Add("vulkan-1.lib");
             conf.SourceFilesBuildExclude.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android\native_app_glue\android_native_app_glue.c"));
+
+            var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
+
+            // compile shaders with glslc 
+            conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
+            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=vertex -o $(OutDir)data\\VertexShader.spv {realProjectPath}\\data\\VertexShader.glsl");
+            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=fragment -o $(OutDir)data\\PixelShader.spv {realProjectPath}\\data\\PixelShader.glsl");
+
         }
 
 
@@ -124,6 +129,14 @@ namespace Que
             // copy android resources before build
             conf.EventPreBuild.Add($"call {Path.Combine(Globals.RootDirectory, @"projects\[project.Name]\copy_resources.bat")}");
 
+            var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
+
+            var androidAssetsPath = ResolveString(Path.Combine(Globals.RootDirectory, @"projects\[project.Name]\src\main\assets\"), conf, target);
+
+            // compile shaders with glslc 
+            conf.EventPostBuild.Add($"if not exist {androidAssetsPath}data mkdir {androidAssetsPath}data");
+            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=vertex -o {androidAssetsPath}data\\VertexShader.spv {realProjectPath}\\data\\VertexShader.glsl");
+            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=fragment -o {androidAssetsPath}data\\PixelShader.spv {realProjectPath}\\data\\PixelShader.glsl");
         }
 
         private void GenerateCopyAndroidResourcesBatchFile(string projectPath)
@@ -143,7 +156,7 @@ namespace Que
 
             // translate above code to batch files
             Directory.CreateDirectory(projectPath + "\\src\\main");
-            string copyResBat = Path.Combine(projectPath, "copy_res.bat");
+            string copyResBat = Path.Combine(projectPath, "copy_resources.bat");
             string copyResCmd = $"xcopy /E /Y /I {SharpmakeCsProjectPath}\\..\\platform\\meta\\resources\\AndroidManifest.xml {projectPath}\\src\\main";
             File.WriteAllText(copyResBat, copyResCmd);
             File.AppendAllText(copyResBat, "\n");
