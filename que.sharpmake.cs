@@ -11,6 +11,8 @@ using Sharpmake.Generators.FastBuild;
 [module: Sharpmake.DebugProjectName("Sharpmake.Que")]
 [module: Sharpmake.Include("game/*.sharpmake.cs")]
 [module: Sharpmake.Include("tools/*.sharpmake.cs")]
+
+[module: Sharpmake.Include("deps/*.sharpmake.cs")]
 [module: Sharpmake.Include("deps/**/*.sharpmake.cs")]
 
 namespace Que

@@ -521,8 +521,10 @@ public:
     virtual void DrawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t vertexOffset = 0, uint32_t firstInstance = 0) = 0;
     virtual void Draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) = 0;
 
+    virtual void SetDebugName(std::string name, void* object) = 0;
+
 protected:
     virtual const std::vector<int64_t> GetSupportedColorSwapchainFormats() = 0;
     virtual const std::vector<int64_t> GetSupportedDepthSwapchainFormats() = 0;
-    bool debugAPI = false;
+    bool debugAPI = true;
 };

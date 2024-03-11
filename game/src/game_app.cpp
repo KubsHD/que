@@ -2,6 +2,12 @@
 
 #include <glm/ext.hpp>
 
+#include <lib/tiny_gltf.h>
+
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
 }
@@ -19,27 +25,32 @@ void GameApp::update()
 {
 }
 
+
+
+GameApp::Mesh m;
+
 void GameApp::render_cube(XrPosef pose, XrVector3f scale, XrVector3f color)
 {
-	XrMatrix4x4f_CreateTranslationRotationScale(&cameraConstants.model, &pose.position, &pose.orientation, &scale);
+
+}
+
+void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Mesh& mesh)
+{
+	XrMatrix4x4f_CreateTranslationRotationScale(&cameraConstants.model, &pos, &rot, &scale);
 
 	XrMatrix4x4f_Multiply(&cameraConstants.modelViewProj, &cameraConstants.viewProj, &cameraConstants.model);
-	cameraConstants.color = { color.x, color.y, color.z, 1.0 };
 	size_t offsetCameraUB = sizeof(CameraConstants) * renderCuboidIndex;
 
 	m_graphicsAPI->SetPipeline(m_pipeline);
 
 	m_graphicsAPI->SetBufferData(m_uniformBuffer_Camera, offsetCameraUB, sizeof(CameraConstants), &cameraConstants);
 	m_graphicsAPI->SetDescriptor({ 0, m_uniformBuffer_Camera, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(CameraConstants) });
-	m_graphicsAPI->SetDescriptor({ 1, m_uniformBuffer_Normals, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(normals) });
 
 	m_graphicsAPI->UpdateDescriptors();
 
-	m_graphicsAPI->SetVertexBuffers(&m_vertexBuffer, 1);
-	m_graphicsAPI->SetIndexBuffer(m_indexBuffer);
-	m_graphicsAPI->DrawIndexed(36);
-
-	renderCuboidIndex++;
+	m_graphicsAPI->SetVertexBuffers((void**)&m.vertex_buffer, 1);
+	m_graphicsAPI->SetIndexBuffer(m.index_buffer);
+	m_graphicsAPI->DrawIndexed(m.index_count);
 }
 
 void GameApp::render(FrameRenderInfo& info)
@@ -82,9 +93,9 @@ void GameApp::render(FrameRenderInfo& info)
 
 	renderCuboidIndex = 0;
 	// Draw a floor. Scale it by 2 in the X and Z, and 0.1 in the Y,
-	render_cube({ {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, -m_viewHeightM, 0.0f} }, { 2.0f, 0.1f, 2.0f }, { 0.4f, 0.5f, 0.5f });
+	render_mesh({0.0f, -1.0f, 0.0f}, { 2.0f, 0.1f, 2.0f }, { 0.0f, 0.0f, 0.0f }, m);
 	// Draw a "table".
-	render_cube({ {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, -m_viewHeightM + 0.9f, -0.7f} }, { 1.0f, 0.2f, 1.0f }, { 0.6f, 0.6f, 0.4f });
+	//render_cube({ {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, -m_viewHeightM + 0.9f, -0.7f} }, { 1.0f, 0.2f, 1.0f }, { 0.6f, 0.6f, 0.4f });
 
 	m_graphicsAPI->EndRendering();
 
@@ -98,37 +109,6 @@ void GameApp::destroy()
 
 void GameApp::create_resources()
 {
-	// Vertices for a 1x1x1 meter cube. (Left/Right, Top/Bottom, Front/Back)
-	constexpr XrVector4f vertexPositions[] = {
-		{+0.5f, +0.5f, +0.5f, 1.0f},
-		{+0.5f, +0.5f, -0.5f, 1.0f},
-		{+0.5f, -0.5f, +0.5f, 1.0f},
-		{+0.5f, -0.5f, -0.5f, 1.0f},
-		{-0.5f, +0.5f, +0.5f, 1.0f},
-		{-0.5f, +0.5f, -0.5f, 1.0f},
-		{-0.5f, -0.5f, +0.5f, 1.0f},
-		{-0.5f, -0.5f, -0.5f, 1.0f} };
-
-#define CUBE_FACE(V1, V2, V3, V4, V5, V6) vertexPositions[V1], vertexPositions[V2], vertexPositions[V3], vertexPositions[V4], vertexPositions[V5], vertexPositions[V6],
-
-	XrVector4f cubeVertices[] = {
-		CUBE_FACE(2, 1, 0, 2, 3, 1)  // -X
-		CUBE_FACE(6, 4, 5, 6, 5, 7)  // +X
-		CUBE_FACE(0, 1, 5, 0, 5, 4)  // -Y
-		CUBE_FACE(2, 6, 7, 2, 7, 3)  // +Y
-		CUBE_FACE(0, 4, 6, 0, 6, 2)  // -Z
-		CUBE_FACE(1, 3, 7, 1, 7, 5)  // +Z
-	};
-
-	uint32_t cubeIndices[36] = {
-		0, 1, 2, 3, 4, 5,        // -X
-		6, 7, 8, 9, 10, 11,      // +X
-		12, 13, 14, 15, 16, 17,  // -Y
-		18, 19, 20, 21, 22, 23,  // +Y
-		24, 25, 26, 27, 28, 29,  // -Z
-		30, 31, 32, 33, 34, 35,  // +Z
-	};
-
 	if (m_apiType == VULKAN) {
 		std::vector<char> vertexSource = m_asset_manager->read_all_bytes("data/VertexShader.spv");
 		m_vertexShader = m_graphicsAPI->CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
@@ -137,19 +117,19 @@ void GameApp::create_resources()
 		m_fragmentShader = m_graphicsAPI->CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
 	}
 
-	m_vertexBuffer = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 4, sizeof(cubeVertices), &cubeVertices });
-
-	m_indexBuffer = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(cubeIndices), &cubeIndices });
-
 	size_t numberOfCuboids = 2;
 	m_uniformBuffer_Camera = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(CameraConstants) * numberOfCuboids, nullptr });
-	m_uniformBuffer_Normals = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(normals), &normals });
 
 	GraphicsAPI::PipelineCreateInfo pipelineCI;
 
 	pipelineCI.shaders = { m_vertexShader, m_fragmentShader };
-	pipelineCI.vertexInputState.attributes = { {0, 0, GraphicsAPI::VertexType::VEC4, 0, "TEXCOORD"} };
-	pipelineCI.vertexInputState.bindings = { {0, 0, 4 * sizeof(float)} };
+	pipelineCI.vertexInputState.attributes = { 
+		{0, 0, GraphicsAPI::VertexType::VEC3, 0, "POSITION"},  
+		{1, 0, GraphicsAPI::VertexType::VEC3, 0, "NORMAL"},
+		{2, 0, GraphicsAPI::VertexType::VEC2, 0, "TEXCOORD"} 
+	};
+													// stride VVVV ie. sizeof(Vertex)
+	pipelineCI.vertexInputState.bindings = { {0, 0, 8 * sizeof(float)} };
 	pipelineCI.inputAssemblyState = { GraphicsAPI::PrimitiveTopology::TRIANGLE_LIST, false };
 	pipelineCI.rasterisationState = { false, false, GraphicsAPI::PolygonMode::FILL, GraphicsAPI::CullMode::BACK, GraphicsAPI::FrontFace::COUNTER_CLOCKWISE, false, 0.0f, 0.0f, 0.0f, 1.0f };
 	pipelineCI.multisampleState = { 1, false, 1.0f, 0xFFFFFFFF, false, false };
@@ -158,9 +138,50 @@ void GameApp::create_resources()
 	pipelineCI.colorFormats = { m_colorSwapchainInfos[0].swapchainFormat };
 	pipelineCI.depthFormat = m_depthSwapchainInfos[0].swapchainFormat;
 	pipelineCI.layout = { {0, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX},
-						 {1, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX},
-						 {2, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT} };
+						 {1, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX} };
+	
 	m_pipeline = m_graphicsAPI->CreatePipeline(pipelineCI);
+
+	Assimp::Importer imp;
+	
+
+	// create models
+	const aiScene *scene = imp.ReadFile("data/box.glb", aiProcess_Triangulate | aiProcess_FlipUVs);
+
+	auto mesh = scene->mMeshes[0];
+
+	struct Vertex {
+		float x;
+		float y;
+		float z;
+		
+		float nx;
+		float ny;
+		float nz;
+
+		float u;
+		float v;
+	};
+
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
+	for (size_t i = 0; i < mesh->mNumVertices; i++) {
+		vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f, 0.0f });
+	}
+
+	for (size_t i = 0; i < mesh->mNumFaces; i++) {
+		indices.push_back(mesh->mFaces[i].mIndices[0]);
+		indices.push_back(mesh->mFaces[i].mIndices[1]);
+		indices.push_back(mesh->mFaces[i].mIndices[2]);
+	}
+
+	m.vertex_buffer = (VkBuffer*)m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
+	m.index_buffer = (VkBuffer*)m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
+	m.index_count = indices.size();
+
+	// add debug names
+	m_graphicsAPI->SetDebugName("vertex_buffer", (void*)m.vertex_buffer);
 }
 
 void GameApp::destroy_resources()
@@ -170,6 +191,4 @@ void GameApp::destroy_resources()
 	m_graphicsAPI->DestroyShader(m_vertexShader);
 	m_graphicsAPI->DestroyBuffer(m_uniformBuffer_Camera);
 	m_graphicsAPI->DestroyBuffer(m_uniformBuffer_Normals);
-	m_graphicsAPI->DestroyBuffer(m_indexBuffer);
-	m_graphicsAPI->DestroyBuffer(m_vertexBuffer);
 }

@@ -27,7 +27,7 @@ namespace Que
             IsFileNameToLower = false;
             IsTargetFileNameToLower = false;
 
-            AddTargets(CommonTarget.GetWin64Target());
+            AddTargets(CommonTarget.GetDefaultTargets());
 
             SourceRootPath = @"[project.RootPath]\[project.Name]";
         }

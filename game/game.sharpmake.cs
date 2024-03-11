@@ -75,7 +75,7 @@ namespace Que
                 LocalDebuggerEnvironment = File.Exists(Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json")) ? "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json") : "",
             };
 
-   
+
 
             // if not set, no precompile option will be used.
             //conf.PrecompHeader = "pch.h";
@@ -84,6 +84,7 @@ namespace Que
             conf.CustomProperties.Add("CustomOptimizationProperty", $"Custom-{target.Optimization}");
 
             conf.AddPublicDependency<OpenXRProject>(target);
+            conf.AddPublicDependency<Assimp>(target);
             //conf.AddPublicDependency<EASTLProject>(target);
 
             conf.Output = Configuration.OutputType.Exe;
@@ -111,6 +112,7 @@ namespace Que
             conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=vertex -o $(OutDir)data\\VertexShader.spv {realProjectPath}\\data\\VertexShader.glsl");
             conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=fragment -o $(OutDir)data\\PixelShader.spv {realProjectPath}\\data\\PixelShader.glsl");
 
+            conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
         }
 
 
