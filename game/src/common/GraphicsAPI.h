@@ -99,6 +99,7 @@
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
 #include <vulkan/vulkan.h>
+#include <lib/vk_mem_alloc.h>
 #endif
 
 // OpenXR Helper
@@ -119,6 +120,9 @@ const char* GetGraphicsAPIInstanceExtensionString(GraphicsAPI_Type type);
 
 class GraphicsAPI {
 public:
+
+
+
 // Pipeline Helpers
 #pragma region Pipeline Helpers
     enum class SwapchainType : uint8_t {
@@ -338,8 +342,58 @@ public:
         size_t bufferOffset;
         size_t bufferSize;
     };
+
+	struct Buffer {
+		VkBuffer buffer;
+		VmaAllocation allocation;
+	};
+
+	struct Image {
+		VkImage image;
+		VmaAllocation allocation;
+	};
+
+	struct ImageViewCreateInfo {
+		void* image;
+		enum class Type : uint8_t {
+			RTV,
+			DSV,
+			SRV,
+			UAV
+		} type;
+		enum class View : uint8_t {
+			TYPE_1D,
+			TYPE_2D,
+			TYPE_3D,
+			TYPE_CUBE,
+			TYPE_1D_ARRAY,
+			TYPE_2D_ARRAY,
+			TYPE_CUBE_ARRAY,
+		} view;
+		int64_t format;
+		enum class Aspect : uint8_t {
+			COLOR_BIT = 0x01,
+			DEPTH_BIT = 0x02,
+			STENCIL_BIT = 0x04
+		} aspect;
+		uint32_t baseMipLevel;
+		uint32_t levelCount;
+		uint32_t baseArrayLayer;
+		uint32_t layerCount;
+	};
+
+	struct ImageView {
+		VkImageView view;
+		GraphicsAPI::ImageViewCreateInfo createInfo;
+	};
+
+	struct Shader {
+		VkShaderModule module;
+		ShaderCreateInfo::Type type;
+	};
+
     struct PipelineCreateInfo {
-        std::vector<void*> shaders;
+        std::vector<Shader> shaders;
         VertexInputState vertexInputState;
         InputAssemblyState inputAssemblyState;
         RasterisationState rasterisationState;
@@ -386,34 +440,7 @@ public:
         bool sampled;
     };
 
-    struct ImageViewCreateInfo {
-        void* image;
-        enum class Type : uint8_t {
-            RTV,
-            DSV,
-            SRV,
-            UAV
-        } type;
-        enum class View : uint8_t {
-            TYPE_1D,
-            TYPE_2D,
-            TYPE_3D,
-            TYPE_CUBE,
-            TYPE_1D_ARRAY,
-            TYPE_2D_ARRAY,
-            TYPE_CUBE_ARRAY,
-        } view;
-        int64_t format;
-        enum class Aspect : uint8_t {
-            COLOR_BIT = 0x01,
-            DEPTH_BIT = 0x02,
-            STENCIL_BIT = 0x04
-        } aspect;
-        uint32_t baseMipLevel;
-        uint32_t levelCount;
-        uint32_t baseArrayLayer;
-        uint32_t layerCount;
-    };
+
 
     struct SamplerCreateInfo {
         enum class Filter : uint8_t {
@@ -463,65 +490,13 @@ public:
         Extent2D extent;
     };
 
+
+
 public:
     virtual ~GraphicsAPI() = default;
 
     int64_t SelectColorSwapchainFormat(const std::vector<int64_t>& formats);
     int64_t SelectDepthSwapchainFormat(const std::vector<int64_t>& formats);
-
-    virtual void* CreateDesktopSwapchain(const SwapchainCreateInfo& swapchainCI) = 0;
-    virtual void DestroyDesktopSwapchain(void*& swapchain) = 0;
-    virtual void* GetDesktopSwapchainImage(void* swapchain, uint32_t index) = 0;
-    virtual void AcquireDesktopSwapchanImage(void* swapchain, uint32_t& index) = 0;
-    virtual void PresentDesktopSwapchainImage(void* swapchain, uint32_t index) = 0;
-
-    virtual int64_t GetDepthFormat() = 0;
-
-    virtual void* GetGraphicsBinding() = 0;
-    virtual XrSwapchainImageBaseHeader* AllocateSwapchainImageData(XrSwapchain swapchain, SwapchainType type, uint32_t count) = 0;
-    virtual void FreeSwapchainImageData(XrSwapchain swapchain) = 0;
-    virtual XrSwapchainImageBaseHeader* GetSwapchainImageData(XrSwapchain swapchain, uint32_t index) = 0;
-    virtual void* GetSwapchainImage(XrSwapchain swapchain, uint32_t index) = 0;
-
-    virtual void* CreateImage(const ImageCreateInfo& imageCI) = 0;
-    virtual void DestroyImage(void*& image) = 0;
-
-    virtual void* CreateImageView(const ImageViewCreateInfo& imageViewCI) = 0;
-    virtual void DestroyImageView(void*& imageView) = 0;
-
-    virtual void* CreateSampler(const SamplerCreateInfo& samplerCI) = 0;
-    virtual void DestroySampler(void*& sampler) = 0;
-
-    virtual void* CreateBuffer(const BufferCreateInfo& bufferCI) = 0;
-    virtual void DestroyBuffer(void*& buffer) {}
-
-    virtual void* CreateShader(const ShaderCreateInfo& shaderCI) = 0;
-    virtual void DestroyShader(void*& shader) = 0;
-
-    virtual void* CreatePipeline(const PipelineCreateInfo& pipelineCI) = 0;
-    virtual void DestroyPipeline(void*& pipeline) = 0;
-
-    virtual void BeginRendering() = 0;
-    virtual void EndRendering() = 0;
-
-    virtual void SetBufferData(void* buffer, size_t offset, size_t size, void* data) = 0;
-
-    virtual void ClearColor(void* imageView, float r, float g, float b, float a) = 0;
-    virtual void ClearDepth(void* imageView, float d) = 0;
-
-    virtual void SetRenderAttachments(void** colorViews, size_t colorViewCount, void* depthStencilView, uint32_t width, uint32_t height, void* pipeline) = 0;
-    virtual void SetViewports(Viewport* viewports, size_t count) = 0;
-    virtual void SetScissors(Rect2D* scissors, size_t count) = 0;
-
-    virtual void SetPipeline(void* pipeline) = 0;
-    virtual void SetDescriptor(const DescriptorInfo& descriptorInfo) = 0;
-    virtual void UpdateDescriptors() = 0;
-    virtual void SetVertexBuffers(void** vertexBuffers, size_t count) = 0;
-    virtual void SetIndexBuffer(void* indexBuffer) = 0;
-    virtual void DrawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t vertexOffset = 0, uint32_t firstInstance = 0) = 0;
-    virtual void Draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) = 0;
-
-    virtual void SetDebugName(std::string name, void* object) = 0;
 
 protected:
     virtual const std::vector<int64_t> GetSupportedColorSwapchainFormats() = 0;

@@ -298,11 +298,11 @@ void App::destroy_swapchains()
 		SwapchainInfo& depthSwapchainInfo = m_depthSwapchainInfos[i];
 
 		// Destroy the color and depth image views from GraphicsAPI.
-		for (void*& imageView : colorSwapchainInfo.imageViews) {
-			m_graphicsAPI->DestroyImageView(imageView);
+		for (VkImageView imageView : colorSwapchainInfo.imageViews) {
+			//m_graphicsAPI->DestroyImageView(imageView);
 		}
-		for (void*& imageView : depthSwapchainInfo.imageViews) {
-			m_graphicsAPI->DestroyImageView(imageView);
+		for (VkImageView imageView : depthSwapchainInfo.imageViews) {
+			//m_graphicsAPI->DestroyImageView(imageView);
 		}
 
 		// Free the Swapchain Image Data.

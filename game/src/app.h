@@ -38,7 +38,7 @@ public:
 	struct SwapchainInfo {
 		XrSwapchain swapchain = XR_NULL_HANDLE;
 		int64_t swapchainFormat = 0;
-		std::vector<void*> imageViews;
+		std::vector<VkImageView> imageViews;
 	};
 
 
@@ -121,7 +121,7 @@ protected:
 	std::vector<std::string> m_instanceExtensions = {};
 
 	// session stuff
-	std::unique_ptr<GraphicsAPI> m_graphicsAPI = nullptr;
+	std::unique_ptr<GraphicsAPI_Vulkan> m_graphicsAPI = nullptr;
 	XrSession m_session = XR_NULL_HANDLE;
 
 	XrSessionState m_sessionState = XR_SESSION_STATE_UNKNOWN;

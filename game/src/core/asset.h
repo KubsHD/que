@@ -7,8 +7,10 @@
 #endif
 
 #include <vector>
+#include <asset/mesh.h>
 
-class GraphicsAPI;
+class GraphicsAPI_Vulkan;
+
 
 class Asset {
 public:
@@ -18,8 +20,8 @@ public:
 
 	std::vector<char> read_all_bytes(String path);
 	
-	static void load_texture_from_file(GraphicsAPI& gapi, String path);
-
+	static void load_texture_from_file(GraphicsAPI_Vulkan& gapi, String path);
+	static Mesh load_mesh(GraphicsAPI_Vulkan& gapi, String path);
 private:
 #if defined(__ANDROID__)
 	AAssetManager* m_android_asset_manager;

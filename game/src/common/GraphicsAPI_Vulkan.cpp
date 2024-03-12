@@ -4,10 +4,14 @@
 
 // OpenXR Tutorial for Khronos Group
 
+;
+
 #if defined(_WIN32)
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 #include "GraphicsAPI_Vulkan.h"
+
+#include <vulkan/vk_enum_string_helper.h>
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
 
@@ -16,6 +20,7 @@
         VkResult result = (x);                                                                     \
         if (result != VK_SUCCESS) {                                                                \
             std::cout << "ERROR: VULKAN: " << std::hex << "0x" << result << std::dec << std::endl; \
+            std::cout << "ERROR: VULKAN: "  << string_VkResult(result) << std::endl; \
             std::cout << "ERROR: VULKAN: " << y << std::endl;                                      \
         }                                                                                          \
     }
@@ -23,6 +28,17 @@
 #if defined(__ANDROID__) && !defined(VK_API_MAKE_VERSION)
 #define VK_MAKE_API_VERSION(variant, major, minor, patch) VK_MAKE_VERSION(major, minor, patch)
 #endif
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData) {
+
+	std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+	return VK_FALSE;
+}
 
 static bool MemoryTypeFromProperties(VkPhysicalDeviceMemoryProperties memoryProperties, uint32_t typeBits, VkMemoryPropertyFlags requirementsMask, uint32_t *typeIndex) {
     // Search memory types to find first index with those properties
@@ -91,6 +107,11 @@ VkDescriptorType ToVkDescrtiptorType(const GraphicsAPI::DescriptorInfo &descInfo
 }
 
 GraphicsAPI_Vulkan::GraphicsAPI_Vulkan() {
+
+    // NOT USED
+    return;
+    
+    
     // Instance
     VkApplicationInfo ai;
     ai.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -125,7 +146,6 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan() {
         }
     }
 
-    activeInstanceLayers = {"VK_LAYER_KHRONOS_validation"};
 
     VkInstanceCreateInfo instanceCI;
     instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -254,7 +274,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     // Instance
     LoadPFN_XrFunctions(m_xrInstance);
 
-    XrGraphicsRequirementsVulkanKHR graphicsRequirements{XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR};
+    XrGraphicsRequirementsVulkanKHR graphicsRequirements{ XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR };
     OPENXR_CHECK(xrGetVulkanGraphicsRequirementsKHR(m_xrInstance, systemId, &graphicsRequirements), "Failed to get Graphics Requirements for Vulkan.");
 
     VkApplicationInfo ai;
@@ -275,8 +295,8 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     std::vector<std::string> openXrInstanceExtensionNames = GetInstanceExtensionsForOpenXR(m_xrInstance, systemId);
     openXrInstanceExtensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-    for (const std::string &requestExtension : openXrInstanceExtensionNames) {
-        for (const VkExtensionProperties &extensionProperty : instanceExtensionProperties) {
+    for (const std::string& requestExtension : openXrInstanceExtensionNames) {
+        for (const VkExtensionProperties& extensionProperty : instanceExtensionProperties) {
             if (strcmp(requestExtension.c_str(), extensionProperty.extensionName))
                 continue;
             else
@@ -284,6 +304,8 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
             break;
         }
     }
+
+	activeInstanceLayers = { "VK_LAYER_KHRONOS_validation" };
 
     VkInstanceCreateInfo instanceCI;
     instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -308,7 +330,8 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     auto physicalDeviceFromXR_it = std::find(physicalDevices.begin(), physicalDevices.end(), physicalDeviceFromXR);
     if (physicalDeviceFromXR_it != physicalDevices.end()) {
         physicalDevice = *physicalDeviceFromXR_it;
-    } else {
+    }
+    else {
         std::cout << "ERROR: Vulkan: Failed to find PhysicalDevice for OpenXR." << std::endl;
         // Select the first available device.
         physicalDevice = physicalDevices[0];
@@ -348,9 +371,9 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     deviceExtensionProperties.resize(deviceExtensionCount);
 
     VULKAN_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, 0, &deviceExtensionCount, deviceExtensionProperties.data()), "Failed to enumerate DeviceExtensionProperties.");
-    const std::vector<std::string> &openXrDeviceExtensionNames = GetDeviceExtensionsForOpenXR(m_xrInstance, systemId);
-    for (const std::string &requestExtension : openXrDeviceExtensionNames) {
-        for (const VkExtensionProperties &extensionProperty : deviceExtensionProperties) {
+    const std::vector<std::string>& openXrDeviceExtensionNames = GetDeviceExtensionsForOpenXR(m_xrInstance, systemId);
+    for (const std::string& requestExtension : openXrDeviceExtensionNames) {
+        for (const VkExtensionProperties& extensionProperty : deviceExtensionProperties) {
             if (strcmp(requestExtension.c_str(), extensionProperty.extensionName))
                 continue;
             else
@@ -392,19 +415,19 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 
     vkGetDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
 
-    VkFenceCreateInfo fenceCI{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+    VkFenceCreateInfo fenceCI{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
     fenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceCI.pNext = nullptr;
     fenceCI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     VULKAN_CHECK(vkCreateFence(device, &fenceCI, nullptr, &fence), "Failed to create Fence.")
 
-    uint32_t maxSets = 1024;
+        uint32_t maxSets = 1024;
     std::vector<VkDescriptorPoolSize> poolSizes{
         {VK_DESCRIPTOR_TYPE_SAMPLER, 16 * maxSets},
         {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 16 * maxSets},
         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 16 * maxSets},
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16 * maxSets},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 16 * maxSets}};
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 16 * maxSets} };
 
     VkDescriptorPoolCreateInfo descPoolCI;
     descPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -417,6 +440,25 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 
     // load debug fn
     vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+    vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+
+    // create vma allocator
+    VmaAllocatorCreateInfo allocatorCI{};
+    allocatorCI.physicalDevice = physicalDevice;
+    allocatorCI.device = device;
+    allocatorCI.instance = instance;
+
+    VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &m_allocator), "Failed to create VMA allocator.");
+
+    // add messenger
+    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback;
+    createInfo.pUserData = nullptr; // Optional
+
+    VULKAN_CHECK(vkCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger), "Failed to create debug messenger");
 }
 
 GraphicsAPI_Vulkan::~GraphicsAPI_Vulkan() {
@@ -591,7 +633,7 @@ XrSwapchainImageBaseHeader *GraphicsAPI_Vulkan::AllocateSwapchainImageData(XrSwa
 }
 // XR_DOCS_TAG_END_GraphicsAPI_Vulkan_AllocateSwapchainImageData
 
-void *GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
+VkImage *GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
     VkImage image{};
     VkImageCreateInfo vkImageCI;
     vkImageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -630,10 +672,10 @@ void *GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
     imageResources[image] = {memory, imageCI};
     imageStates[image] = vkImageCI.initialLayout;
 
-    return (void *)image;
+    return &image;
 }
 
-void GraphicsAPI_Vulkan::DestroyImage(void *&image) {
+void GraphicsAPI_Vulkan::DestroyImage(VkImage image) {
     VkImage vkImage = (VkImage)image;
     VkDeviceMemory memory = imageResources[vkImage].first;
     vkFreeMemory(device, memory, nullptr);
@@ -643,7 +685,7 @@ void GraphicsAPI_Vulkan::DestroyImage(void *&image) {
     image = nullptr;
 }
 
-void *GraphicsAPI_Vulkan::CreateImageView(const ImageViewCreateInfo &imageViewCI) {
+VkImageView GraphicsAPI_Vulkan::CreateImageView(const ImageViewCreateInfo &imageViewCI) {
     VkImageView imageView{};
     VkImageViewCreateInfo vkImageViewCI;
     vkImageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -661,17 +703,17 @@ void *GraphicsAPI_Vulkan::CreateImageView(const ImageViewCreateInfo &imageViewCI
     VULKAN_CHECK(vkCreateImageView(device, &vkImageViewCI, nullptr, &imageView), "Failed to create ImageView.");
 
     imageViewResources[imageView] = imageViewCI;
-    return (void *)imageView;
+    return imageView;
 }
 
-void GraphicsAPI_Vulkan::DestroyImageView(void *&imageView) {
+void GraphicsAPI_Vulkan::DestroyImageView(VkImageView imageView) {
     VkImageView vkImageView = (VkImageView)imageView;
     vkDestroyImageView(device, vkImageView, nullptr);
     imageViewResources.erase(vkImageView);
     imageView = nullptr;
 }
 
-void *GraphicsAPI_Vulkan::CreateSampler(const SamplerCreateInfo &samplerCI) {
+VkSampler *GraphicsAPI_Vulkan::CreateSampler(const SamplerCreateInfo &samplerCI) {
     VkSampler sampler{};
     VkSamplerCreateInfo vkSamplerCI;
     vkSamplerCI.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -697,15 +739,15 @@ void *GraphicsAPI_Vulkan::CreateSampler(const SamplerCreateInfo &samplerCI) {
     vkSamplerCI.unnormalizedCoordinates = false;
 
     VULKAN_CHECK(vkCreateSampler(device, &vkSamplerCI, nullptr, &sampler), "Failed to create Sampler.");
-    return (void *)sampler;
+    return &sampler;
 }
 
-void GraphicsAPI_Vulkan::DestroySampler(void *&sampler) {
+void GraphicsAPI_Vulkan::DestroySampler(VkSampler sampler) {
     vkDestroySampler(device, (VkSampler)sampler, nullptr);
     sampler = nullptr;
 }
 
-void *GraphicsAPI_Vulkan::CreateBuffer(const BufferCreateInfo &bufferCI) {
+VkBuffer GraphicsAPI_Vulkan::CreateBuffer(const BufferCreateInfo &bufferCI) {
     VkBuffer buffer{};
     VkBufferCreateInfo vkBufferCI;
     vkBufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -718,38 +760,29 @@ void *GraphicsAPI_Vulkan::CreateBuffer(const BufferCreateInfo &bufferCI) {
     vkBufferCI.pQueueFamilyIndices = nullptr;
     vkCreateBuffer(device, &vkBufferCI, nullptr, &buffer);
 
-    VkMemoryRequirements memoryRequirements{};
-    vkGetBufferMemoryRequirements(device, buffer, &memoryRequirements);
 
-    VkDeviceMemory memory{};
-    VkMemoryAllocateInfo allocateInfo;
-    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocateInfo.pNext = nullptr;
-    allocateInfo.allocationSize = memoryRequirements.size;
+    VmaAllocation bufferAllocation;
 
-    VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{};
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
-    MemoryTypeFromProperties(physicalDeviceMemoryProperties, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &allocateInfo.memoryTypeIndex);
+	VmaAllocationCreateInfo vmaAllocationCI = {};
+	vmaAllocationCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-    VULKAN_CHECK(vkAllocateMemory(device, &allocateInfo, nullptr, &memory), "Failed to allocate Memory.");
-    VULKAN_CHECK(vkBindBufferMemory(device, buffer, memory, 0), "Failed to bind Memory to Buffer.");
+	VULKAN_CHECK(vmaCreateBuffer(m_allocator, &vkBufferCI, &vmaAllocationCI, &buffer, &bufferAllocation, nullptr), "Failed to create Buffer.");
 
-    bufferResources[buffer] = {memory, bufferCI};
-    SetBufferData((void *)buffer, 0, bufferCI.size, bufferCI.data);
+    bufferResources[buffer] = {bufferAllocation, bufferCI};
+    SetBufferData(buffer, 0, bufferCI.size, bufferCI.data);
 
-    return (void *)buffer;
+    return buffer;
 }
 
-void GraphicsAPI_Vulkan::DestroyBuffer(void *&buffer) {
+void GraphicsAPI_Vulkan::DestroyBuffer(VkBuffer buffer) {
     VkBuffer vkBuffer = (VkBuffer)buffer;
-    VkDeviceMemory memory = bufferResources[vkBuffer].first;
-    vkFreeMemory(device, memory, nullptr);
+	vmaFreeMemory(m_allocator, bufferResources[vkBuffer].first);
     vkDestroyBuffer(device, vkBuffer, nullptr);
     bufferResources.erase(vkBuffer);
     buffer = nullptr;
 }
 
-void *GraphicsAPI_Vulkan::CreateShader(const ShaderCreateInfo &shaderCI) {
+GraphicsAPI_Vulkan::Shader GraphicsAPI_Vulkan::CreateShader(const ShaderCreateInfo &shaderCI) {
     VkShaderModule shaderModule{};
     VkShaderModuleCreateInfo shaderModuleCI;
     shaderModuleCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -759,17 +792,20 @@ void *GraphicsAPI_Vulkan::CreateShader(const ShaderCreateInfo &shaderCI) {
     shaderModuleCI.pCode = reinterpret_cast<const uint32_t *>(shaderCI.sourceData);
     VULKAN_CHECK(vkCreateShaderModule(device, &shaderModuleCI, nullptr, &shaderModule), "Failed to create ShaderModule.");
 
-    shaderResources[shaderModule] = shaderCI;
-    return (void *)shaderModule;
+    //shaderResources[shaderModule] = shaderCI;
+
+    
+    
+    return {shaderModule, shaderCI.type};
 }
 
-void GraphicsAPI_Vulkan::DestroyShader(void *&shader) {
-    VkShaderModule shaderModule = (VkShaderModule)shader;
+void GraphicsAPI_Vulkan::DestroyShader(Shader shader) {
+    VkShaderModule shaderModule = (VkShaderModule)shader.module;
     vkDestroyShaderModule(device, shaderModule, nullptr);
-    shader = nullptr;
+    shader.module = nullptr;
 }
 
-void *GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipelineCI) {
+VkPipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipelineCI) {
     // RenderPass
     std::vector<VkAttachmentDescription> attachmentDescriptions{};
     std::vector<VkAttachmentReference> colorAttachmentReferences{};
@@ -875,15 +911,15 @@ void *GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipelineCI) {
     // ShaderStages
     std::vector<VkPipelineShaderStageCreateInfo> vkShaderStages;
     vkShaderStages.reserve(pipelineCI.shaders.size());
-    for (auto &shader : pipelineCI.shaders) {
-        VkShaderModule shaderModule = (VkShaderModule)shader;
+    for (auto& shader : pipelineCI.shaders) {
         VkPipelineShaderStageCreateInfo shaderStageCI;
         shaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStageCI.pNext = nullptr;
         shaderStageCI.flags = 0;
-        shaderStageCI.stage = static_cast<VkShaderStageFlagBits>(1 << (uint32_t)shaderResources[shaderModule].type);
-        shaderStageCI.module = shaderModule;
+        shaderStageCI.stage = static_cast<VkShaderStageFlagBits>(1 << (uint32_t)shader.type);
+        shaderStageCI.module = shader.module;
         shaderStageCI.pName = "main";
+        
         shaderStageCI.pSpecializationInfo = nullptr;
         vkShaderStages.push_back(shaderStageCI);
     }
@@ -1052,14 +1088,21 @@ void *GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipelineCI) {
     GPCI.subpass = 0;
     GPCI.basePipelineHandle = VK_NULL_HANDLE;
     GPCI.basePipelineIndex = -1;
-
-    VULKAN_CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &GPCI, nullptr, &pipeline), "Failed to create Graphics Pipeline.");
+    {
+        VkResult result = (vkCreateGraphicsPipelines(device, nullptr, 1, &GPCI, nullptr, &pipeline));
+        if (result != VK_SUCCESS) {
+            std::cout << "ERROR: VULKAN: " << std::hex << "0x" << result << std::dec << std::endl; 
+            std::cout << "ERROR: VULKAN: " << string_VkResult(result) << std::endl; 
+            std::cout << "ERROR: VULKAN: " << "Failed to create Graphics Pipeline." << std::endl;
+        }
+    };
+    
     pipelineResources[pipeline] = {pipelineLayout, descSetLayout, renderPass, pipelineCI};
 
-    return (void *)pipeline;
+    return pipeline;
 }
 
-void GraphicsAPI_Vulkan::DestroyPipeline(void *&pipeline) {
+void GraphicsAPI_Vulkan::DestroyPipeline(VkPipeline pipeline) {
     VkPipeline vkPipeline = (VkPipeline)pipeline;
     VkPipelineLayout pipelineLayout = std::get<0>(pipelineResources[vkPipeline]);
     VkDescriptorSetLayout descSetLayout = std::get<1>(pipelineResources[vkPipeline]);
@@ -1156,20 +1199,18 @@ void GraphicsAPI_Vulkan::EndRendering() {
     VULKAN_CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence), "Failed to submit to Queue.");
 }
 
-void GraphicsAPI_Vulkan::SetBufferData(void *buffer, size_t offset, size_t size, void *data) {
+void GraphicsAPI_Vulkan::SetBufferData(VkBuffer buffer, size_t offset, size_t size, void *data) {
     VkBuffer vkBuffer = (VkBuffer)buffer;
-    VkDeviceMemory memory = bufferResources[vkBuffer].first;
+
     void *mappedData = nullptr;
-    VULKAN_CHECK(vkMapMemory(device, memory, offset, size, 0, &mappedData), "Can not map Buffer.");
+    VULKAN_CHECK(vmaMapMemory(m_allocator, bufferResources[vkBuffer].first, &mappedData), "Failed to map memory!");
     if (mappedData && data) {
         memcpy(mappedData, data, size);
-        // Because the VkDeviceMemory use a heap with properties (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-        // We don't need to use vkFlushMappedMemoryRanges() or vkInvalidateMappedMemoryRanges()
     }
-    vkUnmapMemory(device, memory);
+	vmaUnmapMemory(m_allocator, bufferResources[vkBuffer].first);
 };
 
-void GraphicsAPI_Vulkan::ClearColor(void *imageView, float r, float g, float b, float a) {
+void GraphicsAPI_Vulkan::ClearColor(VkImageView& imageView, float r, float g, float b, float a) {
     const ImageViewCreateInfo &imageViewCI = imageViewResources[(VkImageView)imageView];
 
     VkClearColorValue clearColor;
@@ -1255,7 +1296,7 @@ void GraphicsAPI_Vulkan::ClearDepth(void *imageView, float d) {
     vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VkDependencyFlagBits(0), 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
-void GraphicsAPI_Vulkan::SetRenderAttachments(void **colorViews, size_t colorViewCount, void *depthStencilView, uint32_t width, uint32_t height, void *pipeline) {
+void GraphicsAPI_Vulkan::SetRenderAttachments(VkImageView colorViews, size_t colorViewCount, VkImageView depthStencilView, uint32_t width, uint32_t height, void *pipeline) {
     if (inRenderPass) {
         vkCmdEndRenderPass(cmdBuffer);
     }
@@ -1263,9 +1304,8 @@ void GraphicsAPI_Vulkan::SetRenderAttachments(void **colorViews, size_t colorVie
     VkRenderPass renderPass = std::get<2>(pipelineResources[(VkPipeline)pipeline]);
 
     std::vector<VkImageView> vkImageViews;
-    for (size_t i = 0; i < colorViewCount; i++) {
-        vkImageViews.push_back((VkImageView)colorViews[i]);
-    }
+	vkImageViews.push_back((VkImageView)colorViews);
+
     if (depthStencilView) {
         vkImageViews.push_back((VkImageView)depthStencilView);
     }
@@ -1318,7 +1358,7 @@ void GraphicsAPI_Vulkan::SetScissors(Rect2D *scissors, size_t count) {
 
     vkCmdSetScissor(cmdBuffer, 0, static_cast<uint32_t>(vkRect2D.size()), vkRect2D.data());
 }
-void GraphicsAPI_Vulkan::SetPipeline(void *pipeline) {
+void GraphicsAPI_Vulkan::SetPipeline(VkPipeline pipeline) {
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)pipeline);
     setPipeline = (VkPipeline)pipeline;
 }
@@ -1400,7 +1440,7 @@ void GraphicsAPI_Vulkan::UpdateDescriptors() {
     cmdBufferDescriptorSets[cmdBuffer].push_back({descSet});
 }
 
-void GraphicsAPI_Vulkan::SetVertexBuffers(void **vertexBuffers, size_t count) {
+void GraphicsAPI_Vulkan::SetVertexBuffers(VkBuffer** vertexBuffers, size_t count) {
     std::vector<VkBuffer> vkBuffers;
     std::vector<VkDeviceSize> offsets;
     for (size_t i = 0; i < count; i++) {
@@ -1411,7 +1451,7 @@ void GraphicsAPI_Vulkan::SetVertexBuffers(void **vertexBuffers, size_t count) {
     vkCmdBindVertexBuffers(cmdBuffer, 0, static_cast<uint32_t>(vkBuffers.size()), vkBuffers.data(), offsets.data());
 }
 
-void GraphicsAPI_Vulkan::SetIndexBuffer(void *indexBuffer) {
+void GraphicsAPI_Vulkan::SetIndexBuffer(VkBuffer *indexBuffer) {
     const BufferCreateInfo &bufferCI = bufferResources[(VkBuffer)indexBuffer].second;
     VkIndexType type = bufferCI.stride == 4 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
     vkCmdBindIndexBuffer(cmdBuffer, (VkBuffer)indexBuffer, 0, type);

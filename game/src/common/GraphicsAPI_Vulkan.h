@@ -12,85 +12,87 @@
 #include <lib/vk_mem_alloc.h>
 
 class GraphicsAPI_Vulkan : public GraphicsAPI {
+
+
 public:
     GraphicsAPI_Vulkan();
     GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId systemId);
     ~GraphicsAPI_Vulkan();
 
-    virtual void* CreateDesktopSwapchain(const SwapchainCreateInfo& swapchainCI) override;
-    virtual void DestroyDesktopSwapchain(void*& swapchain) override;
-    virtual void* GetDesktopSwapchainImage(void* swapchain, uint32_t index) override;
-    virtual void AcquireDesktopSwapchanImage(void* swapchain, uint32_t& index) override;
-    virtual void PresentDesktopSwapchainImage(void* swapchain, uint32_t index) override;
+    void* CreateDesktopSwapchain(const GraphicsAPI::SwapchainCreateInfo& swapchainCI) ;
+    void DestroyDesktopSwapchain(void*& swapchain) ;
+    void* GetDesktopSwapchainImage(void* swapchain, uint32_t index) ;
+    void AcquireDesktopSwapchanImage(void* swapchain, uint32_t& index) ;
+    void PresentDesktopSwapchainImage(void* swapchain, uint32_t index) ;
 
     // XR_DOCS_TAG_BEGIN_GetDepthFormat_Vulkan
-    virtual int64_t GetDepthFormat() override { return (int64_t)VK_FORMAT_D32_SFLOAT; }
+    int64_t GetDepthFormat()  { return (int64_t)VK_FORMAT_D32_SFLOAT; }
     // XR_DOCS_TAG_END_GetDepthFormat_Vulkan
 
-    virtual void* GetGraphicsBinding() override;
-    virtual XrSwapchainImageBaseHeader* AllocateSwapchainImageData(XrSwapchain swapchain, SwapchainType type, uint32_t count) override;
-    virtual void FreeSwapchainImageData(XrSwapchain swapchain) override {
+    void* GetGraphicsBinding() ;
+    XrSwapchainImageBaseHeader* AllocateSwapchainImageData(XrSwapchain swapchain, GraphicsAPI::SwapchainType type, uint32_t count) ;
+    void FreeSwapchainImageData(XrSwapchain swapchain)  {
         swapchainImagesMap[swapchain].second.clear();
         swapchainImagesMap.erase(swapchain);
     }
-    virtual XrSwapchainImageBaseHeader* GetSwapchainImageData(XrSwapchain swapchain, uint32_t index) override { return (XrSwapchainImageBaseHeader*)&swapchainImagesMap[swapchain].second[index]; }
+    XrSwapchainImageBaseHeader* GetSwapchainImageData(XrSwapchain swapchain, uint32_t index)  { return (XrSwapchainImageBaseHeader*)&swapchainImagesMap[swapchain].second[index]; }
     // XR_DOCS_TAG_BEGIN_GetSwapchainImage_Vulkan
-    virtual void* GetSwapchainImage(XrSwapchain swapchain, uint32_t index) override {
+    void* GetSwapchainImage(XrSwapchain swapchain, uint32_t index)  {
         VkImage image = swapchainImagesMap[swapchain].second[index].image;
-        VkImageLayout layout = swapchainImagesMap[swapchain].first == SwapchainType::COLOR ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        VkImageLayout layout = swapchainImagesMap[swapchain].first == GraphicsAPI::SwapchainType::COLOR ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         imageStates[image] = layout;
         return (void *)image;
     }
     // XR_DOCS_TAG_END_GetSwapchainImage_Vulkan
 
-    virtual void* CreateImage(const ImageCreateInfo& imageCI) override;
-    virtual void DestroyImage(void*& image) override;
+    VkImage* CreateImage(const GraphicsAPI::ImageCreateInfo& imageCI) ;
+    void DestroyImage(VkImage image) ;
 
-    virtual void* CreateImageView(const ImageViewCreateInfo& imageViewCI) override;
-    virtual void DestroyImageView(void*& imageView) override;
+    VkImageView CreateImageView(const GraphicsAPI::ImageViewCreateInfo& imageViewCI) ;
+    void DestroyImageView(VkImageView imageView) ;
 
-    virtual void* CreateSampler(const SamplerCreateInfo& samplerCI) override;
-    virtual void DestroySampler(void*& sampler) override;
+    VkSampler* CreateSampler(const GraphicsAPI::SamplerCreateInfo& samplerCI) ;
+    void DestroySampler(VkSampler sampler) ;
 
-    virtual void* CreateBuffer(const BufferCreateInfo& bufferCI) override;
-    virtual void DestroyBuffer(void*& buffer) override;
+    VkBuffer CreateBuffer(const GraphicsAPI::BufferCreateInfo& bufferCI) ;
+    void DestroyBuffer(VkBuffer buffer) ;
 
-    virtual void* CreateShader(const ShaderCreateInfo& shaderCI) override;
-    virtual void DestroyShader(void*& shader) override;
+    Shader CreateShader(const GraphicsAPI::ShaderCreateInfo& shaderCI) ;
+    void DestroyShader(Shader shader) ;
 
-    virtual void* CreatePipeline(const PipelineCreateInfo& pipelineCI) override;
-    virtual void DestroyPipeline(void*& pipeline) override;
+    VkPipeline CreatePipeline(const GraphicsAPI::PipelineCreateInfo& pipelineCI) ;
+    void DestroyPipeline(VkPipeline pipeline) ;
 
-    virtual void BeginRendering() override;
-    virtual void EndRendering() override;
+    void BeginRendering() ;
+    void EndRendering() ;
 
-    virtual void SetBufferData(void* buffer, size_t offset, size_t size, void* data) override;
+    void SetBufferData(VkBuffer buffer, size_t offset, size_t size, void* data) ;
 
-    virtual void ClearColor(void* imageView, float r, float g, float b, float a) override;
-    virtual void ClearDepth(void* imageView, float d) override;
+    void ClearColor(VkImageView& imageView, float r, float g, float b, float a) ;
+    void ClearDepth(void* imageView, float d) ;
 
-    virtual void SetRenderAttachments(void** colorViews, size_t colorViewCount, void* depthStencilView, uint32_t width, uint32_t height, void* pipeline) override;
-    virtual void SetViewports(Viewport* viewports, size_t count) override;
-    virtual void SetScissors(Rect2D* scissors, size_t count) override;
+    void SetRenderAttachments(VkImageView colorViews, size_t colorViewCount, VkImageView depthStencilView, uint32_t width, uint32_t height, void* pipeline) ;
+    void SetViewports(GraphicsAPI::Viewport* viewports, size_t count) ;
+    void SetScissors(GraphicsAPI::Rect2D* scissors, size_t count) ;
 
-    virtual void SetPipeline(void* pipeline) override;
-    virtual void SetDescriptor(const DescriptorInfo& descriptorInfo) override;
-    virtual void UpdateDescriptors() override;
-    virtual void SetVertexBuffers(void** vertexBuffers, size_t count) override;
-    virtual void SetIndexBuffer(void* indexBuffer) override;
-    virtual void DrawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t vertexOffset = 0, uint32_t firstInstance = 0) override;
-    virtual void Draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) override;
+    void SetPipeline(VkPipeline pipeline) ;
+    void SetDescriptor(const GraphicsAPI::DescriptorInfo& descriptorInfo) ;
+    void UpdateDescriptors() ;
+    void SetVertexBuffers(VkBuffer** vertexBuffers, size_t count) ;
+    void SetIndexBuffer(VkBuffer* indexBuffer) ;
+    void DrawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t vertexOffset = 0, uint32_t firstInstance = 0) ;
+    void Draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) ;
 
+    void SetDebugName(std::string name, void* object) ;
 
-    void SetDebugName(std::string name, void* object) override;
-
+    VkDevice* GetDevice() { return &device; }
 private:
     void LoadPFN_XrFunctions(XrInstance m_xrInstance);
     std::vector<std::string> GetInstanceExtensionsForOpenXR(XrInstance m_xrInstance, XrSystemId systemId);
     std::vector<std::string> GetDeviceExtensionsForOpenXR(XrInstance m_xrInstance, XrSystemId systemId);
 
-    virtual const std::vector<int64_t> GetSupportedColorSwapchainFormats() override;
-    virtual const std::vector<int64_t> GetSupportedDepthSwapchainFormats() override;
+    const std::vector<int64_t> GetSupportedColorSwapchainFormats() ;
+    const std::vector<int64_t> GetSupportedDepthSwapchainFormats() ;
 
 private:
     VkInstance instance{};
@@ -116,11 +118,13 @@ private:
     PFN_xrGetVulkanGraphicsDeviceKHR xrGetVulkanGraphicsDeviceKHR = nullptr;
 
 	PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = VK_NULL_HANDLE;
+    PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = VK_NULL_HANDLE;
 
+	VkDebugUtilsMessengerEXT debugMessenger;
 
     XrGraphicsBindingVulkanKHR graphicsBinding{};
 
-    std::unordered_map<XrSwapchain, std::pair<SwapchainType, std::vector<XrSwapchainImageVulkanKHR>>> swapchainImagesMap{};
+    std::unordered_map<XrSwapchain, std::pair<GraphicsAPI::SwapchainType, std::vector<XrSwapchainImageVulkanKHR>>> swapchainImagesMap{};
 
     VkImage currentDesktopSwapchainImage = VK_NULL_HANDLE;
 
@@ -129,13 +133,12 @@ private:
     VkSemaphore submitSemaphore{};
 
     std::unordered_map<VkImage, VkImageLayout> imageStates;
-    std::unordered_map<VkImage, std::pair<VkDeviceMemory, ImageCreateInfo>> imageResources;
-    std::unordered_map<VkImageView, ImageViewCreateInfo> imageViewResources;
+    std::unordered_map<VkImage, std::pair<VkDeviceMemory, GraphicsAPI::ImageCreateInfo>> imageResources;
+    std::unordered_map<VkImageView, GraphicsAPI::ImageViewCreateInfo> imageViewResources;
     
-    std::unordered_map<VkBuffer, std::pair<VkDeviceMemory, BufferCreateInfo>> bufferResources;
+    std::unordered_map<VkBuffer, std::pair<VmaAllocation, GraphicsAPI::BufferCreateInfo>> bufferResources;
 
-    std::unordered_map<VkShaderModule, ShaderCreateInfo> shaderResources;
-    std::unordered_map<VkPipeline, std::tuple<VkPipelineLayout, VkDescriptorSetLayout, VkRenderPass, PipelineCreateInfo>> pipelineResources;
+    std::unordered_map<VkPipeline, std::tuple<VkPipelineLayout, VkDescriptorSetLayout, VkRenderPass, GraphicsAPI::PipelineCreateInfo>> pipelineResources;
 
     std::unordered_map<VkCommandBuffer, std::vector<VkFramebuffer>> cmdBufferFramebuffers;
     bool inRenderPass = false;
@@ -144,7 +147,7 @@ private:
     std::unordered_map<VkCommandBuffer, std::vector<VkDescriptorSet>> cmdBufferDescriptorSets;
     std::vector<std::tuple<VkWriteDescriptorSet, VkDescriptorBufferInfo, VkDescriptorImageInfo>> writeDescSets;
 
+    
     VmaAllocator m_allocator;
-
 };
 #endif

@@ -1,4 +1,5 @@
 #include "app.h"
+#include <common/GraphicsAPI_Vulkan.h>
 
 
 
@@ -18,11 +19,6 @@ class GameApp : public App
 {
 public:
 
-	struct Mesh {
-		VkBuffer* index_buffer;
-		VkBuffer* vertex_buffer;
-		uint32_t index_count;
-	};
 
 	GameApp(GraphicsAPI_Type type);
 	~GameApp();
@@ -55,8 +51,7 @@ private:
 
 	float m_viewHeightM = 1.5f;
 
-	void* m_uniformBuffer_Camera = nullptr;
-	void* m_uniformBuffer_Normals = nullptr;
-	void* m_vertexShader = nullptr, * m_fragmentShader = nullptr;
-	void* m_pipeline = nullptr;
+	VkBuffer m_uniformBuffer_Camera = nullptr;
+	GraphicsAPI_Vulkan::Shader m_vertexShader,  m_fragmentShader;
+	VkPipeline m_pipeline = nullptr;
 };

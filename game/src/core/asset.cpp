@@ -3,6 +3,14 @@
 #include <fstream>
 #include <iostream>
 
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+
+
+#include <common/GraphicsAPI.h>
+#include <common/GraphicsAPI_Vulkan.h>
+
 Asset::Asset(void* android_ass)
 {
 #if defined(__ANDROID__)
@@ -40,4 +48,39 @@ std::vector<char> Asset::read_all_bytes(String path)
 
 #endif
 
+}
+
+Mesh Asset::load_mesh(GraphicsAPI_Vulkan& gapi, String path)
+{
+	Mesh m;
+
+	Assimp::Importer imp;
+
+
+	// create models
+	const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+
+	auto mesh = scene->mMeshes[0];
+
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
+	for (size_t i = 0; i < mesh->mNumVertices; i++) {
+		vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f, 0.0f });
+	}
+
+	for (size_t i = 0; i < mesh->mNumFaces; i++) {
+		indices.push_back(mesh->mFaces[i].mIndices[0]);
+		indices.push_back(mesh->mFaces[i].mIndices[1]);
+		indices.push_back(mesh->mFaces[i].mIndices[2]);
+	}
+
+	m.vertex_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
+	m.index_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
+	m.index_count = indices.size();
+
+	// add debug names
+	//gapi.SetDebugName("vertex_buffer", (void*)m.vertex_buffer);
+
+	return m;
 }

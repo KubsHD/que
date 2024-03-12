@@ -1,12 +1,15 @@
 #include "game_app.h"
 
-#include <glm/ext.hpp>
+#include <asset/mesh.h>
+#include <core/asset.h>
 
+
+#include <glm/ext.hpp>
 #include <lib/tiny_gltf.h>
 
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
+#include <lib/stb_image.h>
+
+#include <vulkan/vulkan.h>
 
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
@@ -27,7 +30,8 @@ void GameApp::update()
 
 
 
-GameApp::Mesh m;
+Mesh m;
+VkImage* skybox;
 
 void GameApp::render_cube(XrPosef pose, XrVector3f scale, XrVector3f color)
 {
@@ -48,7 +52,7 @@ void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, c
 
 	m_graphicsAPI->UpdateDescriptors();
 
-	m_graphicsAPI->SetVertexBuffers((void**)&m.vertex_buffer, 1);
+	m_graphicsAPI->SetVertexBuffers(&m.vertex_buffer, 1);
 	m_graphicsAPI->SetIndexBuffer(m.index_buffer);
 	m_graphicsAPI->DrawIndexed(m.index_count);
 }
@@ -75,7 +79,7 @@ void GameApp::render(FrameRenderInfo& info)
 	}
 	m_graphicsAPI->ClearDepth(info.depthSwapchainInfo->imageViews[info.depthImageIndex], 1.0f);
 
-	m_graphicsAPI->SetRenderAttachments(&info.colorSwapchainInfo->imageViews[info.colorImageIndex], 1, info.depthSwapchainInfo->imageViews[info.depthImageIndex], info.width, info.height, m_pipeline);
+	m_graphicsAPI->SetRenderAttachments(info.colorSwapchainInfo->imageViews[info.colorImageIndex], 1, info.depthSwapchainInfo->imageViews[info.depthImageIndex], info.width, info.height, m_pipeline);
 	m_graphicsAPI->SetViewports(&viewport, 1);
 	m_graphicsAPI->SetScissors(&scissor, 1);
 
@@ -131,57 +135,44 @@ void GameApp::create_resources()
 													// stride VVVV ie. sizeof(Vertex)
 	pipelineCI.vertexInputState.bindings = { {0, 0, 8 * sizeof(float)} };
 	pipelineCI.inputAssemblyState = { GraphicsAPI::PrimitiveTopology::TRIANGLE_LIST, false };
-	pipelineCI.rasterisationState = { false, false, GraphicsAPI::PolygonMode::FILL, GraphicsAPI::CullMode::BACK, GraphicsAPI::FrontFace::COUNTER_CLOCKWISE, false, 0.0f, 0.0f, 0.0f, 1.0f };
+	pipelineCI.rasterisationState = { false, false, GraphicsAPI::PolygonMode::FILL, 
+									GraphicsAPI::CullMode::BACK, GraphicsAPI::FrontFace::COUNTER_CLOCKWISE,
+									false, 0.0f, 0.0f, 0.0f, 1.0f };
 	pipelineCI.multisampleState = { 1, false, 1.0f, 0xFFFFFFFF, false, false };
 	pipelineCI.depthStencilState = { true, true, GraphicsAPI::CompareOp::LESS_OR_EQUAL, false, false, {}, {}, 0.0f, 1.0f };
 	pipelineCI.colorBlendState = { false, GraphicsAPI::LogicOp::NO_OP, {{true, GraphicsAPI::BlendFactor::SRC_ALPHA, GraphicsAPI::BlendFactor::ONE_MINUS_SRC_ALPHA, GraphicsAPI::BlendOp::ADD, GraphicsAPI::BlendFactor::ONE, GraphicsAPI::BlendFactor::ZERO, GraphicsAPI::BlendOp::ADD, (GraphicsAPI::ColorComponentBit)15}}, {0.0f, 0.0f, 0.0f, 0.0f} };
 	pipelineCI.colorFormats = { m_colorSwapchainInfos[0].swapchainFormat };
 	pipelineCI.depthFormat = m_depthSwapchainInfos[0].swapchainFormat;
-	pipelineCI.layout = { {0, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX},
-						 {1, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX} };
+	pipelineCI.layout = { {0, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX} };
 	
 	m_pipeline = m_graphicsAPI->CreatePipeline(pipelineCI);
 
-	Assimp::Importer imp;
+	m = Asset::load_mesh(*m_graphicsAPI, "data/box.glb");
+
+
 	
 
-	// create models
-	const aiScene *scene = imp.ReadFile("data/box.glb", aiProcess_Triangulate | aiProcess_FlipUVs);
+	auto device = m_graphicsAPI.get()->GetDevice();
 
-	auto mesh = scene->mMeshes[0];
+	// load skybox
 
-	struct Vertex {
-		float x;
-		float y;
-		float z;
-		
-		float nx;
-		float ny;
-		float nz;
+	int texWidth, texHeight, texChannels;
 
-		float u;
-		float v;
-	};
+	stbi_uc* pixels = stbi_load("data/apartment.hdr", &texWidth, &texHeight, &texChannels, 0);
+	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
 
-	for (size_t i = 0; i < mesh->mNumVertices; i++) {
-		vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f, 0.0f });
-	}
 
-	for (size_t i = 0; i < mesh->mNumFaces; i++) {
-		indices.push_back(mesh->mFaces[i].mIndices[0]);
-		indices.push_back(mesh->mFaces[i].mIndices[1]);
-		indices.push_back(mesh->mFaces[i].mIndices[2]);
-	}
+	stbi_image_free(pixels);
 
-	m.vertex_buffer = (VkBuffer*)m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
-	m.index_buffer = (VkBuffer*)m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
-	m.index_count = indices.size();
+	// create image
+	VkImage* skybox_image = (VkImage*)m_graphicsAPI->CreateImage(
+		{3, (unsigned int)texWidth, (unsigned int)texHeight, 1, 1,1,1, VK_FORMAT_R8G8B8A8_SRGB, false, true, false, false }
+	);
 
-	// add debug names
-	m_graphicsAPI->SetDebugName("vertex_buffer", (void*)m.vertex_buffer);
+	
+
+
 }
 
 void GameApp::destroy_resources()
@@ -190,5 +181,4 @@ void GameApp::destroy_resources()
 	m_graphicsAPI->DestroyShader(m_fragmentShader);
 	m_graphicsAPI->DestroyShader(m_vertexShader);
 	m_graphicsAPI->DestroyBuffer(m_uniformBuffer_Camera);
-	m_graphicsAPI->DestroyBuffer(m_uniformBuffer_Normals);
 }
