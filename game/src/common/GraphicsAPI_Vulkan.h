@@ -9,11 +9,44 @@
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
 
+
+#include <vulkan/vk_enum_string_helper.h>
+
+
+#define VULKAN_CHECK(x, y)                                                                         \
+    {                                                                                              \
+        VkResult result = (x);                                                                     \
+        if (result != VK_SUCCESS) {                                                                \
+            std::cout << "ERROR: VULKAN: " << std::hex << "0x" << result << std::dec << std::endl; \
+            std::cout << "ERROR: VULKAN: "  << string_VkResult(result) << std::endl; \
+            std::cout << "ERROR: VULKAN: " << y << std::endl;                                      \
+        }                                                                                          \
+    }
+
+
+#define VULKAN_CHECK_NOMSG(x)                                                                         \
+    {                                                                                              \
+        VkResult result = (x);                                                                     \
+        if (result != VK_SUCCESS) {                                                                \
+            std::cout << "ERROR: VULKAN: " << std::hex << "0x" << result << std::dec << std::endl; \
+            std::cout << "ERROR: VULKAN: "  << string_VkResult(result) << std::endl; \
+        }                                                                                          \
+    }
+
 #include <lib/vk_mem_alloc.h>
+#include <functional>
 
 class GraphicsAPI_Vulkan : public GraphicsAPI {
+public:
+    struct UploadContext {
+        VkFence uploadFence;
+        VkCommandPool pool;
+        VkCommandBuffer buffer;
+    };
 
+    UploadContext m_uploadContext;
 
+    void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 public:
     GraphicsAPI_Vulkan();
     GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId systemId);
@@ -86,6 +119,7 @@ public:
     void SetDebugName(std::string name, void* object) ;
 
     VkDevice* GetDevice() { return &device; }
+    VmaAllocator* GetAllocator() { return &m_allocator; }
 private:
     void LoadPFN_XrFunctions(XrInstance m_xrInstance);
     std::vector<std::string> GetInstanceExtensionsForOpenXR(XrInstance m_xrInstance, XrSystemId systemId);
@@ -133,7 +167,7 @@ private:
     VkSemaphore submitSemaphore{};
 
     std::unordered_map<VkImage, VkImageLayout> imageStates;
-    std::unordered_map<VkImage, std::pair<VkDeviceMemory, GraphicsAPI::ImageCreateInfo>> imageResources;
+    std::unordered_map<VkImage, std::pair<VmaAllocation, GraphicsAPI::ImageCreateInfo>> imageResources;
     std::unordered_map<VkImageView, GraphicsAPI::ImageViewCreateInfo> imageViewResources;
     
     std::unordered_map<VkBuffer, std::pair<VmaAllocation, GraphicsAPI::BufferCreateInfo>> bufferResources;

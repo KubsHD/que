@@ -325,6 +325,8 @@ public:
     struct DescriptorInfo {
         uint32_t bindingIndex;
         void* resource;
+        // used for samplers
+        void* additionalResource;
         enum class Type : uint8_t {
             BUFFER,
             IMAGE,
@@ -350,6 +352,7 @@ public:
 
 	struct Image {
 		VkImage image;
+        VkImageView view;
 		VmaAllocation allocation;
 	};
 

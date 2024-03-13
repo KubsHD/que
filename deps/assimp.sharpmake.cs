@@ -10,7 +10,7 @@ public class Assimp : CommonProject
     public Assimp()
     {
         Name = "Assimp";
-        SourceRootPath = @"[project.SharpmakeCsPath]/app";
+        SourceRootPath = @"[project.SharpmakeCsPath]/assimp";
     }
 
     [Configure]

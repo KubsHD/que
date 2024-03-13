@@ -22,10 +22,12 @@ layout(location = 2) in vec2 a_TexCoord;
 
 
 
-layout(location = 0) out flat vec2 o_TexCoord;
-layout(location = 1) out flat vec3 o_Normal;
+layout(location = 0) out vec2 o_TexCoord;
+layout(location = 1) out vec3 o_Normal;
+layout(location = 2) out vec3 o_Pos;
 
 void main() {
+    o_Pos = a_Positions;
     gl_Position = modelViewProj * vec4(a_Positions, 1.0f);
 	o_TexCoord = a_TexCoord;
 	o_Normal = a_Normals;

@@ -60,25 +60,28 @@ Mesh Asset::load_mesh(GraphicsAPI_Vulkan& gapi, String path)
 	// create models
 	const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
-	auto mesh = scene->mMeshes[0];
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
-	for (size_t i = 0; i < mesh->mNumVertices; i++) {
-		vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f, 0.0f });
-	}
+	for (int m = 0; m < scene->mNumMeshes; m++)
+	{
+		auto mesh = scene->mMeshes[m];
+		
+		for (size_t i = 0; i < mesh->mNumVertices; i++) {
+			vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y });
+		}
 
-	for (size_t i = 0; i < mesh->mNumFaces; i++) {
-		indices.push_back(mesh->mFaces[i].mIndices[0]);
-		indices.push_back(mesh->mFaces[i].mIndices[1]);
-		indices.push_back(mesh->mFaces[i].mIndices[2]);
+		for (size_t i = 0; i < mesh->mNumFaces; i++) {
+			indices.push_back(mesh->mFaces[i].mIndices[0]);
+			indices.push_back(mesh->mFaces[i].mIndices[1]);
+			indices.push_back(mesh->mFaces[i].mIndices[2]);
+		}
 	}
 
 	m.vertex_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
 	m.index_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 	m.index_count = indices.size();
-
 	// add debug names
 	//gapi.SetDebugName("vertex_buffer", (void*)m.vertex_buffer);
 

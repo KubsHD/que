@@ -15,15 +15,6 @@
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
 
-#define VULKAN_CHECK(x, y)                                                                         \
-    {                                                                                              \
-        VkResult result = (x);                                                                     \
-        if (result != VK_SUCCESS) {                                                                \
-            std::cout << "ERROR: VULKAN: " << std::hex << "0x" << result << std::dec << std::endl; \
-            std::cout << "ERROR: VULKAN: "  << string_VkResult(result) << std::endl; \
-            std::cout << "ERROR: VULKAN: " << y << std::endl;                                      \
-        }                                                                                          \
-    }
 
 #if defined(__ANDROID__) && !defined(VK_API_MAKE_VERSION)
 #define VK_MAKE_API_VERSION(variant, major, minor, patch) VK_MAKE_VERSION(major, minor, patch)
@@ -95,7 +86,7 @@ VkDescriptorType ToVkDescrtiptorType(const GraphicsAPI::DescriptorInfo &descInfo
         break;
     }
     case GraphicsAPI::DescriptorInfo::Type::IMAGE: {
-        vkType = descInfo.readWrite ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        vkType = descInfo.readWrite ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         break;
     }
     case GraphicsAPI::DescriptorInfo::Type::SAMPLER: {
@@ -104,6 +95,47 @@ VkDescriptorType ToVkDescrtiptorType(const GraphicsAPI::DescriptorInfo &descInfo
     }
     }
     return vkType;
+}
+
+void GraphicsAPI_Vulkan::immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function)
+{
+    VkCommandBuffer cmd = m_uploadContext.buffer;
+
+    VkCommandBufferBeginInfo cbbi{};
+    cbbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    cbbi.pNext = nullptr;
+
+    cbbi.pInheritanceInfo = nullptr;
+    cbbi.flags = 0;
+
+    VULKAN_CHECK(vkBeginCommandBuffer(cmd, &cbbi), "Failed to begin cmd buf");
+
+    function(cmd);
+
+    VULKAN_CHECK(vkEndCommandBuffer(cmd), "Failed to end cmd buf");
+
+    VkSubmitInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    info.pNext = nullptr;
+
+    info.waitSemaphoreCount = 0;
+    info.pWaitSemaphores = nullptr;
+    info.pWaitDstStageMask = nullptr;
+    info.commandBufferCount = 1;
+    info.pCommandBuffers = &cmd;
+    info.signalSemaphoreCount = 0;
+    info.pSignalSemaphores = nullptr;
+
+
+    //submit command buffer to the queue and execute it.
+    // _uploadFence will now block until the graphic commands finish execution
+    VULKAN_CHECK(vkQueueSubmit(queue, 1, &info, m_uploadContext.uploadFence), "Failed to submit buffer to queue");
+
+    VULKAN_CHECK_NOMSG(vkWaitForFences(device, 1, &m_uploadContext.uploadFence, true, 9999999999));
+    VULKAN_CHECK_NOMSG(vkResetFences(device, 1, &m_uploadContext.uploadFence));
+
+    // reset the command buffers inside the command pool
+    VULKAN_CHECK_NOMSG(vkResetCommandPool(device, m_uploadContext.pool, 0));
 }
 
 GraphicsAPI_Vulkan::GraphicsAPI_Vulkan() {
@@ -245,11 +277,11 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan() {
 
     vkGetDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
 
-    VkFenceCreateInfo fenceCI{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-    fenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceCI.pNext = nullptr;
-    fenceCI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    VULKAN_CHECK(vkCreateFence(device, &fenceCI, nullptr, &fence), "Failed to create Fence.")
+    VkFenceCreateInfo fence2CI{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+    fence2CI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence2CI.pNext = nullptr;
+    fence2CI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    VULKAN_CHECK(vkCreateFence(device, &fence2CI, nullptr, &fence), "Failed to create Fence.")
     
     uint32_t maxSets = 1024;
     std::vector<VkDescriptorPoolSize> poolSizes{
@@ -305,7 +337,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
         }
     }
 
-	activeInstanceLayers = { "VK_LAYER_KHRONOS_validation" };
+    activeInstanceLayers = { "VK_LAYER_KHRONOS_validation" };
 
     VkInstanceCreateInfo instanceCI;
     instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -459,6 +491,32 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     createInfo.pUserData = nullptr; // Optional
 
     VULKAN_CHECK(vkCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger), "Failed to create debug messenger");
+
+    // create upload fence
+    VkFenceCreateInfo ufenceCI{};
+    ufenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    ufenceCI.pNext = nullptr;
+    VULKAN_CHECK(vkCreateFence(device, &ufenceCI, nullptr, &m_uploadContext.uploadFence), "Failed to create Fence.");
+
+    // craete upload commandpool
+    VkCommandPoolCreateInfo uploadCommandPoolInfo{};
+    uploadCommandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    uploadCommandPoolInfo.pNext = nullptr;
+
+    uploadCommandPoolInfo.flags = 0;
+    uploadCommandPoolInfo.queueFamilyIndex = queueFamilyIndex;
+
+    VULKAN_CHECK_NOMSG(vkCreateCommandPool(device, &uploadCommandPoolInfo, nullptr, &m_uploadContext.pool));
+
+    // create upload commandbuffer
+    VkCommandBufferAllocateInfo allocateInfo2{};
+    allocateInfo2.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocateInfo2.pNext = nullptr;
+    allocateInfo2.commandPool = m_uploadContext.pool;
+    allocateInfo2.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo2.commandBufferCount = 1;
+    VULKAN_CHECK(vkAllocateCommandBuffers(device, &allocateInfo2, &m_uploadContext.buffer), "Failed to allocate CommandBuffers.");
+
 }
 
 GraphicsAPI_Vulkan::~GraphicsAPI_Vulkan() {
@@ -656,32 +714,22 @@ VkImage *GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
     VkMemoryRequirements memoryRequirements{};
     vkGetImageMemoryRequirements(device, image, &memoryRequirements);
 
-    VkDeviceMemory memory{};
-    VkMemoryAllocateInfo allocateInfo;
-    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocateInfo.pNext = nullptr;
-    allocateInfo.allocationSize = memoryRequirements.size;
+    VmaAllocation alloc;
+    VmaAllocationCreateInfo info{};
+    info.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
 
-    VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{};
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
-    MemoryTypeFromProperties(physicalDeviceMemoryProperties, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &allocateInfo.memoryTypeIndex);
+    VULKAN_CHECK(vmaAllocateMemoryForImage(m_allocator, image, &info, &alloc, nullptr), "Failed to alloc mem for image");
 
-    VULKAN_CHECK(vkAllocateMemory(device, &allocateInfo, nullptr, &memory), "Failed to allocate Memory.");
-    VULKAN_CHECK(vkBindImageMemory(device, image, memory, 0), "Failed to bind Memory to Image.");
-
-    imageResources[image] = {memory, imageCI};
+    imageResources[image] = {alloc, imageCI};
     imageStates[image] = vkImageCI.initialLayout;
 
     return &image;
 }
 
 void GraphicsAPI_Vulkan::DestroyImage(VkImage image) {
-    VkImage vkImage = (VkImage)image;
-    VkDeviceMemory memory = imageResources[vkImage].first;
-    vkFreeMemory(device, memory, nullptr);
-    vkDestroyImage(device, vkImage, nullptr);
-    imageResources.erase(vkImage);
-    imageStates.erase(vkImage);
+    vmaDestroyImage(m_allocator, image, imageResources[image].first);
+    imageResources.erase(image);
+    imageStates.erase(image);
     image = nullptr;
 }
 
@@ -792,10 +840,6 @@ GraphicsAPI_Vulkan::Shader GraphicsAPI_Vulkan::CreateShader(const ShaderCreateIn
     shaderModuleCI.pCode = reinterpret_cast<const uint32_t *>(shaderCI.sourceData);
     VULKAN_CHECK(vkCreateShaderModule(device, &shaderModuleCI, nullptr, &shaderModule), "Failed to create ShaderModule.");
 
-    //shaderResources[shaderModule] = shaderCI;
-
-    
-    
     return {shaderModule, shaderCI.type};
 }
 
@@ -1377,6 +1421,7 @@ void GraphicsAPI_Vulkan::SetDescriptor(const DescriptorInfo &descriptorInfo) {
     writeDescSet.pTexelBufferView = nullptr;
     writeDescSets.push_back({writeDescSet, {}, {}});
 
+
     if (descriptorInfo.type == DescriptorInfo::Type::BUFFER) {
         VkDescriptorBufferInfo &descBufferInfo = std::get<1>(writeDescSets.back());
         VkBuffer buffer = (VkBuffer)descriptorInfo.resource;
@@ -1387,7 +1432,7 @@ void GraphicsAPI_Vulkan::SetDescriptor(const DescriptorInfo &descriptorInfo) {
     } else if (descriptorInfo.type == DescriptorInfo::Type::IMAGE) {
         VkDescriptorImageInfo &descImageInfo = std::get<2>(writeDescSets.back());
         VkImageView imageView = (VkImageView)descriptorInfo.resource;
-        descImageInfo.sampler = VK_NULL_HANDLE;
+        descImageInfo.sampler = (VkSampler)descriptorInfo.additionalResource;
         descImageInfo.imageView = imageView;
         descImageInfo.imageLayout = descriptorInfo.readWrite ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     } else if (descriptorInfo.type == DescriptorInfo::Type::SAMPLER) {
