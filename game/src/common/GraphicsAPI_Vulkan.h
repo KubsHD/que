@@ -78,7 +78,7 @@ public:
     }
     // XR_DOCS_TAG_END_GetSwapchainImage_Vulkan
 
-    VkImage* CreateImage(const GraphicsAPI::ImageCreateInfo& imageCI) ;
+    VkImage CreateImage(const GraphicsAPI::ImageCreateInfo& imageCI) ;
     void DestroyImage(VkImage image) ;
 
     VkImageView CreateImageView(const GraphicsAPI::ImageViewCreateInfo& imageViewCI) ;

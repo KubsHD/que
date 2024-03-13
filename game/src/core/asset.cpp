@@ -59,7 +59,7 @@ Mesh Asset::load_mesh(GraphicsAPI_Vulkan& gapi, String path)
 
 	// create models
 	const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-
+	
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -69,7 +69,8 @@ Mesh Asset::load_mesh(GraphicsAPI_Vulkan& gapi, String path)
 		auto mesh = scene->mMeshes[m];
 		
 		for (size_t i = 0; i < mesh->mNumVertices; i++) {
-			vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y });
+			vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z,
+				mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y });
 		}
 
 		for (size_t i = 0; i < mesh->mNumFaces; i++) {

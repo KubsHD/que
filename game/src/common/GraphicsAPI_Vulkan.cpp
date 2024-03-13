@@ -106,7 +106,7 @@ void GraphicsAPI_Vulkan::immediate_submit(std::function<void(VkCommandBuffer cmd
     cbbi.pNext = nullptr;
 
     cbbi.pInheritanceInfo = nullptr;
-    cbbi.flags = 0;
+    cbbi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     VULKAN_CHECK(vkBeginCommandBuffer(cmd, &cbbi), "Failed to begin cmd buf");
 
@@ -691,7 +691,7 @@ XrSwapchainImageBaseHeader *GraphicsAPI_Vulkan::AllocateSwapchainImageData(XrSwa
 }
 // XR_DOCS_TAG_END_GraphicsAPI_Vulkan_AllocateSwapchainImageData
 
-VkImage *GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
+VkImage GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
     VkImage image{};
     VkImageCreateInfo vkImageCI;
     vkImageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -723,7 +723,7 @@ VkImage *GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
     imageResources[image] = {alloc, imageCI};
     imageStates[image] = vkImageCI.initialLayout;
 
-    return &image;
+    return image;
 }
 
 void GraphicsAPI_Vulkan::DestroyImage(VkImage image) {

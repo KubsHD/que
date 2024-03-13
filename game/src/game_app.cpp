@@ -157,28 +157,26 @@ void GameApp::create_resources()
 
 	
 
-	auto device = m_graphicsAPI.get()->GetDevice();
+	auto device = m_graphicsAPI->GetDevice();
 	auto allocator = m_graphicsAPI->GetAllocator();
 
 	// load skybox
 
 	int texWidth, texHeight, texChannels;
 
-	float* pixels = stbi_loadf("data/Avocado_baseColor.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load("data/Avocado_baseColor.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	if (!pixels)
 		DEBUG_BREAK;
 
-
-
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
+
 
 	GraphicsAPI::Buffer stagingBuffer;
 
 	VkBufferCreateInfo stagingBufferInfo = {};
 	stagingBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	stagingBufferInfo.pNext = nullptr;
-
 	stagingBufferInfo.size = imageSize;
 	stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
@@ -187,6 +185,8 @@ void GameApp::create_resources()
 	vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
 	
 	auto result = vmaCreateBuffer(*allocator, &stagingBufferInfo, &vmaallocInfo, &stagingBuffer.buffer, &stagingBuffer.allocation, nullptr);
+
+	m_graphicsAPI->SetDebugName("staging buffer img", stagingBuffer.buffer);
 
 	void* pixel_ptr = pixels;
 
@@ -208,28 +208,44 @@ void GameApp::create_resources()
 	VkImageCreateInfo info = { };
 	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	info.pNext = nullptr;
-
 	info.imageType = VK_IMAGE_TYPE_2D;
-
 	info.format = VK_FORMAT_R8G8B8A8_SRGB;
 	info.extent = imageExtent;
-
 	info.mipLevels = 1;
 	info.arrayLayers = 1;
 	info.samples = VK_SAMPLE_COUNT_1_BIT;
-	info.tiling = VK_IMAGE_TILING_LINEAR;
+	info.tiling = VK_IMAGE_TILING_OPTIMAL;
 	info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
+	info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 
 	VmaAllocationCreateInfo dimg_allocinfo = {};
 	dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	dimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 
-	result = vmaCreateImage(*allocator, &info, &dimg_allocinfo, &skybox_image.image, &skybox_image.allocation, nullptr);
+
+	VULKAN_CHECK_NOMSG(vmaCreateImage(*allocator, &info, &dimg_allocinfo, &skybox_image.image, &skybox_image.allocation, nullptr));
+
+
+	VkImageViewCreateInfo ivinfo = {};
+	ivinfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	ivinfo.pNext = nullptr;
+
+	ivinfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	ivinfo.image = skybox_image.image;
+	ivinfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	ivinfo.subresourceRange.baseMipLevel = 0;
+	ivinfo.subresourceRange.levelCount = 1;
+	ivinfo.subresourceRange.baseArrayLayer = 0;
+	ivinfo.subresourceRange.layerCount = 1;
+	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	vkCreateImageView(*device, &ivinfo, nullptr, &skybox_image.view);
+
 
 	m_graphicsAPI->immediate_submit([&](VkCommandBuffer cmd) {
-		VkImageSubresourceRange range;
+		VkImageSubresourceRange range{};
 		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		range.baseMipLevel = 0;
 		range.levelCount = 1;
@@ -239,17 +255,20 @@ void GameApp::create_resources()
 		VkImageMemoryBarrier imageBarrier_toTransfer = {};
 		imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 
+		imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
 		imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		imageBarrier_toTransfer.image = skybox_image.image;
 		imageBarrier_toTransfer.subresourceRange = range;
 
-		imageBarrier_toTransfer.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-		imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
+		imageBarrier_toTransfer.srcAccessMask = 0;
+		imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
 
 		//barrier the image into the transfer-receive layout
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
 
 		VkBufferImageCopy copyRegion = {};
 		copyRegion.bufferOffset = 0;
@@ -269,26 +288,15 @@ void GameApp::create_resources()
 		imgBarrier_toShaderReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		imgBarrier_toShaderReadable.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		imageBarrier_toTransfer.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-		imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
+		imgBarrier_toShaderReadable.image = skybox_image.image;
+		imgBarrier_toShaderReadable.subresourceRange = range;
 
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier_toShaderReadable);
+		imgBarrier_toShaderReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imgBarrier_toShaderReadable.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier_toShaderReadable);
 	});
 
-
-	VkImageViewCreateInfo ivinfo = {};
-	ivinfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	ivinfo.pNext = nullptr;
-
-	ivinfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	ivinfo.image = skybox_image.image;
-	ivinfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-	ivinfo.subresourceRange.baseMipLevel = 0;
-	ivinfo.subresourceRange.levelCount = 1;
-	ivinfo.subresourceRange.baseArrayLayer = 0;
-	ivinfo.subresourceRange.layerCount = 1;
-	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	vkCreateImageView(*device, &ivinfo, nullptr, &skybox_image.view);
 
 	// create sampler
 	VkSamplerCreateInfo sinfo = {};
@@ -302,6 +310,12 @@ void GameApp::create_resources()
 	sinfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
 	VULKAN_CHECK_NOMSG(vkCreateSampler(*device, &sinfo, nullptr, &sampler));
+
+	m_graphicsAPI->SetDebugName("the sampler", sampler);
+	m_graphicsAPI->SetDebugName("loaded texture", skybox_image.image);
+	m_graphicsAPI->SetDebugName("loaded texture view", skybox_image.view);
+	
+	
 }
 
 
