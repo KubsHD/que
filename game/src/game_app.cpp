@@ -49,7 +49,7 @@ void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, c
 	XrMatrix4x4f_CreateTranslationRotationScale(&cameraConstants.model, &pos, &rot, &scale);
 
 	XrMatrix4x4f_Multiply(&cameraConstants.modelViewProj, &cameraConstants.viewProj, &cameraConstants.model);
-	size_t offsetCameraUB = sizeof(CameraConstants) * renderCuboidIndex;
+	size_t offsetCameraUB = sizeof(CameraConstants) *0;
 
 	m_graphicsAPI->SetPipeline(m_pipeline);
 
@@ -68,6 +68,8 @@ void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, c
 }
 
 static float posx = 0;
+
+static GPUModelConstant pushConst;
 
 void GameApp::render(FrameRenderInfo& info)
 {
@@ -92,11 +94,15 @@ void GameApp::render(FrameRenderInfo& info)
 	}
 	m_graphicsAPI->ClearDepth(info.depthSwapchainInfo->imageViews[info.depthImageIndex], 1.0f);
 
+
+
 	m_graphicsAPI->SetRenderAttachments(info.colorSwapchainInfo->imageViews[info.colorImageIndex], 1, info.depthSwapchainInfo->imageViews[info.depthImageIndex], info.width, info.height, m_pipeline);
 	m_graphicsAPI->SetViewports(&viewport, 1);
 	m_graphicsAPI->SetScissors(&scissor, 1);
 
-		// Compute the view-projection transform.
+
+
+	// Compute the view-projection transform.
 	// All matrices (including OpenXR's) are column-major, right-handed.
 	XrMatrix4x4f proj;
 	XrMatrix4x4f_CreateProjectionFov(&proj, m_apiType, info.view.fov, nearZ, farZ);
@@ -107,27 +113,21 @@ void GameApp::render(FrameRenderInfo& info)
 	XrMatrix4x4f_InvertRigidBody(&view, &toView);
 	XrMatrix4x4f_Multiply(&cameraConstants.viewProj, &proj, &view);
 
-
-	renderCuboidIndex = 0;
-	// Draw a floor. Scale it by 2 in the X and Z, and 0.1 in the Y,
 	render_mesh({ posx, -1.0f, 0.0f}, { 0.1f, 0.1f, 0.1f }, { 0.0f, 0.0f, 0.0f }, mod);
-
-	vkDeviceWaitIdle(*m_graphicsAPI->GetDevice());
 
 	// draw skybox
 	XrVector3f pos = { 0.0f, 0.0f, 0.0f };
-	XrVector3f scale = { 10.0f, 10.0f, 10.0f };
+	XrVector3f scale = { 20.0f, 20.0f, 20.0f };
 	XrQuaternionf rot = { 0.0f, 0.0f, 0.0f };
-	
-	XrMatrix4x4f_CreateTranslationRotationScale(&cameraConstants.model, &pos, &rot, &scale);
 
-	XrMatrix4x4f_Multiply(&cameraConstants.modelViewProj, &cameraConstants.viewProj, &cameraConstants.model);
-	size_t offsetCameraUB = sizeof(CameraConstants) * 0;
+	XrMatrix4x4f_CreateTranslationRotationScale(&pushConst.model, &pos, &rot, &scale);
 
 	m_graphicsAPI->SetPipeline(sky_pipeline);
 
-	m_graphicsAPI->SetBufferData(m_uniformBuffer_Camera, offsetCameraUB, sizeof(CameraConstants), &cameraConstants);
-	m_graphicsAPI->SetDescriptor({ 0, m_uniformBuffer_Camera, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(CameraConstants) });
+	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant));
+
+	m_graphicsAPI->SetBufferData(m_uniformBuffer_Camera, 0, sizeof(CameraConstants), &cameraConstants);
+	m_graphicsAPI->SetDescriptor({ 0, m_uniformBuffer_Camera, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(CameraConstants) });
 	m_graphicsAPI->SetDescriptor({ 1, skybox_image.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 
 	m_graphicsAPI->UpdateDescriptors();
@@ -139,13 +139,14 @@ void GameApp::render(FrameRenderInfo& info)
 		m_graphicsAPI->DrawIndexed(mesh.index_count);
 	}
 
+
+
 	m_graphicsAPI->EndRendering();
 }
 
 void GameApp::destroy()
 {
 }
-
 
 void GameApp::create_resources()
 {

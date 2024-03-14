@@ -2,10 +2,19 @@
 
 #include <vulkan/vulkan.h>
 
+#include <openxr/openxr.h>
+#include <common/GraphicsAPI.h>
+#include <common/GraphicsAPI_Vulkan.h>
+#include <common/xr_linear_algebra.h>
+
 struct Mesh {
 	VkBuffer* index_buffer;
 	VkBuffer* vertex_buffer;
 	uint32_t index_count;
+};
+
+struct GPUModelConstant {
+	XrMatrix4x4f model;
 };
 
 struct Vertex {

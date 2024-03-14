@@ -406,6 +406,7 @@ public:
         std::vector<int64_t> colorFormats;
         int64_t depthFormat;
         std::vector<DescriptorInfo> layout;
+        VkPushConstantRange pushConstantRange;
     };
 
     struct SwapchainCreateInfo {

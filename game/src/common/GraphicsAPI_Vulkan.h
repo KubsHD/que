@@ -100,6 +100,7 @@ public:
     void EndRendering() ;
 
     void SetBufferData(VkBuffer buffer, size_t offset, size_t size, void* data) ;
+    void PushConstant(void* data, size_t size);
 
     void ClearColor(VkImageView& imageView, float r, float g, float b, float a) ;
     void ClearDepth(void* imageView, float d) ;

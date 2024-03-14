@@ -948,8 +948,9 @@ VkPipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipeline
     PLCI.flags = 0;
     PLCI.setLayoutCount = 1;
     PLCI.pSetLayouts = &descSetLayout;
-    PLCI.pushConstantRangeCount = 0;
-    PLCI.pPushConstantRanges = nullptr;
+    PLCI.pushConstantRangeCount = pipelineCI.pushConstantRange.size != 0 ? 1 : 0;
+    // this may crash
+	PLCI.pPushConstantRanges = &pipelineCI.pushConstantRange;
     VULKAN_CHECK(vkCreatePipelineLayout(device, &PLCI, nullptr, &pipelineLayout), "Failed to create PipelineLayout.");
 
     // ShaderStages
@@ -1253,6 +1254,13 @@ void GraphicsAPI_Vulkan::SetBufferData(VkBuffer buffer, size_t offset, size_t si
     }
 	vmaUnmapMemory(m_allocator, bufferResources[vkBuffer].first);
 };
+
+void GraphicsAPI_Vulkan::PushConstant(void* data, size_t size)
+{
+	VkPipelineLayout pipelineLayout = std::get<0>(pipelineResources[(VkPipeline)setPipeline]);
+
+	vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, size, data);
+}
 
 void GraphicsAPI_Vulkan::ClearColor(VkImageView& imageView, float r, float g, float b, float a) {
     const ImageViewCreateInfo &imageViewCI = imageViewResources[(VkImageView)imageView];
