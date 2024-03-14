@@ -11,6 +11,7 @@
 
 #include <vulkan/vulkan.h>
 #include <common/GraphicsAPI.h>
+#include <pipeline/sky_pipeline.h>
 
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
@@ -29,8 +30,13 @@ void GameApp::update()
 {
 }
 
-Mesh m;
+Model mod;
+GraphicsAPI::Image model_texture;
+
+Model skybox_cube;
 GraphicsAPI::Image skybox_image;
+
+VkPipeline sky_pipeline;
 
 VkSampler sampler;
 
@@ -38,7 +44,7 @@ void GameApp::render_cube(XrPosef pose, XrVector3f scale, XrVector3f color)
 {
 }
 
-void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Mesh& mesh)
+void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model)
 {
 	XrMatrix4x4f_CreateTranslationRotationScale(&cameraConstants.model, &pos, &rot, &scale);
 
@@ -49,13 +55,16 @@ void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, c
 
 	m_graphicsAPI->SetBufferData(m_uniformBuffer_Camera, offsetCameraUB, sizeof(CameraConstants), &cameraConstants);
 	m_graphicsAPI->SetDescriptor({ 0, m_uniformBuffer_Camera, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(CameraConstants) });
-	m_graphicsAPI->SetDescriptor({ 1, skybox_image.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+	m_graphicsAPI->SetDescriptor({ 1, model_texture.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 
 	m_graphicsAPI->UpdateDescriptors();
 
-	m_graphicsAPI->SetVertexBuffers(&m.vertex_buffer, 1);
-	m_graphicsAPI->SetIndexBuffer(m.index_buffer);
-	m_graphicsAPI->DrawIndexed(m.index_count);
+	for (auto mesh : model.meshes)
+	{
+		m_graphicsAPI->SetVertexBuffers(&mesh.vertex_buffer, 1);
+		m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
+		m_graphicsAPI->DrawIndexed(mesh.index_count);
+	}
 }
 
 static float posx = 0;
@@ -101,13 +110,36 @@ void GameApp::render(FrameRenderInfo& info)
 
 	renderCuboidIndex = 0;
 	// Draw a floor. Scale it by 2 in the X and Z, and 0.1 in the Y,
-	render_mesh({ posx, -1.0f, 0.0f}, { 5.0f, 5.0f, 5.0f }, { 0.0f, 0.0f, 0.0f }, m);
-	// Draw a "table".
-	//render_cube({ {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, -m_viewHeightM + 0.9f, -0.7f} }, { 1.0f, 0.2f, 1.0f }, { 0.6f, 0.6f, 0.4f });
+	render_mesh({ posx, -1.0f, 0.0f}, { 0.1f, 0.1f, 0.1f }, { 0.0f, 0.0f, 0.0f }, mod);
+
+	vkDeviceWaitIdle(*m_graphicsAPI->GetDevice());
+
+	// draw skybox
+	XrVector3f pos = { 0.0f, 0.0f, 0.0f };
+	XrVector3f scale = { 10.0f, 10.0f, 10.0f };
+	XrQuaternionf rot = { 0.0f, 0.0f, 0.0f };
+	
+	XrMatrix4x4f_CreateTranslationRotationScale(&cameraConstants.model, &pos, &rot, &scale);
+
+	XrMatrix4x4f_Multiply(&cameraConstants.modelViewProj, &cameraConstants.viewProj, &cameraConstants.model);
+	size_t offsetCameraUB = sizeof(CameraConstants) * 0;
+
+	m_graphicsAPI->SetPipeline(sky_pipeline);
+
+	m_graphicsAPI->SetBufferData(m_uniformBuffer_Camera, offsetCameraUB, sizeof(CameraConstants), &cameraConstants);
+	m_graphicsAPI->SetDescriptor({ 0, m_uniformBuffer_Camera, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(CameraConstants) });
+	m_graphicsAPI->SetDescriptor({ 1, skybox_image.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+
+	m_graphicsAPI->UpdateDescriptors();
+
+	for (auto mesh : skybox_cube.meshes)
+	{
+		m_graphicsAPI->SetVertexBuffers(&mesh.vertex_buffer, 1);
+		m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
+		m_graphicsAPI->DrawIndexed(mesh.index_count);
+	}
 
 	m_graphicsAPI->EndRendering();
-
-	
 }
 
 void GameApp::destroy()
@@ -117,13 +149,11 @@ void GameApp::destroy()
 
 void GameApp::create_resources()
 {
-	if (m_apiType == VULKAN) {
-		std::vector<char> vertexSource = m_asset_manager->read_all_bytes("data/VertexShader.spv");
-		m_vertexShader = m_graphicsAPI->CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
+	std::vector<char> vertexSource = m_asset_manager->read_all_bytes("data/shader/mesh.vert.spv");
+	m_vertexShader = m_graphicsAPI->CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
 
-		std::vector<char> fragmentSource = m_asset_manager->read_all_bytes("data/PixelShader.spv");
-		m_fragmentShader = m_graphicsAPI->CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
-	}
+	std::vector<char> fragmentSource = m_asset_manager->read_all_bytes("data/shader/mesh.frag.spv");
+	m_fragmentShader = m_graphicsAPI->CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
 
 	size_t numberOfCuboids = 2;
 	m_uniformBuffer_Camera = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(CameraConstants) * numberOfCuboids, nullptr });
@@ -133,14 +163,14 @@ void GameApp::create_resources()
 	pipelineCI.shaders = { m_vertexShader, m_fragmentShader };
 	pipelineCI.vertexInputState.attributes = { 
 		{0, 0, GraphicsAPI::VertexType::VEC3, 0, "POSITION"},  
-		{1, 0, GraphicsAPI::VertexType::VEC3, 0, "NORMAL"},
-		{2, 0, GraphicsAPI::VertexType::VEC2, 0, "TEXCOORD"} 
+		{1, 0, GraphicsAPI::VertexType::VEC3, offsetof(Vertex, nx), "NORMAL"},
+		{2, 0, GraphicsAPI::VertexType::VEC2, offsetof(Vertex, u), "TEXCOORD"}
 	};
 													// stride VVVV ie. sizeof(Vertex)
 	pipelineCI.vertexInputState.bindings = { {0, 0, 8 * sizeof(float)} };
 	pipelineCI.inputAssemblyState = { GraphicsAPI::PrimitiveTopology::TRIANGLE_LIST, false };
 	pipelineCI.rasterisationState = { false, false, GraphicsAPI::PolygonMode::FILL, 
-									GraphicsAPI::CullMode::FRONT, GraphicsAPI::FrontFace::COUNTER_CLOCKWISE,
+									GraphicsAPI::CullMode::FRONT, GraphicsAPI::FrontFace::CLOCKWISE,
 									false, 0.0f, 0.0f, 0.0f, 1.0f };
 	pipelineCI.multisampleState = { 1, false, 1.0f, 0xFFFFFFFF, false, false };
 	pipelineCI.depthStencilState = { true, true, GraphicsAPI::CompareOp::LESS_OR_EQUAL, false, false, {}, {}, 0.0f, 1.0f };
@@ -152,151 +182,13 @@ void GameApp::create_resources()
 	
 	m_pipeline = m_graphicsAPI->CreatePipeline(pipelineCI);
 
-	m = Asset::load_mesh(*m_graphicsAPI, "data/Avocado.gltf");
+	mod = Asset::load_model(*m_graphicsAPI, "data/backpack.obj");
+	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 
-
-	
+	model_texture = Asset::load_image(*m_graphicsAPI, "data/diffuse.jpg", false);
+	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", true);
 
 	auto device = m_graphicsAPI->GetDevice();
-	auto allocator = m_graphicsAPI->GetAllocator();
-
-	// load skybox
-
-	int texWidth, texHeight, texChannels;
-
-	stbi_uc* pixels = stbi_load("data/Avocado_baseColor.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-	if (!pixels)
-		DEBUG_BREAK;
-
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-
-	GraphicsAPI::Buffer stagingBuffer;
-
-	VkBufferCreateInfo stagingBufferInfo = {};
-	stagingBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	stagingBufferInfo.pNext = nullptr;
-	stagingBufferInfo.size = imageSize;
-	stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-
-	//let the VMA library know that this data should be on CPU RAM
-	VmaAllocationCreateInfo vmaallocInfo = {};
-	vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-	
-	auto result = vmaCreateBuffer(*allocator, &stagingBufferInfo, &vmaallocInfo, &stagingBuffer.buffer, &stagingBuffer.allocation, nullptr);
-
-	m_graphicsAPI->SetDebugName("staging buffer img", stagingBuffer.buffer);
-
-	void* pixel_ptr = pixels;
-
-	void* data;
-	vmaMapMemory(*allocator, stagingBuffer.allocation, &data);
-
-	memcpy(data, pixel_ptr, static_cast<size_t>(imageSize));
-
-	vmaUnmapMemory(*allocator, stagingBuffer.allocation);
-
-	stbi_image_free(pixels);
-
-	VkExtent3D imageExtent;
-	imageExtent.width = static_cast<uint32_t>(texWidth);
-	imageExtent.height = static_cast<uint32_t>(texHeight);
-	imageExtent.depth = 1;
-
-	// create image
-	VkImageCreateInfo info = { };
-	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	info.pNext = nullptr;
-	info.imageType = VK_IMAGE_TYPE_2D;
-	info.format = VK_FORMAT_R8G8B8A8_SRGB;
-	info.extent = imageExtent;
-	info.mipLevels = 1;
-	info.arrayLayers = 1;
-	info.samples = VK_SAMPLE_COUNT_1_BIT;
-	info.tiling = VK_IMAGE_TILING_OPTIMAL;
-	info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-
-	VmaAllocationCreateInfo dimg_allocinfo = {};
-	dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-	dimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-
-
-	VULKAN_CHECK_NOMSG(vmaCreateImage(*allocator, &info, &dimg_allocinfo, &skybox_image.image, &skybox_image.allocation, nullptr));
-
-
-	VkImageViewCreateInfo ivinfo = {};
-	ivinfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	ivinfo.pNext = nullptr;
-
-	ivinfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	ivinfo.image = skybox_image.image;
-	ivinfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-	ivinfo.subresourceRange.baseMipLevel = 0;
-	ivinfo.subresourceRange.levelCount = 1;
-	ivinfo.subresourceRange.baseArrayLayer = 0;
-	ivinfo.subresourceRange.layerCount = 1;
-	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	vkCreateImageView(*device, &ivinfo, nullptr, &skybox_image.view);
-
-
-	m_graphicsAPI->immediate_submit([&](VkCommandBuffer cmd) {
-		VkImageSubresourceRange range{};
-		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		range.baseMipLevel = 0;
-		range.levelCount = 1;
-		range.baseArrayLayer = 0;
-		range.layerCount = 1;
-
-		VkImageMemoryBarrier imageBarrier_toTransfer = {};
-		imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-
-		imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-		imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imageBarrier_toTransfer.image = skybox_image.image;
-		imageBarrier_toTransfer.subresourceRange = range;
-
-		imageBarrier_toTransfer.srcAccessMask = 0;
-		imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-
-		//barrier the image into the transfer-receive layout
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
-
-		VkBufferImageCopy copyRegion = {};
-		copyRegion.bufferOffset = 0;
-		copyRegion.bufferRowLength = 0;
-		copyRegion.bufferImageHeight = 0;
-
-		copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		copyRegion.imageSubresource.mipLevel = 0;
-		copyRegion.imageSubresource.baseArrayLayer = 0;
-		copyRegion.imageSubresource.layerCount = 1;
-		copyRegion.imageExtent = imageExtent;
-
-		vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, skybox_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1, &copyRegion);
-
-		VkImageMemoryBarrier imgBarrier_toShaderReadable = imageBarrier_toTransfer;
-		imgBarrier_toShaderReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imgBarrier_toShaderReadable.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		imgBarrier_toShaderReadable.image = skybox_image.image;
-		imgBarrier_toShaderReadable.subresourceRange = range;
-
-		imgBarrier_toShaderReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imgBarrier_toShaderReadable.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier_toShaderReadable);
-	});
-
 
 	// create sampler
 	VkSamplerCreateInfo sinfo = {};
@@ -311,11 +203,7 @@ void GameApp::create_resources()
 
 	VULKAN_CHECK_NOMSG(vkCreateSampler(*device, &sinfo, nullptr, &sampler));
 
-	m_graphicsAPI->SetDebugName("the sampler", sampler);
-	m_graphicsAPI->SetDebugName("loaded texture", skybox_image.image);
-	m_graphicsAPI->SetDebugName("loaded texture view", skybox_image.view);
-	
-	
+	sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 }
 
 

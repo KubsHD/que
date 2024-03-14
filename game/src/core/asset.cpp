@@ -10,6 +10,9 @@
 
 #include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>
+#include <lib/stb_image.h>
+
+
 
 Asset::Asset(void* android_ass)
 {
@@ -58,7 +61,7 @@ Mesh Asset::load_mesh(GraphicsAPI_Vulkan& gapi, String path)
 
 
 	// create models
-	const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate  | aiProcess_ConvertToLeftHanded | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices);
 	
 
 	std::vector<Vertex> vertices;
@@ -73,18 +76,218 @@ Mesh Asset::load_mesh(GraphicsAPI_Vulkan& gapi, String path)
 				mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y });
 		}
 
-		for (size_t i = 0; i < mesh->mNumFaces; i++) {
-			indices.push_back(mesh->mFaces[i].mIndices[0]);
-			indices.push_back(mesh->mFaces[i].mIndices[1]);
-			indices.push_back(mesh->mFaces[i].mIndices[2]);
+		for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+		{
+			aiFace face = mesh->mFaces[i];
+			for (unsigned int j = 0; j < face.mNumIndices; j++)
+				indices.push_back(face.mIndices[j]);
 		}
 	}
 
 	m.vertex_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
 	m.index_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 	m.index_count = indices.size();
-	// add debug names
-	//gapi.SetDebugName("vertex_buffer", (void*)m.vertex_buffer);
 
 	return m;
+}
+
+Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
+{
+	Model mod;
+
+	Assimp::Importer imp;
+
+
+	// create models
+	const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices);
+
+
+	for (int m = 0; m < scene->mNumMeshes; m++)
+	{
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
+
+		Mesh internal_mesh;
+
+		auto mesh = scene->mMeshes[m];
+
+		for (size_t i = 0; i < mesh->mNumVertices; i++) {
+			vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z,
+				mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y });
+		}
+
+		for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+		{
+			aiFace face = mesh->mFaces[i];
+			for (unsigned int j = 0; j < face.mNumIndices; j++)
+				indices.push_back(face.mIndices[j]);
+		}
+		internal_mesh.vertex_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
+		internal_mesh.index_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
+		internal_mesh.index_count = indices.size();
+
+		mod.meshes.push_back(internal_mesh);
+	}
+
+
+	return mod;
+}
+
+GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool isHdri /*= false*/)
+{
+	GraphicsAPI::Image img;
+
+
+	auto format = isHdri ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
+
+	auto device = gapi.GetDevice();
+	auto allocator = gapi.GetAllocator();
+
+	// load skybox
+	int texWidth, texHeight, texChannels;
+
+
+	void* pixel_ptr;
+
+	if (isHdri)
+	{
+		float* temp = stbi_loadf(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		pixel_ptr = temp;
+	}
+	else
+		pixel_ptr = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+	if (!pixel_ptr)
+		DEBUG_BREAK;
+
+	VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+	// allocate more memory if it's an hdri since we're using floats
+	if (isHdri)
+		imageSize *= sizeof(float);
+
+	GraphicsAPI::Buffer stagingBuffer;
+
+	VkBufferCreateInfo stagingBufferInfo = {};
+	stagingBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	stagingBufferInfo.pNext = nullptr;
+	stagingBufferInfo.size = imageSize;
+	stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+	//let the VMA library know that this data should be on CPU RAM
+	VmaAllocationCreateInfo vmaallocInfo = {};
+	vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+
+	auto result = vmaCreateBuffer(*allocator, &stagingBufferInfo, &vmaallocInfo, &stagingBuffer.buffer, &stagingBuffer.allocation, nullptr);
+
+	gapi.SetDebugName("staging buffer img", stagingBuffer.buffer);
+
+
+	void* data;
+	vmaMapMemory(*allocator, stagingBuffer.allocation, &data);
+
+	memcpy(data, pixel_ptr, static_cast<size_t>(imageSize));
+
+	vmaUnmapMemory(*allocator, stagingBuffer.allocation);
+
+	stbi_image_free(pixel_ptr);
+
+	VkExtent3D imageExtent;
+	imageExtent.width = static_cast<uint32_t>(texWidth);
+	imageExtent.height = static_cast<uint32_t>(texHeight);
+	imageExtent.depth = 1;
+
+	// create image
+	VkImageCreateInfo info = { };
+	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	info.pNext = nullptr;
+	info.imageType = VK_IMAGE_TYPE_2D;
+	info.format = format;
+	info.extent = imageExtent;
+	info.mipLevels = 1;
+	info.arrayLayers = 1;
+	info.samples = VK_SAMPLE_COUNT_1_BIT;
+	info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+
+	VmaAllocationCreateInfo dimg_allocinfo = {};
+	dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	dimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	VULKAN_CHECK_NOMSG(vmaCreateImage(*allocator, &info, &dimg_allocinfo, &img.image, &img.allocation, nullptr));
+
+	VkImageViewCreateInfo ivinfo = {};
+	ivinfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	ivinfo.pNext = nullptr;
+
+	ivinfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	ivinfo.image = img.image;
+	ivinfo.format = format;
+	ivinfo.subresourceRange.baseMipLevel = 0;
+	ivinfo.subresourceRange.levelCount = 1;
+	ivinfo.subresourceRange.baseArrayLayer = 0;
+	ivinfo.subresourceRange.layerCount = 1;
+	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	vkCreateImageView(*device, &ivinfo, nullptr, &img.view);
+
+
+	gapi.immediate_submit([&](VkCommandBuffer cmd) {
+		VkImageSubresourceRange range{};
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.baseMipLevel = 0;
+		range.levelCount = 1;
+		range.baseArrayLayer = 0;
+		range.layerCount = 1;
+
+		VkImageMemoryBarrier imageBarrier_toTransfer = {};
+		imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+		imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+		imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		imageBarrier_toTransfer.image = img.image;
+		imageBarrier_toTransfer.subresourceRange = range;
+
+		imageBarrier_toTransfer.srcAccessMask = 0;
+		imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+
+		//barrier the image into the transfer-receive layout
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+
+		VkBufferImageCopy copyRegion = {};
+		copyRegion.bufferOffset = 0;
+		copyRegion.bufferRowLength = 0;
+		copyRegion.bufferImageHeight = 0;
+
+		copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		copyRegion.imageSubresource.mipLevel = 0;
+		copyRegion.imageSubresource.baseArrayLayer = 0;
+		copyRegion.imageSubresource.layerCount = 1;
+		copyRegion.imageExtent = imageExtent;
+
+		vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, img.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+		VkImageMemoryBarrier imgBarrier_toShaderReadable = imageBarrier_toTransfer;
+		imgBarrier_toShaderReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		imgBarrier_toShaderReadable.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		imgBarrier_toShaderReadable.image = img.image;
+		imgBarrier_toShaderReadable.subresourceRange = range;
+
+		imgBarrier_toShaderReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imgBarrier_toShaderReadable.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier_toShaderReadable);
+	});
+
+	gapi.SetDebugName("texture: " + path, img.image);
+	gapi.SetDebugName("texture view: " + path, img.view);
+
+	return img;
 }

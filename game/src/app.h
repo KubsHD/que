@@ -103,7 +103,7 @@ private:
 	void poll_events();
 protected:
 
-	std::unique_ptr<Asset> m_asset_manager;
+	std::shared_ptr<Asset> m_asset_manager;
 
 	XrInstance m_xrInstance{};
 

@@ -14,10 +14,10 @@ App::App(GraphicsAPI_Type apiType) : m_apiType(apiType)
 void App::Run()
 {
 #if defined(__ANDROID__)
-	m_asset_manager = std::make_unique<Asset>(androidApp->activity->assetManager);
+	m_asset_manager = std::make_shared<Asset>(androidApp->activity->assetManager);
 
 #else
-	m_asset_manager = std::make_unique<Asset>();
+	m_asset_manager = std::make_shared<Asset>();
 #endif
 
 	create_instance();

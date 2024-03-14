@@ -29,13 +29,9 @@ public:
 	void destroy() override;
 
 	void render_cube(XrPosef pose, XrVector3f scale, XrVector3f color);
-	void render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Mesh& mesh);
-
-	
+	void render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model);
 
 private:
-
-
 
 	XrVector4f normals[6] = {
 	{1.00f, 0.00f, 0.00f, 0},

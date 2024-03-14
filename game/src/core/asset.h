@@ -9,8 +9,9 @@
 #include <vector>
 #include <asset/mesh.h>
 
-class GraphicsAPI_Vulkan;
+#include <common/GraphicsAPI.h>
 
+class GraphicsAPI_Vulkan;
 
 class Asset {
 public:
@@ -22,6 +23,10 @@ public:
 	
 	static void load_texture_from_file(GraphicsAPI_Vulkan& gapi, String path);
 	static Mesh load_mesh(GraphicsAPI_Vulkan& gapi, String path);
+
+	static Model load_model(GraphicsAPI_Vulkan& gapi, String path);
+
+	static GraphicsAPI::Image load_image(GraphicsAPI_Vulkan& gapi, String path, bool isHdri = false);
 private:
 #if defined(__ANDROID__)
 	AAssetManager* m_android_asset_manager;

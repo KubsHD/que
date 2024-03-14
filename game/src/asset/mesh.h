@@ -20,3 +20,7 @@ struct Vertex {
 	float u;
 	float v;
 };
+
+struct Model {
+	std::vector<Mesh> meshes;
+};
