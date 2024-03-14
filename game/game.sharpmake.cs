@@ -2,6 +2,8 @@
 using System.IO;
 using Sharpmake;
 using System;
+using System.Text;
+using System.Net.Http.Headers;
 
 namespace Que
 {
@@ -23,7 +25,8 @@ namespace Que
 
             SourceFilesExtensions.Add(".xml");
             SourceFilesExtensions.Add(".gradle");
-            SourceFilesExtensions.Add(".glsl");
+            SourceFilesExtensions.Add(".vert");
+            SourceFilesExtensions.Add(".frag");
 
             var platformPath = Path.Combine(Globals.RootDirectory, "platform");
             AdditionalSourceRootPaths.Add(platformPath);
@@ -88,6 +91,7 @@ namespace Que
             //conf.AddPublicDependency<EASTLProject>(target);
 
             conf.Output = Configuration.OutputType.Exe;
+
         }
 
         public override void PostResolve()
@@ -109,13 +113,13 @@ namespace Que
 
             // compile shaders with glslc 
             conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
-            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=vertex -o $(OutDir)data\\VertexShader.spv {realProjectPath}\\data\\VertexShader.glsl");
-            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=fragment -o $(OutDir)data\\PixelShader.spv {realProjectPath}\\data\\PixelShader.glsl");
-
             conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
+
+            GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", ResolveString(conf.TargetPath, conf, target) + "\\data\\shader");
+
+            conf.EventPreBuild.Add($"call  {conf.TargetPath + "\\data\\shader\\shader_compile.bat"}");
+
         }
-
-
 
         public override void ConfigureAgde(Configuration conf, CommonTarget target)
         {
@@ -139,6 +143,30 @@ namespace Que
             conf.EventPostBuild.Add($"if not exist {androidAssetsPath}data mkdir {androidAssetsPath}data");
             conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=vertex -o {androidAssetsPath}data\\VertexShader.spv {realProjectPath}\\data\\VertexShader.glsl");
             conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=fragment -o {androidAssetsPath}data\\PixelShader.spv {realProjectPath}\\data\\PixelShader.glsl");
+        }
+
+        private void GenerateShaderCompileBat(string srcPath, string targetPath)
+        {
+            // loop over files in srcPath and run glslc on them
+            StringBuilder batchContent = new StringBuilder();
+            batchContent.AppendLine("@echo off");
+
+            string vulkanPath = Environment.GetEnvironmentVariable("VULKAN_SDK");
+
+            foreach (string file in Directory.GetFiles(srcPath, "*.vert"))
+            {
+                batchContent.AppendLine($"\"{vulkanPath}\\Bin\\glslc.exe\" -o {targetPath}\\{Path.GetFileName(file)}.spv {file}");
+            }
+
+            foreach (string file in Directory.GetFiles(srcPath, "*.frag"))
+            {
+                batchContent.AppendLine($"\"{vulkanPath}\\Bin\\glslc.exe\" -o {targetPath}\\{Path.GetFileName(file)}.spv {file}");
+            }
+
+            if (!Directory.Exists(targetPath))
+                Directory.CreateDirectory(targetPath);
+
+            File.WriteAllText(targetPath + "\\shader_compile.bat", batchContent.ToString());
         }
 
         private void GenerateCopyAndroidResourcesBatchFile(string projectPath)
