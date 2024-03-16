@@ -28,10 +28,21 @@ public:
 	void render(FrameRenderInfo& info) override;
 	void destroy() override;
 
-	void render_cube(XrPosef pose, XrVector3f scale, XrVector3f color);
 	void render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model);
 
 private:
+
+	struct SceneData {
+		XrMatrix4x4f viewProj;
+		XrMatrix4x4f view;
+		XrMatrix4x4f proj;
+	};
+
+	struct InstanceData {
+		XrMatrix4x4f model;
+		XrMatrix4x4f modelInvTrans;
+	};
+
 
 	XrVector4f normals[6] = {
 	{1.00f, 0.00f, 0.00f, 0},
@@ -47,7 +58,10 @@ private:
 
 	float m_viewHeightM = 1.5f;
 
-	VkBuffer m_uniformBuffer_Camera = nullptr;
-	GraphicsAPI_Vulkan::Shader m_vertexShader,  m_fragmentShader;
+	SceneData m_sceneDataCPU;
+
+	VkBuffer m_sceneData;
+	VkBuffer m_instanceData;
+
 	VkPipeline m_pipeline = nullptr;
 };

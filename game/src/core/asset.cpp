@@ -84,8 +84,8 @@ Mesh Asset::load_mesh(GraphicsAPI_Vulkan& gapi, String path)
 		}
 	}
 
-	m.vertex_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
-	m.index_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
+	m.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
+	m.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 	m.index_count = indices.size();
 
 	return m;
@@ -108,6 +108,7 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
 		std::vector<uint32_t> indices;
 
 		Mesh internal_mesh;
+		
 
 		auto mesh = scene->mMeshes[m];
 
@@ -122,13 +123,38 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
 			for (unsigned int j = 0; j < face.mNumIndices; j++)
 				indices.push_back(face.mIndices[j]);
 		}
-		internal_mesh.vertex_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
-		internal_mesh.index_buffer = (VkBuffer*)gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
+		internal_mesh.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
+		internal_mesh.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 		internal_mesh.index_count = indices.size();
 
+		if (mesh->mMaterialIndex >= 0)
+		{
+			// check if material index is in map 
+			// if not, load material
+			
+			if (mod.materials.find(mesh->mMaterialIndex) == mod.materials.end())
+			{
+				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+				aiString path;
+				material->GetTexture(aiTextureType_DIFFUSE, 0, &path);
+
+
+				const aiTexture* tex = scene->GetEmbeddedTexture(path.C_Str());
+
+				//load texture with stb
+				if (!tex && path.length > 0)
+				{
+					Material mat;
+					mat.diff = load_image(gapi, "data/" + std::string(path.C_Str()));
+					mod.materials.emplace(mesh->mMaterialIndex, mat);
+				}
+			}
+			
+			internal_mesh.material_index = mesh->mMaterialIndex;
+		}
 		mod.meshes.push_back(internal_mesh);
 	}
-
 
 	return mod;
 }
@@ -185,10 +211,12 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 
 	void* data;
 	vmaMapMemory(*allocator, stagingBuffer.allocation, &data);
-
 	memcpy(data, pixel_ptr, static_cast<size_t>(imageSize));
-
 	vmaUnmapMemory(*allocator, stagingBuffer.allocation);
+
+	gapi.MainDeletionQueue.push_function([&]() {
+		//vmaDestroyBuffer(*allocator, stagingBuffer.buffer, stagingBuffer.allocation);
+	});
 
 	stbi_image_free(pixel_ptr);
 

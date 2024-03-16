@@ -8,13 +8,20 @@
 #include <common/xr_linear_algebra.h>
 
 struct Mesh {
-	VkBuffer* index_buffer;
-	VkBuffer* vertex_buffer;
+	VkBuffer index_buffer;
+	VkBuffer vertex_buffer;
 	uint32_t index_count;
+	int material_index;
 };
 
 struct GPUModelConstant {
 	XrMatrix4x4f model;
+};
+
+struct Material {
+	GraphicsAPI::Image diff;
+	GraphicsAPI::Image norm;
+	//Image spec = nullptr;
 };
 
 struct Vertex {
@@ -32,4 +39,5 @@ struct Vertex {
 
 struct Model {
 	std::vector<Mesh> meshes;
+	std::unordered_map<unsigned int, Material> materials;
 };

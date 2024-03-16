@@ -323,6 +323,7 @@ public:
     };
 
     struct DescriptorInfo {
+        uint32_t set;
         uint32_t bindingIndex;
         void* resource;
         // used for samplers

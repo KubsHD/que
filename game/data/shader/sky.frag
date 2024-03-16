@@ -11,7 +11,7 @@ layout(location = 2) in vec3 o_Pos;
 layout(location = 0) out vec4 o_Color;
 
 
-layout(binding = 1) uniform sampler2D tex1;
+layout(set = 0, binding = 1) uniform sampler2D tex1;
 
 const vec2 invAtan = vec2(0.1591, 0.3183);
 vec2 SampleSphericalMap(vec3 v)

@@ -5,14 +5,10 @@
 #version 450
 #extension GL_KHR_vulkan_glsl : enable
 
-layout(std140, binding = 0) uniform CameraConstants {
-    mat4 viewProj;
-    mat4 modelViewProj;
-    mat4 model;
-    vec4 color;
-    vec4 pad1;
-    vec4 pad2;
-    vec4 pad3;
+layout(set = 0,binding = 0) uniform SceneData {
+	mat4 viewProj;
+	mat4 view;
+	mat4 proj;
 };
 
 layout( push_constant ) uniform constants

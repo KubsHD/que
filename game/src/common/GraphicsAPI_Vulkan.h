@@ -35,6 +35,7 @@
 
 #include <lib/vk_mem_alloc.h>
 #include <functional>
+#include "deletion_queue.h"
 
 class GraphicsAPI_Vulkan : public GraphicsAPI {
 public:
@@ -48,6 +49,7 @@ public:
 
     void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 public:
+
     GraphicsAPI_Vulkan();
     GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId systemId);
     ~GraphicsAPI_Vulkan();
@@ -112,8 +114,8 @@ public:
     void SetPipeline(VkPipeline pipeline) ;
     void SetDescriptor(const GraphicsAPI::DescriptorInfo& descriptorInfo) ;
     void UpdateDescriptors() ;
-    void SetVertexBuffers(VkBuffer** vertexBuffers, size_t count) ;
-    void SetIndexBuffer(VkBuffer* indexBuffer) ;
+    void SetVertexBuffers(VkBuffer* vertexBuffers, size_t count) ;
+    void SetIndexBuffer(VkBuffer indexBuffer) ;
     void DrawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t vertexOffset = 0, uint32_t firstInstance = 0) ;
     void Draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) ;
 
@@ -121,6 +123,8 @@ public:
 
     VkDevice* GetDevice() { return &device; }
     VmaAllocator* GetAllocator() { return &m_allocator; }
+
+    DeletionQueue MainDeletionQueue;
 private:
     void LoadPFN_XrFunctions(XrInstance m_xrInstance);
     std::vector<std::string> GetInstanceExtensionsForOpenXR(XrInstance m_xrInstance, XrSystemId systemId);
@@ -173,14 +177,14 @@ private:
     
     std::unordered_map<VkBuffer, std::pair<VmaAllocation, GraphicsAPI::BufferCreateInfo>> bufferResources;
 
-    std::unordered_map<VkPipeline, std::tuple<VkPipelineLayout, VkDescriptorSetLayout, VkRenderPass, GraphicsAPI::PipelineCreateInfo>> pipelineResources;
+    std::unordered_map<VkPipeline, std::tuple<VkPipelineLayout, std::vector<VkDescriptorSetLayout>, VkRenderPass, GraphicsAPI::PipelineCreateInfo>> pipelineResources;
 
     std::unordered_map<VkCommandBuffer, std::vector<VkFramebuffer>> cmdBufferFramebuffers;
     bool inRenderPass = false;
 
     VkPipeline setPipeline = VK_NULL_HANDLE;
     std::unordered_map<VkCommandBuffer, std::vector<VkDescriptorSet>> cmdBufferDescriptorSets;
-    std::vector<std::tuple<VkWriteDescriptorSet, VkDescriptorBufferInfo, VkDescriptorImageInfo>> writeDescSets;
+    std::vector<std::tuple<uint32_t, VkWriteDescriptorSet, VkDescriptorBufferInfo, VkDescriptorImageInfo>> writeDescSets;
 
     
     VmaAllocator m_allocator;

@@ -927,27 +927,42 @@ VkPipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipeline
         descSetLayouBinding.binding = descInfo.bindingIndex;
         descSetLayouBinding.descriptorType = ToVkDescrtiptorType(descInfo);
         descSetLayouBinding.descriptorCount = 1;
-        descSetLayouBinding.stageFlags = static_cast<VkShaderStageFlagBits>(1 << (uint32_t)descInfo.stage);
+        descSetLayouBinding.stageFlags = VK_SHADER_STAGE_ALL; /* static_cast<VkShaderStageFlagBits>(1 << (uint32_t)descInfo.stage);*/
         descSetLayouBinding.pImmutableSamplers = nullptr;
         descSetLayouBindings.push_back(descSetLayouBinding);
     }
 
-    VkDescriptorSetLayout descSetLayout{};
-    VkDescriptorSetLayoutCreateInfo descSetLayoutCI;
-    descSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descSetLayoutCI.pNext = nullptr;
-    descSetLayoutCI.flags = 0;
-    descSetLayoutCI.bindingCount = static_cast<uint32_t>(descSetLayouBindings.size());
-    descSetLayoutCI.pBindings = descSetLayouBindings.data();
-    VULKAN_CHECK(vkCreateDescriptorSetLayout(device, &descSetLayoutCI, nullptr, &descSetLayout), "Failed to create PipelineLayout.");
+    // todo
+	// count how many uniqe ints are in the writeDescSets vector
+	std::vector<uint32_t> setCounts;
+    for (auto& writeDescSet : pipelineCI.layout) {
+        setCounts.push_back(writeDescSet.set);
+	}
+	std::sort(setCounts.begin(), setCounts.end());
+	setCounts.erase(std::unique(setCounts.begin(), setCounts.end()), setCounts.end());
+
+	std::vector<VkDescriptorSetLayout> descSetLayouts;
+    descSetLayouts.resize(setCounts.size());
+	for (size_t i = 0; i < setCounts.size(); i++) {
+        descSetLayouts[i] = {};
+		VkDescriptorSetLayoutCreateInfo descSetLayoutCI;
+		descSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descSetLayoutCI.pNext = nullptr;
+		descSetLayoutCI.flags = 0;
+		descSetLayoutCI.bindingCount = static_cast<uint32_t>(descSetLayouBindings.size());
+		descSetLayoutCI.pBindings = descSetLayouBindings.data();
+		VULKAN_CHECK(vkCreateDescriptorSetLayout(device, &descSetLayoutCI, nullptr, &descSetLayouts[i]), "Failed to create PipelineLayout.");
+	}
+
+
 
     VkPipelineLayout pipelineLayout{};
     VkPipelineLayoutCreateInfo PLCI{};
     PLCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     PLCI.pNext = nullptr;
     PLCI.flags = 0;
-    PLCI.setLayoutCount = 1;
-    PLCI.pSetLayouts = &descSetLayout;
+	PLCI.setLayoutCount = static_cast<uint32_t>(descSetLayouts.size());
+    PLCI.pSetLayouts = descSetLayouts.data();
     PLCI.pushConstantRangeCount = pipelineCI.pushConstantRange.size != 0 ? 1 : 0;
     // this may crash
 	PLCI.pPushConstantRanges = &pipelineCI.pushConstantRange;
@@ -1142,7 +1157,7 @@ VkPipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipeline
         }
     };
     
-    pipelineResources[pipeline] = {pipelineLayout, descSetLayout, renderPass, pipelineCI};
+    pipelineResources[pipeline] = {pipelineLayout, descSetLayouts, renderPass, pipelineCI};
 
     return pipeline;
 }
@@ -1150,10 +1165,15 @@ VkPipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipeline
 void GraphicsAPI_Vulkan::DestroyPipeline(VkPipeline pipeline) {
     VkPipeline vkPipeline = (VkPipeline)pipeline;
     VkPipelineLayout pipelineLayout = std::get<0>(pipelineResources[vkPipeline]);
-    VkDescriptorSetLayout descSetLayout = std::get<1>(pipelineResources[vkPipeline]);
+    std::vector<VkDescriptorSetLayout> descSetLayouts = std::get<1>(pipelineResources[vkPipeline]);
     VkRenderPass renderPass = std::get<2>(pipelineResources[vkPipeline]);
     vkDestroyRenderPass(device, renderPass, nullptr);
-    vkDestroyDescriptorSetLayout(device, descSetLayout, nullptr);
+
+    for (auto descSetLayout : descSetLayouts)
+    {
+        vkDestroyDescriptorSetLayout(device, descSetLayout, nullptr);
+    }
+
     vkDestroyPipeline(device, vkPipeline, nullptr);
     pipelineResources.erase(vkPipeline);
     pipeline = nullptr;
@@ -1250,7 +1270,7 @@ void GraphicsAPI_Vulkan::SetBufferData(VkBuffer buffer, size_t offset, size_t si
     void *mappedData = nullptr;
     VULKAN_CHECK(vmaMapMemory(m_allocator, bufferResources[vkBuffer].first, &mappedData), "Failed to map memory!");
     if (mappedData && data) {
-        memcpy(mappedData, data, size);
+        memcpy(*(&mappedData + offset), data, size);
     }
 	vmaUnmapMemory(m_allocator, bufferResources[vkBuffer].first);
 };
@@ -1427,24 +1447,24 @@ void GraphicsAPI_Vulkan::SetDescriptor(const DescriptorInfo &descriptorInfo) {
     writeDescSet.pImageInfo = nullptr;
     writeDescSet.pBufferInfo = nullptr;
     writeDescSet.pTexelBufferView = nullptr;
-    writeDescSets.push_back({writeDescSet, {}, {}});
+    writeDescSets.push_back({descriptorInfo.set, writeDescSet, {}, {}});
 
 
     if (descriptorInfo.type == DescriptorInfo::Type::BUFFER) {
-        VkDescriptorBufferInfo &descBufferInfo = std::get<1>(writeDescSets.back());
+        VkDescriptorBufferInfo &descBufferInfo = std::get<2>(writeDescSets.back());
         VkBuffer buffer = (VkBuffer)descriptorInfo.resource;
         const BufferCreateInfo &bufferCI = bufferResources[buffer].second;
         descBufferInfo.buffer = buffer;
         descBufferInfo.offset = descriptorInfo.bufferOffset;
         descBufferInfo.range = descriptorInfo.bufferSize;
     } else if (descriptorInfo.type == DescriptorInfo::Type::IMAGE) {
-        VkDescriptorImageInfo &descImageInfo = std::get<2>(writeDescSets.back());
+        VkDescriptorImageInfo &descImageInfo = std::get<3>(writeDescSets.back());
         VkImageView imageView = (VkImageView)descriptorInfo.resource;
         descImageInfo.sampler = (VkSampler)descriptorInfo.additionalResource;
         descImageInfo.imageView = imageView;
         descImageInfo.imageLayout = descriptorInfo.readWrite ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     } else if (descriptorInfo.type == DescriptorInfo::Type::SAMPLER) {
-        VkDescriptorImageInfo &descImageInfo = std::get<2>(writeDescSets.back());
+        VkDescriptorImageInfo &descImageInfo = std::get<3>(writeDescSets.back());
         VkSampler sampler = (VkSampler)descriptorInfo.resource;
         descImageInfo.sampler = sampler;
         descImageInfo.imageView = VK_NULL_HANDLE;
@@ -1458,25 +1478,39 @@ void GraphicsAPI_Vulkan::SetDescriptor(const DescriptorInfo &descriptorInfo) {
 
 void GraphicsAPI_Vulkan::UpdateDescriptors() {
     VkPipelineLayout pipelineLayout = std::get<0>(pipelineResources[(VkPipeline)setPipeline]);
-    VkDescriptorSetLayout descSetLayout = std::get<1>(pipelineResources[(VkPipeline)setPipeline]);
+    std::vector<VkDescriptorSetLayout> descSetLayouts = std::get<1>(pipelineResources[(VkPipeline)setPipeline]);
     PipelineCreateInfo pipelinCI = std::get<3>(pipelineResources[(VkPipeline)setPipeline]);
 
-    VkDescriptorSet descSet{};
+    // count how many uniqe ints are in the writeDescSets vector
+	std::vector<uint32_t> setCounts;
+	for (auto& writeDescSet : writeDescSets) {
+		setCounts.push_back(std::get<0>(writeDescSet));
+	}
+	std::sort(setCounts.begin(), setCounts.end());
+	setCounts.erase(std::unique(setCounts.begin(), setCounts.end()), setCounts.end());
+
+	std::vector<VkDescriptorSet> descSets;
+	descSets.resize(setCounts.size());
+	for (size_t i = 0; i < setCounts.size(); i++) {
+        descSets[i] = {};
+	}
+    
+
     VkDescriptorSetAllocateInfo descSetAI;
     descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descSetAI.pNext = nullptr;
     descSetAI.descriptorPool = descriptorPool;
-    descSetAI.descriptorSetCount = 1;
-    descSetAI.pSetLayouts = &descSetLayout;
-    VULKAN_CHECK(vkAllocateDescriptorSets(device, &descSetAI, &descSet), "Failed to allocate DescriptorSet.");
+    descSetAI.descriptorSetCount = setCounts.size();
+    descSetAI.pSetLayouts = descSetLayouts.data();
+    VULKAN_CHECK(vkAllocateDescriptorSets(device, &descSetAI, descSets.data()), "Failed to allocate DescriptorSet.");
 
     std::vector<VkWriteDescriptorSet> vkWriteDescSets;
     for (auto &writeDescSet : writeDescSets) {
-        VkWriteDescriptorSet &vkWriteDescSet = std::get<0>(writeDescSet);
-        VkDescriptorBufferInfo &vkDescBufferInfo = std::get<1>(writeDescSet);
-        VkDescriptorImageInfo &vkDescImageInfo = std::get<2>(writeDescSet);
+        VkWriteDescriptorSet &vkWriteDescSet = std::get<1>(writeDescSet);
+        VkDescriptorBufferInfo &vkDescBufferInfo = std::get<2>(writeDescSet);
+        VkDescriptorImageInfo &vkDescImageInfo = std::get<3>(writeDescSet);
 
-        vkWriteDescSet.dstSet = descSet;
+        vkWriteDescSet.dstSet = descSets[std::get<0>(writeDescSet)];
         if (vkDescBufferInfo.buffer) {
             vkWriteDescSet.pBufferInfo = &vkDescBufferInfo;
         } else if (vkDescImageInfo.imageView || vkDescImageInfo.sampler) {
@@ -1489,11 +1523,13 @@ void GraphicsAPI_Vulkan::UpdateDescriptors() {
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(vkWriteDescSets.size()), vkWriteDescSets.data(), 0, nullptr);
     writeDescSets.clear();
 
-    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descSet, 0, nullptr);
-    cmdBufferDescriptorSets[cmdBuffer].push_back({descSet});
+    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, descSets.size(), descSets.data(), 0, nullptr);
+    for (auto& descSet : descSets) {
+        cmdBufferDescriptorSets[cmdBuffer].push_back({ descSet });
+    }
 }
 
-void GraphicsAPI_Vulkan::SetVertexBuffers(VkBuffer** vertexBuffers, size_t count) {
+void GraphicsAPI_Vulkan::SetVertexBuffers(VkBuffer* vertexBuffers, size_t count) {
     std::vector<VkBuffer> vkBuffers;
     std::vector<VkDeviceSize> offsets;
     for (size_t i = 0; i < count; i++) {
@@ -1504,7 +1540,7 @@ void GraphicsAPI_Vulkan::SetVertexBuffers(VkBuffer** vertexBuffers, size_t count
     vkCmdBindVertexBuffers(cmdBuffer, 0, static_cast<uint32_t>(vkBuffers.size()), vkBuffers.data(), offsets.data());
 }
 
-void GraphicsAPI_Vulkan::SetIndexBuffer(VkBuffer *indexBuffer) {
+void GraphicsAPI_Vulkan::SetIndexBuffer(VkBuffer indexBuffer) {
     const BufferCreateInfo &bufferCI = bufferResources[(VkBuffer)indexBuffer].second;
     VkIndexType type = bufferCI.stride == 4 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
     vkCmdBindIndexBuffer(cmdBuffer, (VkBuffer)indexBuffer, 0, type);

@@ -67,10 +67,6 @@ protected:
 		XrVector4f pad2;
 		XrVector4f pad3;
 	};
-	CameraConstants cameraConstants;
-
-
-
 private:
 
 
