@@ -50,18 +50,15 @@ void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, c
 	size_t offsetCameraUB = sizeof(InstanceData) * currently_drawn_object;
 
 	m_graphicsAPI->SetPipeline(m_pipeline);
-
 	m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(InstanceData), &id);
 
-	
 	for (auto mesh : model.meshes)
 	{
-	
 		m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(SceneData) });
 		m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(InstanceData) });
 		m_graphicsAPI->SetDescriptor({ 1, 1, mod.materials[mesh.material_index].diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false});
-		m_graphicsAPI->SetDescriptor({ 1, 2, mod.materials[mesh.material_index].diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 3, mod.materials[mesh.material_index].diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 2, mod.materials[mesh.material_index].norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 3, mod.materials[mesh.material_index].orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 
 		m_graphicsAPI->UpdateDescriptors();
 		
@@ -73,8 +70,8 @@ void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, c
 	currently_drawn_object++;
 }
 
-static float posx = 0;
 
+static float posx = 0;
 static GPUModelConstant pushConst;
 
 void GameApp::render(FrameRenderInfo& info)
@@ -84,8 +81,6 @@ void GameApp::render(FrameRenderInfo& info)
 	float nearZ = 0.05f;
 	float farZ = 100.0f;
 
-	//posx += 0.001f;
-	
 	currently_drawn_object = 0;
 
 	// Rendering code to clear the color and depth image views.
@@ -105,6 +100,7 @@ void GameApp::render(FrameRenderInfo& info)
 	m_graphicsAPI->SetViewports(&viewport, 1);
 	m_graphicsAPI->SetScissors(&scissor, 1);
 
+	
 	// Compute the view-projection transform.
 	// All matrices (including OpenXR's) are column-major, right-handed.
 	XrMatrix4x4f proj;
@@ -115,8 +111,10 @@ void GameApp::render(FrameRenderInfo& info)
 	XrMatrix4x4f view;
 	XrMatrix4x4f_InvertRigidBody(&view, &toView);
 	XrMatrix4x4f_Multiply(&m_sceneDataCPU.viewProj, &proj, &view);
+	m_sceneDataCPU.camPos = info.view.pose.position;
+	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(SceneData), &m_sceneDataCPU);
 
-	render_mesh({ posx, -1.0f, 0.0f}, { 0.1f, 0.1f, 0.1f }, { 0.0f, 0.0f, 0.0f }, mod);
+	render_mesh({ posx, -1.0f, 0.0f}, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, mod);
 
 	// draw skybox
 	XrVector3f pos = info.view.pose.position;
@@ -126,7 +124,6 @@ void GameApp::render(FrameRenderInfo& info)
 	XrMatrix4x4f_CreateTranslationRotationScale(&pushConst.model, &pos, &rot, &scale);
 
 	m_graphicsAPI->SetPipeline(sky_pipeline);
-	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(SceneData), &m_sceneDataCPU);
 
 	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant));
 
@@ -141,8 +138,6 @@ void GameApp::render(FrameRenderInfo& info)
 		m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
 		m_graphicsAPI->DrawIndexed(mesh.index_count);
 	}
-
-
 
 	m_graphicsAPI->EndRendering();
 }
@@ -211,15 +206,12 @@ void GameApp::create_resources()
 			m_graphicsAPI->DestroyBuffer(m.vertex_buffer);
 		}
 
-		
 		m_graphicsAPI->DestroyPipeline(sky_pipeline);
 		m_graphicsAPI->DestroyBuffer(m_sceneData);
-		
 		m_graphicsAPI->DestroyPipeline(m_pipeline);
+		
 	});
-
 }
-
 
 void GameApp::destroy_resources()
 {

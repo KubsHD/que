@@ -12,6 +12,9 @@
 #include <common/GraphicsAPI.h>
 
 class GraphicsAPI_Vulkan;
+struct aiScene;
+enum aiTextureType;
+struct aiMaterial;
 
 class Asset {
 public:
@@ -28,6 +31,9 @@ public:
 
 	static GraphicsAPI::Image load_image(GraphicsAPI_Vulkan& gapi, String path, bool isHdri = false);
 private:
+
+	static GraphicsAPI::Image try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type);
+
 #if defined(__ANDROID__)
 	AAssetManager* m_android_asset_manager;
 #endif

@@ -36,6 +36,7 @@ private:
 		XrMatrix4x4f viewProj;
 		XrMatrix4x4f view;
 		XrMatrix4x4f proj;
+		XrVector3f camPos;
 	};
 
 	struct InstanceData {

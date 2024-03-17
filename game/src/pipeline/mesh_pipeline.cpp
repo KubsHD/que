@@ -13,7 +13,6 @@ namespace pipeline
 		std::vector<char> fragmentSource = asset_mgr->read_all_bytes("data/shader/mesh.frag.spv");
 		auto ps = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
 
-
 		GraphicsAPI::PipelineCreateInfo pipelineCI;
 
 		pipelineCI.shaders = { vs, ps };
@@ -38,7 +37,6 @@ namespace pipeline
 							  {1, 1, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT},
 							  {1, 2, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT},
 							  {1, 3, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT},
-
 		};
 
 		return gapi.CreatePipeline(pipelineCI);

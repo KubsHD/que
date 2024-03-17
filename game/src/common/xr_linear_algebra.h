@@ -554,7 +554,6 @@ inline static void XrMatrix4x4f_CreateProjectionFov(XrMatrix4x4f* result, Graphi
 
     XrMatrix4x4f_CreateProjection(result, graphicsApi, tanLeft, tanRight, tanUp, tanDown, nearZ, farZ);
 }
-
 // Creates a matrix that transforms the -1 to 1 cube to cover the given 'mins' and 'maxs' transformed with the given 'matrix'.
 inline static void XrMatrix4x4f_CreateOffsetScaleForBounds(XrMatrix4x4f* result, const XrMatrix4x4f* matrix, const XrVector3f* mins,
                                                            const XrVector3f* maxs) {

@@ -186,7 +186,6 @@ private:
     std::unordered_map<VkCommandBuffer, std::vector<VkDescriptorSet>> cmdBufferDescriptorSets;
     std::vector<std::tuple<uint32_t, VkWriteDescriptorSet, VkDescriptorBufferInfo, VkDescriptorImageInfo>> writeDescSets;
 
-    
     VmaAllocator m_allocator;
 };
 #endif

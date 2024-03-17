@@ -30,7 +30,6 @@ public:
 	struct RenderLayerInfo;
 	struct FrameRenderInfo;
 
-
 	virtual void init() = 0;
 	virtual void update() = 0;
 	virtual void render(FrameRenderInfo& info) = 0;

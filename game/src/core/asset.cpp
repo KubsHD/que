@@ -136,19 +136,13 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
 			{
 				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-				aiString path;
-				material->GetTexture(aiTextureType_DIFFUSE, 0, &path);
+				Material mat;
 
+				mat.diff = try_to_load_texture_type(gapi, scene, material, aiTextureType_DIFFUSE);
+				mat.norm = try_to_load_texture_type(gapi, scene, material, aiTextureType_NORMALS);
+				mat.orm = try_to_load_texture_type(gapi, scene, material, aiTextureType_METALNESS);
 
-				const aiTexture* tex = scene->GetEmbeddedTexture(path.C_Str());
-
-				//load texture with stb
-				if (!tex && path.length > 0)
-				{
-					Material mat;
-					mat.diff = load_image(gapi, "data/" + std::string(path.C_Str()));
-					mod.materials.emplace(mesh->mMaterialIndex, mat);
-				}
+				mod.materials.emplace(mesh->mMaterialIndex, mat);
 			}
 			
 			internal_mesh.material_index = mesh->mMaterialIndex;
@@ -161,18 +155,17 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
 
 GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool isHdri /*= false*/)
 {
-	GraphicsAPI::Image img;
+	stbi_set_flip_vertically_on_load(true);
 
+	GraphicsAPI::Image img;
 
 	auto format = isHdri ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
 
 	auto device = gapi.GetDevice();
 	auto allocator = gapi.GetAllocator();
-
-	// load skybox
 	int texWidth, texHeight, texChannels;
 
-
+	
 	void* pixel_ptr;
 
 	if (isHdri)
@@ -318,4 +311,20 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	gapi.SetDebugName("texture view: " + path, img.view);
 
 	return img;
+}
+
+GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type)
+{
+	aiString path;
+	material->GetTexture(type, 0, &path);
+
+	const aiTexture* tex = scene->GetEmbeddedTexture(path.C_Str());
+
+	//load texture with stb
+	if (!tex && path.length > 0)
+	{
+		return load_image(gapi, "data/" + std::string(path.C_Str()));
+	}
+	
+	return GraphicsAPI::Image();
 }

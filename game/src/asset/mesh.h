@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-
 #include <openxr/openxr.h>
 #include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>
@@ -21,7 +20,7 @@ struct GPUModelConstant {
 struct Material {
 	GraphicsAPI::Image diff;
 	GraphicsAPI::Image norm;
-	//Image spec = nullptr;
+	GraphicsAPI::Image orm;
 };
 
 struct Vertex {

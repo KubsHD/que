@@ -121,8 +121,6 @@ const char* GetGraphicsAPIInstanceExtensionString(GraphicsAPI_Type type);
 class GraphicsAPI {
 public:
 
-
-
 // Pipeline Helpers
 #pragma region Pipeline Helpers
     enum class SwapchainType : uint8_t {
