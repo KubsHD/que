@@ -32,6 +32,14 @@ struct Vertex {
 	float ny;
 	float nz;
 
+	float tx;
+	float ty;
+	float tz;
+
+	float btx;
+	float bty;
+	float btz;
+
 	float u;
 	float v;
 };

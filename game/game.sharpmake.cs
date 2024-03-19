@@ -71,6 +71,7 @@ namespace Que
 
             // tracy include
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps/tracy/public"));
+            conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps"));
 
             conf.VcxprojUserFile = new Configuration.VcxprojUserFileSettings
             {

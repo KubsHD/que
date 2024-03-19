@@ -11,6 +11,8 @@ layout(set = 0,binding = 0) uniform SceneData {
 	vec3 camPos;
 };
 
+//layout (set = 0, binding = 1) uniform samplerCube tex_cubemap;
+
 layout(set = 1, binding = 0) uniform InstanceData {
 	mat4 model;
 	mat4 modelInvTrans;
@@ -24,6 +26,8 @@ layout(location = 0) in vec2 i_TexCoord;
 layout(location = 1) in vec3 i_Normal;
 layout(location = 2) in vec3 i_Pos;
 layout(location = 3) in vec3 i_WorldPos;
+layout(location = 4) in mat3 i_TBN;
+
 
 layout(location = 0) out vec4 o_Color;
 
@@ -79,8 +83,9 @@ void main() {
 	vec3 lightPos = vec3(-3.0f, 4.0f, 0.0f);
 	vec3 lightColor = vec3(150.0f);
 	
-	vec3 norm = i_Normal;
-	//norm = normalize(norm * 2.0 - 1.0);   
+	vec3 norm = texture(tex_normal, i_TexCoord).xyz;
+	norm = normalize(norm * 2.0 - 1.0);   
+	norm = normalize(i_TBN * norm);
 
 	vec3 albedo = texture(tex_diffuse,i_TexCoord).xyz;
 

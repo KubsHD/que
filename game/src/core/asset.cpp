@@ -53,45 +53,7 @@ std::vector<char> Asset::read_all_bytes(String path)
 
 }
 
-Mesh Asset::load_mesh(GraphicsAPI_Vulkan& gapi, String path)
-{
-	Mesh m;
-
-	Assimp::Importer imp;
-
-
-	// create models
-	const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate  | aiProcess_ConvertToLeftHanded | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices);
-	
-
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
-
-	for (int m = 0; m < scene->mNumMeshes; m++)
-	{
-		auto mesh = scene->mMeshes[m];
-		
-		for (size_t i = 0; i < mesh->mNumVertices; i++) {
-			vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z,
-				mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y });
-		}
-
-		for (unsigned int i = 0; i < mesh->mNumFaces; i++)
-		{
-			aiFace face = mesh->mFaces[i];
-			for (unsigned int j = 0; j < face.mNumIndices; j++)
-				indices.push_back(face.mIndices[j]);
-		}
-	}
-
-	m.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
-	m.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
-	m.index_count = indices.size();
-
-	return m;
-}
-
-Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
+Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 {
 	Model mod;
 
@@ -99,7 +61,7 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
 
 
 	// create models
-	const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices);
+	const aiScene* scene = imp.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
 
 
 	for (int m = 0; m < scene->mNumMeshes; m++)
@@ -113,8 +75,13 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
 		auto mesh = scene->mMeshes[m];
 
 		for (size_t i = 0; i < mesh->mNumVertices; i++) {
-			vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z,
-				mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y });
+			vertices.push_back({
+				mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z,
+				mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z,
+				mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,
+				mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z,
+				mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y
+				});
 		}
 
 		for (unsigned int i = 0; i < mesh->mNumFaces; i++)
@@ -123,14 +90,17 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
 			for (unsigned int j = 0; j < face.mNumIndices; j++)
 				indices.push_back(face.mIndices[j]);
 		}
-		internal_mesh.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 8, sizeof(Vertex) * vertices.size(), vertices.data() });
+		internal_mesh.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
 		internal_mesh.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 		internal_mesh.index_count = indices.size();
+
+		auto model_directory = path.parent_path();
 
 		if (mesh->mMaterialIndex >= 0)
 		{
 			// check if material index is in map 
 			// if not, load material
+			
 			
 			if (mod.materials.find(mesh->mMaterialIndex) == mod.materials.end())
 			{
@@ -138,9 +108,9 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, String path)
 
 				Material mat;
 
-				mat.diff = try_to_load_texture_type(gapi, scene, material, aiTextureType_DIFFUSE);
-				mat.norm = try_to_load_texture_type(gapi, scene, material, aiTextureType_NORMALS);
-				mat.orm = try_to_load_texture_type(gapi, scene, material, aiTextureType_METALNESS);
+				mat.diff = try_to_load_texture_type(gapi, scene, material, aiTextureType_DIFFUSE, model_directory.string());
+				mat.norm = try_to_load_texture_type(gapi, scene, material, aiTextureType_NORMALS, model_directory.string());
+				mat.orm = try_to_load_texture_type(gapi, scene, material, aiTextureType_METALNESS, model_directory.string());
 
 				mod.materials.emplace(mesh->mMaterialIndex, mat);
 			}
@@ -313,7 +283,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	return img;
 }
 
-GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type)
+GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path)
 {
 	aiString path;
 	material->GetTexture(type, 0, &path);
@@ -323,7 +293,7 @@ GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, con
 	//load texture with stb
 	if (!tex && path.length > 0)
 	{
-		return load_image(gapi, "data/" + std::string(path.C_Str()));
+		return load_image(gapi, root_path + "/" + std::string(path.C_Str()));
 	}
 	
 	return GraphicsAPI::Image();

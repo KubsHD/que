@@ -24,7 +24,6 @@
 #define DEBUG_BREAK raise(SIGTRAP)
 #endif
 
-// XR_DOCS_TAG_BEGIN_Helper_Functions1
 inline bool IsStringInVector(std::vector<const char *> list, const char *name) {
     bool found = false;
     for (auto &item : list) {

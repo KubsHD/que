@@ -80,6 +80,9 @@ namespace Que
         public virtual void ConfigureWin64(Configuration conf, CommonTarget target)
         {
             conf.Options.Add(Options.Vc.Linker.SubSystem.Windows);
+            conf.Options.Add(Options.Vc.Compiler.MinimalRebuild.Disable);
+            conf.Options.Add(Options.Vc.Linker.GenerateFullProgramDatabaseFile.Enable);
+            conf.Options.Add(Options.Vc.Linker.CreateHotPatchableImage.Enable);
         }
         #endregion
         ////////////////////////////////////////////////////////////////////////

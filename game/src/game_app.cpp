@@ -99,7 +99,6 @@ void GameApp::render(FrameRenderInfo& info)
 	m_graphicsAPI->SetRenderAttachments(info.colorSwapchainInfo->imageViews[info.colorImageIndex], 1, info.depthSwapchainInfo->imageViews[info.depthImageIndex], info.width, info.height, sky_pipeline);
 	m_graphicsAPI->SetViewports(&viewport, 1);
 	m_graphicsAPI->SetScissors(&scissor, 1);
-
 	
 	// Compute the view-projection transform.
 	// All matrices (including OpenXR's) are column-major, right-handed.
@@ -116,13 +115,13 @@ void GameApp::render(FrameRenderInfo& info)
 
 	render_mesh({ posx, -1.0f, 0.0f}, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, mod);
 
+	
 	// draw skybox
 	XrVector3f pos = info.view.pose.position;
 	XrVector3f scale = { 5.0f, 5.0f, 5.0f };
 	XrQuaternionf rot = { 0.0f, 0.0f, 0.0f };
 
 	XrMatrix4x4f_CreateTranslationRotationScale(&pushConst.model, &pos, &rot, &scale);
-
 	m_graphicsAPI->SetPipeline(sky_pipeline);
 
 	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant));
@@ -159,7 +158,7 @@ void GameApp::create_resources()
 	m_pipeline = pipeline::create_mesh_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 	sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 
-	mod = Asset::load_model(*m_graphicsAPI, "data/testlevel.gltf");
+	mod = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 
 	model_texture = Asset::load_image(*m_graphicsAPI, "data/diffuse.jpg", false);
