@@ -1557,6 +1557,8 @@ void GraphicsAPI_Vulkan::Draw(uint32_t vertexCount, uint32_t instanceCount, uint
 
 void GraphicsAPI_Vulkan::SetDebugName(std::string name, void* object)
 {
+    return;
+
 	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 	name_info.objectType = VK_OBJECT_TYPE_BUFFER;
 	name_info.objectHandle = (uint64_t)object;

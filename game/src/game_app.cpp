@@ -11,8 +11,10 @@
 
 #include <vulkan/vulkan.h>
 #include <common/GraphicsAPI.h>
-#include <pipeline/sky_pipeline.h>
-#include <pipeline/mesh_pipeline.h>
+#include <gfx/pipeline/sky_pipeline.h>
+#include <gfx/pipeline/mesh_pipeline.h>
+
+#include <gfx/sky.h>
 
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
@@ -106,7 +108,12 @@ void GameApp::render(FrameRenderInfo& info)
 	XrMatrix4x4f_CreateProjectionFov(&proj, m_apiType, info.view.fov, nearZ, farZ);
 	XrMatrix4x4f toView;
 	XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
-	XrMatrix4x4f_CreateTranslationRotationScale(&toView, &info.view.pose.position, &info.view.pose.orientation, &scale1m);
+	XrVector3f offset{ 0.0f, 1.5f, 0.0f };
+	XrVector3f final_camera_pos;
+	XrVector3f_Add(&final_camera_pos, &info.view.pose.position, &offset);
+
+
+	XrMatrix4x4f_CreateTranslationRotationScale(&toView, &final_camera_pos, & info.view.pose.orientation, & scale1m);
 	XrMatrix4x4f view;
 	XrMatrix4x4f_InvertRigidBody(&view, &toView);
 	XrMatrix4x4f_Multiply(&m_sceneDataCPU.viewProj, &proj, &view);
@@ -161,8 +168,9 @@ void GameApp::create_resources()
 	mod = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 
-	model_texture = Asset::load_image(*m_graphicsAPI, "data/diffuse.jpg", false);
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", true);
+
+	gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr");
 
 	auto device = m_graphicsAPI->GetDevice();
 
