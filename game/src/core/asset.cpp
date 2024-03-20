@@ -12,6 +12,11 @@
 #include <common/GraphicsAPI_Vulkan.h>
 #include <lib/stb_image.h>
 
+#if defined(__ANDROID__)
+#include <assimp/port/AndroidJNI/AndroidJNIIOSystem.h>
+#endif
+#include <app.h>
+
 
 
 Asset::Asset(void* android_ass)
@@ -59,6 +64,13 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 
 	Assimp::Importer imp;
 
+
+#if defined(__ANDROID__)
+	Assimp::AndroidJNIIOSystem* ioSystem = new Assimp::AndroidJNIIOSystem(App::androidApp->activity);
+	if (nullptr != ioSystem) {
+		imp.SetIOHandler(ioSystem);
+	}
+#endif
 
 	// create models
 	const aiScene* scene = imp.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
@@ -138,13 +150,30 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	
 	void* pixel_ptr;
 
+#if defined(__ANDROID__)
+	auto am = App::androidApp->activity->assetManager;
+	AAsset* asset = AAssetManager_open(am, path.c_str(), AASSET_MODE_BUFFER);
+
+	long fileLength = AAsset_getLength(asset);
+	char* buffer = new char[fileLength];
+	int bytesRead = AAsset_read(asset, buffer, fileLength);
+
+	if (isHdri)
+	{
+		float* temp = stbi_loadf_from_memory((stbi_uc*)buffer, fileLength, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		pixel_ptr = temp;
+	}
+	else
+		pixel_ptr = stbi_load_from_memory((stbi_uc*)buffer, fileLength, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+#else
 	if (isHdri)
 	{
 		float* temp = stbi_loadf(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		pixel_ptr = temp;
-	}
+}
 	else
 		pixel_ptr = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+#endif
 
 	if (!pixel_ptr)
 		DEBUG_BREAK;

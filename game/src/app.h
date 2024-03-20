@@ -177,7 +177,7 @@ protected:
 
 #if defined(__ANDROID__)
 public:
-	// Stored pointer to the android_app structure from android_main().
+	// Stored pointer to the android_app structure from andrqoid_main().
 	static android_app* androidApp;
 
 	// Custom data structure that is used by PollSystemEvents().

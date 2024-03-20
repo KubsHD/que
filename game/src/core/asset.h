@@ -10,10 +10,10 @@
 #include <asset/mesh.h>
 
 #include <common/GraphicsAPI.h>
+#include <assimp/material.h>
 
 class GraphicsAPI_Vulkan;
 struct aiScene;
-enum aiTextureType;
 struct aiMaterial;
 
 class Asset {

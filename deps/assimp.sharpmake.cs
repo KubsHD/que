@@ -28,6 +28,15 @@ public class Assimp : CommonProject
             conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib\x64\assimp-vc143-mt.lib");
             conf.TargetCopyFiles.Add(@"[project.SourceRootPath]\bin\x64\assimp-vc143-mt.dll");
         }
+
+        if (target.Platform == Platform.agde)
+        {
+            Console.WriteLine("Configuring assimp for Android");
+            conf.LibraryPaths.Add(@"[project.SourceRootPath]\lib\arm64");
+            conf.LibraryFiles.Add("libandroid_jniiosystem.a");
+            conf.LibraryFiles.Add("assimp.so");
+            conf.TargetCopyFiles.Add(@"[project.SourceRootPath]\lib\arm64\libassimp.so");
+        }
     }
     public override void ConfigureAgde(Configuration conf, CommonTarget target)
     {

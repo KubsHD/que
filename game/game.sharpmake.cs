@@ -72,6 +72,7 @@ namespace Que
             // tracy include
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps/tracy/public"));
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps"));
+            conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps/entt/single_include"));
 
             conf.VcxprojUserFile = new Configuration.VcxprojUserFileSettings
             {
@@ -112,7 +113,6 @@ namespace Que
 
             var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
 
-            // compile shaders with glslc 
             conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
             conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
 
@@ -130,6 +130,10 @@ namespace Que
             conf.IncludePaths.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android")); // For android_native_app_glue.h
             conf.AdditionalLinkerOptions.Add("-llog", "-landroid", "-lvulkan");
 
+
+            conf.LibraryFiles.Add(Path.Combine(Globals.RootDirectory, @"deps\vulkan_android_validation_layer\libVkLayer_khronos_validation.so"));
+            conf.LibraryPaths.Add(Path.Combine(Globals.RootDirectory, @"deps\vulkan_android_validation_layer"));
+
             conf.TargetPath = Path.Combine(conf.TargetPath, GetABI(target));
             conf.TargetFileName = LowerName;
 
@@ -140,10 +144,14 @@ namespace Que
 
             var androidAssetsPath = ResolveString(Path.Combine(Globals.RootDirectory, @"projects\[project.Name]\src\main\assets\"), conf, target);
 
+            // copy assets
+            conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data {androidAssetsPath}\\data");
+
             // compile shaders with glslc 
             conf.EventPostBuild.Add($"if not exist {androidAssetsPath}data mkdir {androidAssetsPath}data");
-            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=vertex -o {androidAssetsPath}data\\VertexShader.spv {realProjectPath}\\data\\VertexShader.glsl");
-            conf.EventPostBuild.Add($"\"$(VULKAN_SDK)\\Bin\\glslc.exe\" -fshader-stage=fragment -o {androidAssetsPath}data\\PixelShader.spv {realProjectPath}\\data\\PixelShader.glsl");
+            GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", androidAssetsPath + "\\data\\shader");
+
+            conf.EventPreBuild.Add($"call  {androidAssetsPath + "\\data\\shader\\shader_compile.bat"}");
         }
 
         private void GenerateShaderCompileBat(string srcPath, string targetPath)

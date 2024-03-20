@@ -316,7 +316,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     ai.applicationVersion = 1;
     ai.pEngineName = "OpenXR Tutorial - Vulkan Engine";
     ai.engineVersion = 1;
-    ai.apiVersion = VK_MAKE_API_VERSION(0, XR_VERSION_MAJOR(graphicsRequirements.minApiVersionSupported), XR_VERSION_MINOR(graphicsRequirements.minApiVersionSupported), 0);
+    ai.apiVersion = VK_MAKE_API_VERSION(0, XR_VERSION_MAJOR(graphicsRequirements.maxApiVersionSupported), XR_VERSION_MINOR(graphicsRequirements.maxApiVersionSupported), 0);
 
     uint32_t instanceExtensionCount = 0;
     VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr), "Failed to enumerate InstanceExtensionProperties.");
