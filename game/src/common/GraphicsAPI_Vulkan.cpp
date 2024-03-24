@@ -1270,7 +1270,10 @@ void GraphicsAPI_Vulkan::SetBufferData(VkBuffer buffer, size_t offset, size_t si
     void *mappedData = nullptr;
     VULKAN_CHECK(vmaMapMemory(m_allocator, bufferResources[vkBuffer].first, &mappedData), "Failed to map memory!");
     if (mappedData && data) {
-        memcpy(*(&mappedData + offset), data, size);
+        memcpy((char*)mappedData + offset, data, size);
+    }
+    else {
+        __debugbreak;
     }
 	vmaUnmapMemory(m_allocator, bufferResources[vkBuffer].first);
 };
@@ -1555,15 +1558,31 @@ void GraphicsAPI_Vulkan::Draw(uint32_t vertexCount, uint32_t instanceCount, uint
 }
 
 
-void GraphicsAPI_Vulkan::SetDebugName(std::string name, void* object)
+void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkImage object)
 {
-    return;
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_IMAGE;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+    vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
 
+void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkBuffer object)
+{
 	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 	name_info.objectType = VK_OBJECT_TYPE_BUFFER;
 	name_info.objectHandle = (uint64_t)object;
 	name_info.pObjectName = name.c_str();
-    vkSetDebugUtilsObjectNameEXT(device, &name_info);
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
+void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkImageView object)
+{
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+    name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
 }
 
 // XR_DOCS_TAG_BEGIN_GraphicsAPI_Vulkan_LoadPFN_XrFunctions

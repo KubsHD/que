@@ -1,5 +1,6 @@
 #include "sky.h"
 #include <core/asset.h>
+#include <common/vk_initializers.h>
 
 namespace gfx {
 
@@ -14,17 +15,10 @@ namespace gfx {
 
         // 1. create skybox cubemap image
         GraphicsAPI::Image sky_cube;
-        VkImageCreateInfo imageCreateInfo{};
-        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageCreateInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+
+        VkImageCreateInfo imageCreateInfo = vkinit::image_create_info(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, { 512,512,1 });
+        
         imageCreateInfo.mipLevels = 1;
-        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageCreateInfo.extent = { 512,512, 1 };
-        imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         // Cube faces count as array layers in Vulkan
         imageCreateInfo.arrayLayers = 6;
         // This flag is required for cube map images
@@ -33,7 +27,7 @@ namespace gfx {
         VmaAllocationCreateInfo vai{};
         vai.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
 
-        VULKAN_CHECK_NOMSG(vmaCreateImage(*gapi.GetAllocator(), &imageCreateInfo, &vai, &sky_cube.image, &sky_cube.allocation, nullptr));
+        VULKAN_CHECK_NOMSG(vmaCreateImage(gapi.GetAllocator(), &imageCreateInfo, &vai, &sky_cube.image, &sky_cube.allocation, nullptr));
         
         // change image layout
 
@@ -80,7 +74,7 @@ namespace gfx {
             ivinfo.subresourceRange.baseArrayLayer = i;
             ivinfo.subresourceRange.layerCount = 1;
             ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            vkCreateImageView(*gapi.GetDevice(), &ivinfo, nullptr, &cubemapViews[i]);
+            vkCreateImageView(gapi.GetDevice(), &ivinfo, nullptr, &cubemapViews[i]);
         }
 
 		// create sampler cube
@@ -130,7 +124,7 @@ namespace gfx {
         renderPassCI.pSubpasses = &subpassDescription;
         renderPassCI.dependencyCount = 1;
         renderPassCI.pDependencies = &subpassDependency;
-        VULKAN_CHECK(vkCreateRenderPass(*gapi.GetDevice(), &renderPassCI, nullptr, &renderPass), "Failed to create RenderPass.");
+        VULKAN_CHECK(vkCreateRenderPass(gapi.GetDevice(), &renderPassCI, nullptr, &renderPass), "Failed to create RenderPass.");
 
      
 
@@ -148,7 +142,7 @@ namespace gfx {
             fbufCreateInfo.height = 512;
             fbufCreateInfo.layers = 1;
 
-            vkCreateFramebuffer(*gapi.GetDevice(), &fbufCreateInfo, nullptr, &framebuffers[i]);
+            vkCreateFramebuffer(gapi.GetDevice(), &fbufCreateInfo, nullptr, &framebuffers[i]);
         }
 
         gapi.immediate_submit([&](VkCommandBuffer cmd) {

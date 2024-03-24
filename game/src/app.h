@@ -13,6 +13,7 @@
 #include <core/ecs.h>
 
 #include <functional>
+#include <core/input.h>
 
 
 class App {
@@ -27,6 +28,8 @@ public:
 	std::function<void()> onExit;
 
 	std::unique_ptr<Scene> m_current_scene;
+	std::shared_ptr<Input> input;
+
 	struct RenderLayerInfo;
 	struct FrameRenderInfo;
 
@@ -67,9 +70,6 @@ protected:
 		XrVector4f pad3;
 	};
 private:
-	XrPath CreateXrPath(const char* path_string);
-	std::string FromXrPath(XrPath path);
-
 	void create_reference_space();
 	void destroy_reference_space();
 
@@ -94,7 +94,6 @@ private:
 	void render_frame();
 	bool render_layer(RenderLayerInfo& info);
 	
-	void create_action_set();
 
 	void poll_events();
 protected:
@@ -150,34 +149,12 @@ protected:
 		std::vector<XrCompositionLayerProjectionView> layerProjectionViews;
 	};
 
-	// input stuff
-	XrActionSet m_actionSet;
-	// An action for grabbing blocks, and an action to change the color of a block.
-	XrAction m_grabCubeAction, m_spawnCubeAction, m_changeColorAction;
-	// The realtime states of these actions.
-	XrActionStateFloat m_grabState[2] = { {XR_TYPE_ACTION_STATE_FLOAT}, {XR_TYPE_ACTION_STATE_FLOAT} };
-	XrActionStateBoolean m_changeColorState[2] = { {XR_TYPE_ACTION_STATE_BOOLEAN}, {XR_TYPE_ACTION_STATE_BOOLEAN} };
-	XrActionStateBoolean m_spawnCubeState = { XR_TYPE_ACTION_STATE_BOOLEAN };
-	// The haptic output action for grabbing cubes.
-	XrAction m_buzzAction;
-	// The current haptic output value for each controller.
-	float m_buzz[2] = { 0, 0 };
-	// The action for getting the hand or controller position and orientation.
-	XrAction m_palmPoseAction;
-	// The XrPaths for left and right hand hands or controllers.
-	XrPath m_handPaths[2] = { 0, 0 };
-	// The spaces that represents the two hand poses.
-	XrSpace m_handPoseSpace[2];
-	XrActionStatePose m_handPoseState[2] = { {XR_TYPE_ACTION_STATE_POSE}, {XR_TYPE_ACTION_STATE_POSE} };
-	// The current poses obtained from the XrSpaces.
-	XrPosef m_handPose[2] = {
-		{{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1}},
-		{{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1}} };
+
 
 
 #if defined(__ANDROID__)
 public:
-	// Stored pointer to the android_app structure from andrqoid_main().
+	// Stored pointer to the android_app structure from android_main().
 	static android_app* androidApp;
 
 	// Custom data structure that is used by PollSystemEvents().

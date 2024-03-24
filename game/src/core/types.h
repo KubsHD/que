@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 #include <filesystem>
 
+#include <vulkan/vulkan.h>
+
 using String = std::string;
 
 template<typename T>

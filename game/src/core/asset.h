@@ -25,10 +25,10 @@ public:
 	std::vector<char> read_all_bytes(String path);
 	
 	static void load_texture_from_file(GraphicsAPI_Vulkan& gapi, String path);
-
-	static Model load_model(GraphicsAPI_Vulkan& gapi, Path path);
-
 	static GraphicsAPI::Image load_image(GraphicsAPI_Vulkan& gapi, String path, bool isHdri = false);
+	
+	static Model load_model(GraphicsAPI_Vulkan& gapi, Path path);
+	static Model load_model_json(GraphicsAPI_Vulkan& gapi, Path path);
 private:
 
 	static GraphicsAPI::Image try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path);

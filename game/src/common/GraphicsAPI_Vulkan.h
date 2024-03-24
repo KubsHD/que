@@ -119,10 +119,13 @@ public:
     void DrawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t vertexOffset = 0, uint32_t firstInstance = 0) ;
     void Draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0) ;
 
-    void SetDebugName(std::string name, void* object) ;
+    void SetDebugName(std::string name, VkBuffer object);
+	void SetDebugName(std::string name, VkImage object);
+	void SetDebugName(std::string name, VkImageView object);
 
-    VkDevice* GetDevice() { return &device; }
-    VmaAllocator* GetAllocator() { return &m_allocator; }
+
+    VkDevice GetDevice() { return device; }
+    VmaAllocator GetAllocator() { return m_allocator; }
 
     DeletionQueue MainDeletionQueue;
 private:

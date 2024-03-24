@@ -17,7 +17,9 @@
 #endif
 #include <app.h>
 
+#include <lib/json.hpp>
 
+using json = nlohmann::json;
 
 Asset::Asset(void* android_ass)
 {
@@ -196,15 +198,15 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	VmaAllocationCreateInfo vmaallocInfo = {};
 	vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
 
-	auto result = vmaCreateBuffer(*allocator, &stagingBufferInfo, &vmaallocInfo, &stagingBuffer.buffer, &stagingBuffer.allocation, nullptr);
+	auto result = vmaCreateBuffer(allocator, &stagingBufferInfo, &vmaallocInfo, &stagingBuffer.buffer, &stagingBuffer.allocation, nullptr);
 
 	gapi.SetDebugName("staging buffer img", stagingBuffer.buffer);
 
 
 	void* data;
-	vmaMapMemory(*allocator, stagingBuffer.allocation, &data);
+	vmaMapMemory(allocator, stagingBuffer.allocation, &data);
 	memcpy(data, pixel_ptr, static_cast<size_t>(imageSize));
-	vmaUnmapMemory(*allocator, stagingBuffer.allocation);
+	vmaUnmapMemory(allocator, stagingBuffer.allocation);
 
 	gapi.MainDeletionQueue.push_function([&]() {
 		//vmaDestroyBuffer(*allocator, stagingBuffer.buffer, stagingBuffer.allocation);
@@ -237,7 +239,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 	dimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	VULKAN_CHECK_NOMSG(vmaCreateImage(*allocator, &info, &dimg_allocinfo, &img.image, &img.allocation, nullptr));
+	VULKAN_CHECK_NOMSG(vmaCreateImage(allocator, &info, &dimg_allocinfo, &img.image, &img.allocation, nullptr));
 
 	VkImageViewCreateInfo ivinfo = {};
 	ivinfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -251,7 +253,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	ivinfo.subresourceRange.baseArrayLayer = 0;
 	ivinfo.subresourceRange.layerCount = 1;
 	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	vkCreateImageView(*device, &ivinfo, nullptr, &img.view);
+	vkCreateImageView(device, &ivinfo, nullptr, &img.view);
 
 
 	gapi.immediate_submit([&](VkCommandBuffer cmd) {
@@ -310,6 +312,85 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	gapi.SetDebugName("texture view: " + path, img.view);
 
 	return img;
+}
+
+Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
+{
+	Model model;
+
+
+	auto loadMeshes = [&](String modelPath) -> std::vector<Mesh> {
+
+		std::vector<Mesh> meshes;
+
+		Assimp::Importer imp;
+#if defined(__ANDROID__)
+		Assimp::AndroidJNIIOSystem* ioSystem = new Assimp::AndroidJNIIOSystem(App::androidApp->activity);
+		if (nullptr != ioSystem) {
+			imp.SetIOHandler(ioSystem);
+		}
+#endif
+
+		const aiScene* scene = imp.ReadFile(modelPath, aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
+		for (int m = 0; m < scene->mNumMeshes; m++)
+		{
+			std::vector<Vertex> vertices;
+			std::vector<uint32_t> indices;
+
+			Mesh internal_mesh;
+
+
+			auto mesh = scene->mMeshes[m];
+
+			for (size_t i = 0; i < mesh->mNumVertices; i++) {
+				vertices.push_back({
+					mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z,
+					mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z,
+					mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,
+					mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z,
+					mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y
+					});
+			}
+
+			for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+			{
+				aiFace face = mesh->mFaces[i];
+				for (unsigned int j = 0; j < face.mNumIndices; j++)
+					indices.push_back(face.mIndices[j]);
+			}
+
+			internal_mesh.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
+			internal_mesh.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
+			internal_mesh.index_count = indices.size();
+
+			meshes.push_back(internal_mesh);
+		}
+
+		return meshes;
+	};
+		
+	std::ifstream ifs(path);
+	auto desc = json::parse(ifs);
+
+	auto desc_directory = path.parent_path().string();
+
+	model.meshes = loadMeshes(desc_directory + "/" + (String)desc["file"]);
+
+	for (auto& mesh : model.meshes) {
+		mesh.material_index = 0;
+	}
+
+	for (auto material : desc["materials"])
+	{
+		Material m;
+		m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"]);
+		m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"]);
+		m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"]);
+
+		model.materials.emplace((int)material["id"], m);
+	}
+
+	return model;
 }
 
 GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path)

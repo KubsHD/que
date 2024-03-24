@@ -13,8 +13,13 @@
 #include <common/GraphicsAPI.h>
 #include <gfx/pipeline/sky_pipeline.h>
 #include <gfx/pipeline/mesh_pipeline.h>
+#include <entt/entt.hpp>
 
 #include <gfx/sky.h>
+
+#include <common/vk_initializers.h>
+
+entt::registry registry;
 
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
@@ -26,6 +31,7 @@ GameApp::~GameApp()
 
 void GameApp::init()
 {
+
 	create_resources();
 }
 
@@ -34,17 +40,19 @@ void GameApp::update()
 }
 
 Model mod;
-GraphicsAPI::Image model_texture;
+Model controller;
 
 Model skybox_cube;
 GraphicsAPI::Image skybox_image;
+
+
 
 VkPipeline sky_pipeline;
 VkSampler sampler;
 
 int currently_drawn_object = 0;
 
-void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model)
+void GameApp::render_model(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model)
 {
 	InstanceData id;
 
@@ -58,9 +66,9 @@ void GameApp::render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, c
 	{
 		m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(SceneData) });
 		m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(InstanceData) });
-		m_graphicsAPI->SetDescriptor({ 1, 1, mod.materials[mesh.material_index].diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false});
-		m_graphicsAPI->SetDescriptor({ 1, 2, mod.materials[mesh.material_index].norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 3, mod.materials[mesh.material_index].orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 1, model.materials.at(mesh.material_index).diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false});
+		m_graphicsAPI->SetDescriptor({ 1, 2, model.materials.at(mesh.material_index).norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 3, model.materials.at(mesh.material_index).orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 
 		m_graphicsAPI->UpdateDescriptors();
 		
@@ -120,9 +128,13 @@ void GameApp::render(FrameRenderInfo& info)
 	m_sceneDataCPU.camPos = info.view.pose.position;
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(SceneData), &m_sceneDataCPU);
 
-	render_mesh({ posx, -1.0f, 0.0f}, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, mod);
+	render_model({ posx, -1.0f, 0.0f}, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, mod);
 
-	
+	for (auto pose : input->get_controller_poses())
+	{
+		render_model(pose.position, { 1.0f, 1.0f, 1.0f }, pose.orientation, controller);
+	}
+
 	// draw skybox
 	XrVector3f pos = info.view.pose.position;
 	XrVector3f scale = { 5.0f, 5.0f, 5.0f };
@@ -167,6 +179,7 @@ void GameApp::create_resources()
 
 	mod = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
+	controller = Asset::load_model_json(*m_graphicsAPI, "data/models/meta/model_controller_left.model");
 
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", true);
 
@@ -175,30 +188,17 @@ void GameApp::create_resources()
 	auto device = m_graphicsAPI->GetDevice();
 
 	// create sampler
-	VkSamplerCreateInfo sinfo = {};
-	sinfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	sinfo.pNext = nullptr;
-
-	sinfo.magFilter = VK_FILTER_NEAREST;
-	sinfo.minFilter = VK_FILTER_NEAREST;
-	sinfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sinfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sinfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-	VULKAN_CHECK_NOMSG(vkCreateSampler(*device, &sinfo, nullptr, &sampler));
+	VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	VULKAN_CHECK_NOMSG(vkCreateSampler(device, &sinfo, nullptr, &sampler));
 
 
 	
 	m_graphicsAPI->MainDeletionQueue.push_function([&]() {
-		vkDestroySampler(*m_graphicsAPI->GetDevice(), sampler, nullptr);
-
-		m_graphicsAPI->DestroyImage(model_texture.image);
-		m_graphicsAPI->DestroyImageView(model_texture.view);
-		vmaFreeMemory(*m_graphicsAPI->GetAllocator(), model_texture.allocation);
+		vkDestroySampler(m_graphicsAPI->GetDevice(), sampler, nullptr);
 
 		m_graphicsAPI->DestroyImage(skybox_image.image);
 		m_graphicsAPI->DestroyImageView(skybox_image.view);
-		vmaFreeMemory(*m_graphicsAPI->GetAllocator(), skybox_image.allocation);
+		vmaFreeMemory(m_graphicsAPI->GetAllocator(), skybox_image.allocation);
 
 		for (auto m : mod.meshes)
 		{

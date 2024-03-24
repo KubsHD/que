@@ -1,5 +1,6 @@
 #include "app.h"
 #include <common/GraphicsAPI_Vulkan.h>
+#include <core/input.h>
 
 
 
@@ -28,7 +29,7 @@ public:
 	void render(FrameRenderInfo& info) override;
 	void destroy() override;
 
-	void render_mesh(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model);
+	void render_model(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model);
 
 private:
 
@@ -40,8 +41,8 @@ private:
 	};
 
 	struct InstanceData {
-		XrMatrix4x4f model;
-		XrMatrix4x4f modelInvTrans;
+		XrMatrix4x4f model{};
+		XrMatrix4x4f modelInvTrans{};
 	};
 
 

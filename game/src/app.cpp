@@ -6,25 +6,6 @@ android_app* App::androidApp = nullptr;
 App::AndroidAppState App::androidAppState = {};
 #endif
 
-XrPath App::CreateXrPath(const char* path_string) {
-	XrPath xrPath;
-	OPENXR_CHECK(xrStringToPath(m_xrInstance, path_string, &xrPath), "Failed to create XrPath from string.");
-	return xrPath;
-}
-std::string App::FromXrPath(XrPath path) {
-	uint32_t strl;
-	char text[XR_MAX_PATH_LENGTH];
-	XrResult res;
-	res = xrPathToString(m_xrInstance, path, XR_MAX_PATH_LENGTH, &strl, text);
-	std::string str;
-	if (res == XR_SUCCESS) {
-		str = text;
-	}
-	else {
-		OPENXR_CHECK(res, "Failed to retrieve path.");
-	}
-	return str;
-}
 
 App::App(GraphicsAPI_Type apiType) : m_apiType(apiType)
 {
@@ -40,21 +21,24 @@ void App::Run()
 	m_asset_manager = std::make_shared<Asset>();
 #endif
 
+
 	create_instance();
 	create_debug();
 	get_properties();
 	get_system();
 
-	create_action_set();
-
 	get_view_configuration_views();
 	get_enviroment_blend_modes();
 
-
+	input = std::make_shared<Input>(m_xrInstance, &m_session);
+	input->create_action_set();
 
 	create_session();
 	create_swapchains();
 	create_reference_space();
+
+	input->create_action_poses();
+	input->attach_action_set();
 
 	init();
 
@@ -179,47 +163,6 @@ bool App::render_layer(RenderLayerInfo& info)
 	return true;
 }
 
-void App::create_action_set()
-{
-	XrActionSetCreateInfo actionSetCI{ XR_TYPE_ACTION_SET_CREATE_INFO };
-	// The internal name the runtime uses for this Action Set.
-	strncpy(actionSetCI.actionSetName, "que-actionset", XR_MAX_ACTION_SET_NAME_SIZE);
-	// Localized names are required so there is a human-readable action name to show the user if they are rebinding Actions in an options screen.
-	strncpy(actionSetCI.localizedActionSetName, "Que ActionSet", XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
-	OPENXR_CHECK(xrCreateActionSet(m_xrInstance, &actionSetCI, &m_actionSet), "Failed to create ActionSet.");
-	// Set a priority: this comes into play when we have multiple Action Sets, and determines which Action takes priority in binding to a specific input.
-	actionSetCI.priority = 0;
-
-	auto CreateAction = [this](XrAction& xrAction, const char* name, XrActionType xrActionType, std::vector<const char*> subaction_paths = {}) -> void {
-		XrActionCreateInfo actionCI{ XR_TYPE_ACTION_CREATE_INFO };
-		// The type of action: float input, pose, haptic output etc.
-		actionCI.actionType = xrActionType;
-		// Subaction paths, e.g. left and right hand. To distinguish the same action performed on different devices.
-		std::vector<XrPath> subaction_xrpaths;
-		for (auto p : subaction_paths) {
-			subaction_xrpaths.push_back(CreateXrPath(p));
-		}
-		actionCI.countSubactionPaths = (uint32_t)subaction_xrpaths.size();
-		actionCI.subactionPaths = subaction_xrpaths.data();
-		// The internal name the runtime uses for this Action.
-		strncpy(actionCI.actionName, name, XR_MAX_ACTION_NAME_SIZE);
-		// Localized names are required so there is a human-readable action name to show the user if they are rebinding the Action in an options screen.
-		strncpy(actionCI.localizedActionName, name, XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
-		OPENXR_CHECK(xrCreateAction(m_actionSet, &actionCI, &xrAction), "Failed to create Action.");
-		};
-
-	// An Action for grabbing cubes.
-	CreateAction(m_grabCubeAction, "grab-cube", XR_ACTION_TYPE_FLOAT_INPUT, { "/user/hand/left", "/user/hand/right" });
-	CreateAction(m_spawnCubeAction, "spawn-cube", XR_ACTION_TYPE_BOOLEAN_INPUT);
-	CreateAction(m_changeColorAction, "change-color", XR_ACTION_TYPE_BOOLEAN_INPUT, { "/user/hand/left", "/user/hand/right" });
-	// An Action for the position of the palm of the user's hand - appropriate for the location of a grabbing Actions.
-	CreateAction(m_palmPoseAction, "palm-pose", XR_ACTION_TYPE_POSE_INPUT, { "/user/hand/left", "/user/hand/right" });
-	// An Action for a vibration output on one or other hand.
-	CreateAction(m_buzzAction, "buzz", XR_ACTION_TYPE_VIBRATION_OUTPUT, { "/user/hand/left", "/user/hand/right" });
-	// For later convenience we create the XrPaths for the subaction path names.
-	m_handPaths[0] = CreateXrPath("/user/hand/left");
-	m_handPaths[1] = CreateXrPath("/user/hand/right");
-}
 
 void App::get_enviroment_blend_modes()
 {
@@ -395,6 +338,8 @@ void App::render_frame()
 	bool rendered = false;
 	RenderLayerInfo renderLayerInfo;
 	renderLayerInfo.predictedDisplayTime = frameState.predictedDisplayTime;
+
+	input->poll_actions(frameState.predictedDisplayTime);
 
 	// Check that the session is active and that we should render.
 	bool sessionActive = (m_sessionState == XR_SESSION_STATE_SYNCHRONIZED || m_sessionState == XR_SESSION_STATE_VISIBLE || m_sessionState == XR_SESSION_STATE_FOCUSED);
