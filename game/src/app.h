@@ -4,6 +4,7 @@
 #include <common/GraphicsAPI_Vulkan.h>
 #include <common/OpenXRDebugUtils.h>
 
+#include <chrono>
 #include <memory>
 #include <common/xr_linear_algebra.h>
 
@@ -22,11 +23,6 @@ public:
 	~App() = default;
 	void Run();
 
-	std::function<void()> onInit;
-	std::function<void()> onUpdate;
-	std::function<void()> onRender;
-	std::function<void()> onExit;
-
 	std::unique_ptr<Scene> m_current_scene;
 	std::shared_ptr<Input> input;
 
@@ -34,7 +30,7 @@ public:
 	struct FrameRenderInfo;
 
 	virtual void init() = 0;
-	virtual void update() = 0;
+	virtual void update(float dt) = 0;
 	virtual void render(FrameRenderInfo& info) = 0;
 	virtual void destroy() = 0;
 	struct SwapchainInfo {
@@ -96,6 +92,7 @@ private:
 	
 
 	void poll_events();
+	void calculate_frame_stats();
 protected:
 
 	std::shared_ptr<Asset> m_asset_manager;
@@ -149,7 +146,12 @@ protected:
 		std::vector<XrCompositionLayerProjectionView> layerProjectionViews;
 	};
 
+	// time stuff
 
+	std::chrono::steady_clock::time_point m_start_time;
+	std::chrono::steady_clock::time_point m_last_time;
+	float m_time;
+	float m_delta_time;
 
 
 #if defined(__ANDROID__)

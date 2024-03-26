@@ -14,7 +14,7 @@ public:
 	void create_action_poses();
 	void attach_action_set();
 
-	void poll_actions(XrTime time);
+	void poll_actions(XrTime time, XrSpace local_space);
 
 	std::vector<XrPosef> get_controller_poses();
 

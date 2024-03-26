@@ -82,7 +82,6 @@ void Input::suggest_bindings()
 		};
 
 	bool any_ok = false;
-	// Each Action here has two paths, one for each SubAction path.
 	any_ok |= SuggestBindings("/interaction_profiles/oculus/touch_controller", { {m_palmPoseAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/grip/pose")},
 																			  {m_palmPoseAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/grip/pose")},
 																			  {m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/left/output/haptic")},
@@ -118,7 +117,7 @@ void Input::attach_action_set()
 	OPENXR_CHECK(xrAttachSessionActionSets(*m_session, &actionSetAttachInfo), "Failed to attach ActionSet to Session.");
 }
 
-void Input::poll_actions(XrTime time)
+void Input::poll_actions(XrTime time, XrSpace local_space)
 {
 	XrActiveActionSet activeActionSet{};
 	activeActionSet.actionSet = m_actionSet;

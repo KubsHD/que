@@ -1,6 +1,8 @@
 #include "app.h"
 #include <common/GraphicsAPI_Vulkan.h>
 #include <core/input.h>
+#include <entt/entt.hpp>
+#include <core/physics.h>
 
 
 
@@ -25,11 +27,16 @@ public:
 	~GameApp();
 
 	void init() override;
-	void update() override;
+	void update(float dt) override;
 	void render(FrameRenderInfo& info) override;
 	void destroy() override;
 
 	void render_model(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model);
+
+	entt::registry& get_registry()
+	{
+		return m_registry;
+	}
 
 private:
 
@@ -66,4 +73,7 @@ private:
 	VkBuffer m_instanceData;
 
 	VkPipeline m_pipeline = nullptr;
+
+	entt::registry m_registry;
+	std::unique_ptr<PhysicsWorld> m_physics_world;
 };

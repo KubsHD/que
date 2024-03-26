@@ -42,13 +42,16 @@ void App::Run()
 
 	init();
 
+	m_start_time = std::chrono::high_resolution_clock::now();
+
 	while (m_applicationRunning)
 	{
 		poll_system_events();
 		poll_events();
 		if (m_sessionRunning)
 		{
-			update();
+			calculate_frame_stats();
+			update(m_delta_time);
 			render_frame();
 		}
 	}
@@ -339,7 +342,7 @@ void App::render_frame()
 	RenderLayerInfo renderLayerInfo;
 	renderLayerInfo.predictedDisplayTime = frameState.predictedDisplayTime;
 
-	input->poll_actions(frameState.predictedDisplayTime);
+	input->poll_actions(frameState.predictedDisplayTime, m_localSpace);
 
 	// Check that the session is active and that we should render.
 	bool sessionActive = (m_sessionState == XR_SESSION_STATE_SYNCHRONIZED || m_sessionState == XR_SESSION_STATE_VISIBLE || m_sessionState == XR_SESSION_STATE_FOCUSED);
@@ -577,6 +580,13 @@ void App::poll_events()
 		}
 		}
 	}
+}
+
+void App::calculate_frame_stats()
+{
+	m_delta_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - m_last_time).count();
+	m_last_time = std::chrono::high_resolution_clock::now();
+	m_time = std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - m_start_time).count();
 }
 
 #if defined(__ANDROID__)

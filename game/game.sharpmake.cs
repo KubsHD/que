@@ -80,7 +80,10 @@ namespace Que
                 LocalDebuggerEnvironment = File.Exists(Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json")) ? "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json") : "",
             };
 
-
+            if (target.Optimization == Optimization.Debug)
+            {
+                conf.Defines.Add("JPH_DEBUG_RENDERER");
+            }
 
             // if not set, no precompile option will be used.
             //conf.PrecompHeader = "pch.h";
@@ -90,6 +93,8 @@ namespace Que
 
             conf.AddPublicDependency<OpenXRProject>(target);
             conf.AddPublicDependency<Assimp>(target);
+            conf.AddPublicDependency<Jolt>(target);
+
             //conf.AddPublicDependency<EASTLProject>(target);
 
             conf.Output = Configuration.OutputType.Exe;

@@ -16,6 +16,12 @@ class GraphicsAPI_Vulkan;
 struct aiScene;
 struct aiMaterial;
 
+enum TextureType {
+	TT_DIFFUSE = 0,
+	TT_NORMAL = 1,
+	TT_HDRI = 2
+};
+
 class Asset {
 public:
 	Asset() = default;
@@ -25,7 +31,7 @@ public:
 	std::vector<char> read_all_bytes(String path);
 	
 	static void load_texture_from_file(GraphicsAPI_Vulkan& gapi, String path);
-	static GraphicsAPI::Image load_image(GraphicsAPI_Vulkan& gapi, String path, bool isHdri = false);
+	static GraphicsAPI::Image load_image(GraphicsAPI_Vulkan& gapi, String path, TextureType type);
 	
 	static Model load_model(GraphicsAPI_Vulkan& gapi, Path path);
 	static Model load_model_json(GraphicsAPI_Vulkan& gapi, Path path);

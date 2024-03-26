@@ -3,6 +3,8 @@
 #include <common/GraphicsAPI_Vulkan.h>
 #include <core/types.h>
 
+struct Model;
+
 namespace gfx {
 	struct Sky {
 		GraphicsAPI::Image skyImage;
@@ -11,6 +13,6 @@ namespace gfx {
 	};
 
 	namespace sky {
-		Sky create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath);
+		Sky create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, VkPipeline sky_pipeline);
 	}
 }

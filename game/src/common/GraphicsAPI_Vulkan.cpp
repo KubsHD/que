@@ -1272,9 +1272,7 @@ void GraphicsAPI_Vulkan::SetBufferData(VkBuffer buffer, size_t offset, size_t si
     if (mappedData && data) {
         memcpy((char*)mappedData + offset, data, size);
     }
-    else {
-        __debugbreak;
-    }
+
 	vmaUnmapMemory(m_allocator, bufferResources[vkBuffer].first);
 };
 

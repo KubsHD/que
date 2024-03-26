@@ -137,13 +137,24 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 	return mod;
 }
 
-GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool isHdri /*= false*/)
+
+GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, TextureType type)
 {
 	stbi_set_flip_vertically_on_load(true);
 
 	GraphicsAPI::Image img;
 
-	auto format = isHdri ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
+	VkFormat format;
+
+	// https://www.reddit.com/r/vulkan/comments/wksa4z/strange_issue_with_normal_maps_in_pbr_shader/
+	if (type == TT_DIFFUSE)
+		format = VK_FORMAT_R8G8B8A8_SRGB;
+	else if (type == TT_NORMAL)
+		format = VK_FORMAT_R8G8B8A8_UNORM;
+	else if (type == TT_HDRI)
+		format = VK_FORMAT_R32G32B32A32_SFLOAT;
+
+	assert(format != VK_FORMAT_UNDEFINED);
 
 	auto device = gapi.GetDevice();
 	auto allocator = gapi.GetAllocator();
@@ -160,7 +171,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	char* buffer = new char[fileLength];
 	int bytesRead = AAsset_read(asset, buffer, fileLength);
 
-	if (isHdri)
+	if (type == TT_HDRI)
 	{
 		float* temp = stbi_loadf_from_memory((stbi_uc*)buffer, fileLength, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		pixel_ptr = temp;
@@ -168,7 +179,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	else
 		pixel_ptr = stbi_load_from_memory((stbi_uc*)buffer, fileLength, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 #else
-	if (isHdri)
+	if (type == TT_HDRI)
 	{
 		float* temp = stbi_loadf(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		pixel_ptr = temp;
@@ -183,7 +194,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, bool
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	// allocate more memory if it's an hdri since we're using floats
-	if (isHdri)
+	if (type == TT_HDRI)
 		imageSize *= sizeof(float);
 
 	GraphicsAPI::Buffer stagingBuffer;
@@ -331,7 +342,7 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 		}
 #endif
 
-		const aiScene* scene = imp.ReadFile(modelPath, aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
+		const aiScene* scene = imp.ReadFile(modelPath, aiProcess_Triangulate | aiProcess_CalcTangentSpace);
 		for (int m = 0; m < scene->mNumMeshes; m++)
 		{
 			std::vector<Vertex> vertices;
@@ -383,9 +394,9 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 	for (auto material : desc["materials"])
 	{
 		Material m;
-		m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"]);
-		m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"]);
-		m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"]);
+		m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+		m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+		m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
 
 		model.materials.emplace((int)material["id"], m);
 	}
@@ -403,8 +414,8 @@ GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, con
 	//load texture with stb
 	if (!tex && path.length > 0)
 	{
-		return load_image(gapi, root_path + "/" + std::string(path.C_Str()));
+		return load_image(gapi, root_path + "/" + std::string(path.C_Str()), type == aiTextureType_NORMALS ? TT_NORMAL : TT_DIFFUSE);
 	}
 	
 	return GraphicsAPI::Image();
-}
+} 

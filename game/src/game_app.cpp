@@ -31,12 +31,14 @@ GameApp::~GameApp()
 
 void GameApp::init()
 {
+	m_physics_world = std::make_unique<PhysicsWorld>();
 
 	create_resources();
 }
 
-void GameApp::update()
+void GameApp::update(float dt)
 {
+	m_physics_world->update(dt, m_registry);
 }
 
 Model mod;
@@ -44,8 +46,6 @@ Model controller;
 
 Model skybox_cube;
 GraphicsAPI::Image skybox_image;
-
-
 
 VkPipeline sky_pipeline;
 VkSampler sampler;
@@ -132,7 +132,7 @@ void GameApp::render(FrameRenderInfo& info)
 
 	for (auto pose : input->get_controller_poses())
 	{
-		render_model(pose.position, { 1.0f, 1.0f, 1.0f }, pose.orientation, controller);
+		render_model(pose.position, { 0.1f, 0.1f, 0.1f }, pose.orientation, controller);
 	}
 
 	// draw skybox
@@ -177,21 +177,20 @@ void GameApp::create_resources()
 	m_pipeline = pipeline::create_mesh_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 	sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 
+
 	mod = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 	controller = Asset::load_model_json(*m_graphicsAPI, "data/models/meta/model_controller_left.model");
 
-	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", true);
+	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);
 
-	gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr");
+	gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, sky_pipeline);
 
 	auto device = m_graphicsAPI->GetDevice();
 
 	// create sampler
 	VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 	VULKAN_CHECK_NOMSG(vkCreateSampler(device, &sinfo, nullptr, &sampler));
-
-
 	
 	m_graphicsAPI->MainDeletionQueue.push_function([&]() {
 		vkDestroySampler(m_graphicsAPI->GetDevice(), sampler, nullptr);

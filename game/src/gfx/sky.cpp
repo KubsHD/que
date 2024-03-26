@@ -2,16 +2,20 @@
 #include <core/asset.h>
 #include <common/vk_initializers.h>
 
+#include <glm/glm.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+
 namespace gfx {
 
-	Sky gfx::sky::create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath)
+	Sky gfx::sky::create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, VkPipeline sky_pipeline)
 	{
 		Sky s;
 
         VkImageView cubemapViews[6];
         VkFramebuffer framebuffers[6];
 
-		s.skyImage = Asset::load_image(gapi, hdriPath);
+		s.skyImage = Asset::load_image(gapi, hdriPath, TT_HDRI);
 
         // 1. create skybox cubemap image
         GraphicsAPI::Image sky_cube;
@@ -145,6 +149,20 @@ namespace gfx {
             vkCreateFramebuffer(gapi.GetDevice(), &fbufCreateInfo, nullptr, &framebuffers[i]);
         }
 
+        // rendering to cube sides
+
+		glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+		glm::mat4 captureViews[] =
+		{
+		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+		};
+
+
         gapi.immediate_submit([&](VkCommandBuffer cmd) {
             VkClearValue clearValues[2];
             clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
@@ -163,7 +181,16 @@ namespace gfx {
 
                 vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-                // todo
+
+                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, sky_pipeline);
+                
+                auto projView = captureProjection * captureViews[i];
+
+                
+       /*         
+                vkCmdBindVertexBuffers(cmd, 0, 1, &cube.meshes[0].vertex_buffer, nullptr);
+                vkCmdBindIndexBuffer(cmd, cube.meshes[0].index_buffer, 0, VK_INDEX_TYPE_UINT16);
+                vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);*/
 
                 vkCmdEndRenderPass(cmd);
             }
