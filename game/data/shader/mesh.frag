@@ -84,7 +84,7 @@ void main() {
 	vec3 lightColor = vec3(150.0f);
 	
 	vec3 norm = texture(tex_normal, i_TexCoord).xyz;
-	norm = normalize(norm * 2.0 - 1.0);   
+	norm = (norm * 2.0 - 1.0);   
 	norm = normalize(i_TBN * norm);
 
 	vec3 albedo = texture(tex_diffuse,i_TexCoord).xyz;
@@ -116,11 +116,11 @@ void main() {
     float NdotL = max(dot(norm, lightDir), 0.0);        
     vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
 
-	vec3 ambient = vec3(0.05) * albedo * ao;
-    vec3 color = ambient + albedo;
+	vec3 ambient = vec3(0.02) * albedo * ao;
+    vec3 color = ambient + Lo;
 	
     //color = color / (color + vec3(1.0));
     //color = pow(color, vec3(1.0/2.2));  
 
-	o_Color = vec4(Lo, 1.0f);
+	o_Color = vec4(color, 1.0f);
 }
