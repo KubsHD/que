@@ -32,6 +32,7 @@ void App::Run()
 
 	input = std::make_shared<Input>(m_xrInstance, &m_session);
 	input->create_action_set();
+	input->suggest_bindings();
 
 	create_session();
 	create_swapchains();
@@ -528,6 +529,9 @@ void App::poll_events()
 				XR_TUT_LOG("XrEventDataInteractionProfileChanged for unknown Session");
 				break;
 			}
+
+			input->record_actions();
+
 			break;
 		}
 														   // Log that there's a reference space change pending.

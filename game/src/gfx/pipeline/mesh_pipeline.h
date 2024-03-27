@@ -8,5 +8,5 @@
 class Asset;
 
 namespace pipeline {
-	VkPipeline create_mesh_pipeline(GraphicsAPI_Vulkan& gapi, std::shared_ptr<Asset> asset_mgr, VkFormat drawImageFormat, VkFormat depthImageFormat);
+	GraphicsAPI::Pipeline create_mesh_pipeline(GraphicsAPI_Vulkan& gapi, std::shared_ptr<Asset> asset_mgr, VkFormat drawImageFormat, VkFormat depthImageFormat);
 }

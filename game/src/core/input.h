@@ -16,6 +16,8 @@ public:
 
 	void poll_actions(XrTime time, XrSpace local_space);
 
+	void record_actions();
+
 	std::vector<XrPosef> get_controller_poses();
 
 private:

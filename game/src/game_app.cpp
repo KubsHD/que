@@ -31,14 +31,14 @@ GameApp::~GameApp()
 
 void GameApp::init()
 {
-	m_physics_world = std::make_unique<PhysicsWorld>();
+	//m_physics_world = std::make_unique<PhysicsWorld>();
 
 	create_resources();
 }
 
 void GameApp::update(float dt)
 {
-	m_physics_world->update(dt, m_registry);
+	//m_physics_world->update(dt, m_registry);
 }
 
 Model mod;
@@ -47,7 +47,7 @@ Model controller;
 Model skybox_cube;
 GraphicsAPI::Image skybox_image;
 
-VkPipeline sky_pipeline;
+GraphicsAPI::Pipeline sky_pipeline;
 VkSampler sampler;
 
 int currently_drawn_object = 0;
@@ -128,11 +128,17 @@ void GameApp::render(FrameRenderInfo& info)
 	m_sceneDataCPU.camPos = info.view.pose.position;
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(SceneData), &m_sceneDataCPU);
 
-	render_model({ posx, -1.0f, 0.0f}, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, mod);
+	render_model({ posx, -1.0f, 0.0f}, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, mod);
 
-	for (auto pose : input->get_controller_poses())
+	for (auto& pose : input->get_controller_poses())
 	{
-		render_model(pose.position, { 0.1f, 0.1f, 0.1f }, pose.orientation, controller);
+		std::cout << "POS: " << pose.position.x << ";" << pose.position.y << ";" << pose.position.z << std::endl;
+
+		XrVector3f target_pos = pose.position;
+		XrVector3f offset = { 0, m_viewHeightM, 0 };
+		XrVector3f_Add(&target_pos, &target_pos, &offset);
+
+		render_model(target_pos, { 0.01f, 0.01f, 0.01f }, pose.orientation, controller);
 	}
 
 	// draw skybox

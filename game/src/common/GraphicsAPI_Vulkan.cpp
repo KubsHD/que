@@ -849,7 +849,9 @@ void GraphicsAPI_Vulkan::DestroyShader(Shader shader) {
     shader.module = nullptr;
 }
 
-VkPipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipelineCI) {
+GraphicsAPI::Pipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipelineCI) {
+    Pipeline pip;
+
     // RenderPass
     std::vector<VkAttachmentDescription> attachmentDescriptions{};
     std::vector<VkAttachmentReference> colorAttachmentReferences{};
@@ -1159,11 +1161,13 @@ VkPipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInfo &pipeline
     
     pipelineResources[pipeline] = {pipelineLayout, descSetLayouts, renderPass, pipelineCI};
 
-    return pipeline;
+    pip.pipeline = pipeline;
+    pip.layout = pipelineLayout;
+    return pip;
 }
 
-void GraphicsAPI_Vulkan::DestroyPipeline(VkPipeline pipeline) {
-    VkPipeline vkPipeline = (VkPipeline)pipeline;
+void GraphicsAPI_Vulkan::DestroyPipeline(GraphicsAPI::Pipeline pipeline) {
+    VkPipeline vkPipeline = (VkPipeline)pipeline.pipeline;
     VkPipelineLayout pipelineLayout = std::get<0>(pipelineResources[vkPipeline]);
     std::vector<VkDescriptorSetLayout> descSetLayouts = std::get<1>(pipelineResources[vkPipeline]);
     VkRenderPass renderPass = std::get<2>(pipelineResources[vkPipeline]);
@@ -1176,7 +1180,8 @@ void GraphicsAPI_Vulkan::DestroyPipeline(VkPipeline pipeline) {
 
     vkDestroyPipeline(device, vkPipeline, nullptr);
     pipelineResources.erase(vkPipeline);
-    pipeline = nullptr;
+    pipeline.pipeline = nullptr;
+    pipeline.layout = nullptr;
 }
 
 void GraphicsAPI_Vulkan::BeginRendering() {
@@ -1369,12 +1374,12 @@ void GraphicsAPI_Vulkan::ClearDepth(void *imageView, float d) {
     vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VkDependencyFlagBits(0), 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
-void GraphicsAPI_Vulkan::SetRenderAttachments(VkImageView colorViews, size_t colorViewCount, VkImageView depthStencilView, uint32_t width, uint32_t height, void *pipeline) {
+void GraphicsAPI_Vulkan::SetRenderAttachments(VkImageView colorViews, size_t colorViewCount, VkImageView depthStencilView, uint32_t width, uint32_t height, GraphicsAPI::Pipeline pipeline) {
     if (inRenderPass) {
         vkCmdEndRenderPass(cmdBuffer);
     }
 
-    VkRenderPass renderPass = std::get<2>(pipelineResources[(VkPipeline)pipeline]);
+    VkRenderPass renderPass = std::get<2>(pipelineResources[(VkPipeline)pipeline.pipeline]);
 
     std::vector<VkImageView> vkImageViews;
 	vkImageViews.push_back((VkImageView)colorViews);
@@ -1431,9 +1436,9 @@ void GraphicsAPI_Vulkan::SetScissors(Rect2D *scissors, size_t count) {
 
     vkCmdSetScissor(cmdBuffer, 0, static_cast<uint32_t>(vkRect2D.size()), vkRect2D.data());
 }
-void GraphicsAPI_Vulkan::SetPipeline(VkPipeline pipeline) {
-    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)pipeline);
-    setPipeline = (VkPipeline)pipeline;
+void GraphicsAPI_Vulkan::SetPipeline(GraphicsAPI::Pipeline pipeline) {
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)pipeline.pipeline);
+    setPipeline = (VkPipeline)pipeline.pipeline;
 }
 
 void GraphicsAPI_Vulkan::SetDescriptor(const DescriptorInfo &descriptorInfo) {

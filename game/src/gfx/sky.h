@@ -13,6 +13,6 @@ namespace gfx {
 	};
 
 	namespace sky {
-		Sky create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, VkPipeline sky_pipeline);
+		Sky create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, GraphicsAPI::Pipeline sky_pipeline);
 	}
 }

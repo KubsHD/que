@@ -139,7 +139,7 @@ void Input::poll_actions(XrTime time, XrSpace local_space)
 		OPENXR_CHECK(xrGetActionStatePose(*m_session, &actionStateGetInfo, &m_handPoseState[i]), "Failed to get Pose State.");
 		if (m_handPoseState[i].isActive) {
 			XrSpaceLocation spaceLocation{ XR_TYPE_SPACE_LOCATION };
-			XrResult res = xrLocateSpace(m_handPoseSpace[i], XrSpace(0), time, &spaceLocation);
+			XrResult res = xrLocateSpace(m_handPoseSpace[i], local_space, time, &spaceLocation);
 			if (XR_UNQUALIFIED_SUCCESS(res) &&
 				(spaceLocation.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0 &&
 				(spaceLocation.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT) != 0) {
@@ -148,6 +148,23 @@ void Input::poll_actions(XrTime time, XrSpace local_space)
 			else {
 				m_handPoseState[i].isActive = false;
 			}
+		}
+	}
+}
+
+void Input::record_actions()
+{
+	if (m_session) {
+		// now we are ready to:
+		XrInteractionProfileState interactionProfile = { XR_TYPE_INTERACTION_PROFILE_STATE, 0, 0 };
+		// for each action, what is the binding?
+		OPENXR_CHECK_PORTABLE(m_xrInstance, xrGetCurrentInteractionProfile(*m_session, m_handPaths[0], &interactionProfile), "Failed to get profile.");
+		if (interactionProfile.interactionProfile) {
+		std::cout << "user/hand/left ActiveProfile " << FromXrPath(m_xrInstance, interactionProfile.interactionProfile).c_str();
+		}
+		OPENXR_CHECK_PORTABLE(m_xrInstance, xrGetCurrentInteractionProfile(*m_session, m_handPaths[1], &interactionProfile), "Failed to get profile.");
+		if (interactionProfile.interactionProfile) {
+			std::cout << "user/hand/right ActiveProfile " << FromXrPath(m_xrInstance, interactionProfile.interactionProfile).c_str();
 		}
 	}
 }

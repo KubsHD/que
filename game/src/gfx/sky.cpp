@@ -8,7 +8,7 @@
 
 namespace gfx {
 
-	Sky gfx::sky::create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, VkPipeline sky_pipeline)
+	Sky gfx::sky::create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, GraphicsAPI::Pipeline sky_pipeline)
 	{
 		Sky s;
 
@@ -182,15 +182,58 @@ namespace gfx {
                 vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 
-                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, sky_pipeline);
+                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, sky_pipeline.pipeline);
                 
                 auto projView = captureProjection * captureViews[i];
 
+                GPUModelConstant c;
+                XrMatrix4x4f_CreateIdentity(&c.model);
+                vkCmdPushConstants(cmd, sky_pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUModelConstant), &c);
+
+                // desc 0
+                VkWriteDescriptorSet writeDescSet;
+                writeDescSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writeDescSet.pNext = nullptr;
+                writeDescSet.dstSet = VK_NULL_HANDLE;
+                writeDescSet.dstBinding = 0;
+                writeDescSet.dstArrayElement = 0;
+                writeDescSet.descriptorCount = 1;
+                writeDescSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                writeDescSet.pImageInfo = nullptr;
+                writeDescSet.pTexelBufferView = nullptr;
+
+
+                writeDescSet.pBufferInfo = descBufferInfo;
+                if (descriptorInfo.type == DescriptorInfo::Type::BUFFER) {
+                }
+                else if (descriptorInfo.type == DescriptorInfo::Type::IMAGE) {
+                    VkDescriptorImageInfo& descImageInfo = std::get<3>(writeDescSets.back());
+                    VkImageView imageView = (VkImageView)descriptorInfo.resource;
+                    descImageInfo.sampler = (VkSampler)descriptorInfo.additionalResource;
+                    descImageInfo.imageView = imageView;
+                    descImageInfo.imageLayout = descriptorInfo.readWrite ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                }
+                else if (descriptorInfo.type == DescriptorInfo::Type::SAMPLER) {
+                    VkDescriptorImageInfo& descImageInfo = std::get<3>(writeDescSets.back());
+                    VkSampler sampler = (VkSampler)descriptorInfo.resource;
+                    descImageInfo.sampler = sampler;
+                    descImageInfo.imageView = VK_NULL_HANDLE;
+                    descImageInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                }
+                else {
+                    std::cout << "Unknown Descriptor Type" << std::endl;
+                    DEBUG_BREAK;
+                    return;
+                }
+
+                m_graphicsAPI->SetDescriptor({ 0,  0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(SceneData) });
+                m_graphicsAPI->SetDescriptor({ 0,  1, skybox_image.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+
+                m_graphicsAPI->UpdateDescriptors();
                 
-       /*         
                 vkCmdBindVertexBuffers(cmd, 0, 1, &cube.meshes[0].vertex_buffer, nullptr);
                 vkCmdBindIndexBuffer(cmd, cube.meshes[0].index_buffer, 0, VK_INDEX_TYPE_UINT16);
-                vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);*/
+                vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);
 
                 vkCmdEndRenderPass(cmd);
             }

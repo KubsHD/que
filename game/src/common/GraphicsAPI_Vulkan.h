@@ -95,8 +95,8 @@ public:
     Shader CreateShader(const GraphicsAPI::ShaderCreateInfo& shaderCI) ;
     void DestroyShader(Shader shader) ;
 
-    VkPipeline CreatePipeline(const GraphicsAPI::PipelineCreateInfo& pipelineCI) ;
-    void DestroyPipeline(VkPipeline pipeline) ;
+    GraphicsAPI::Pipeline  CreatePipeline(const GraphicsAPI::PipelineCreateInfo& pipelineCI) ;
+    void DestroyPipeline(GraphicsAPI::Pipeline  pipeline) ;
 
     void BeginRendering() ;
     void EndRendering() ;
@@ -107,11 +107,11 @@ public:
     void ClearColor(VkImageView& imageView, float r, float g, float b, float a) ;
     void ClearDepth(void* imageView, float d) ;
 
-    void SetRenderAttachments(VkImageView colorViews, size_t colorViewCount, VkImageView depthStencilView, uint32_t width, uint32_t height, void* pipeline) ;
+    void SetRenderAttachments(VkImageView colorViews, size_t colorViewCount, VkImageView depthStencilView, uint32_t width, uint32_t height, GraphicsAPI::Pipeline pipeline) ;
     void SetViewports(GraphicsAPI::Viewport* viewports, size_t count) ;
     void SetScissors(GraphicsAPI::Rect2D* scissors, size_t count) ;
 
-    void SetPipeline(VkPipeline pipeline) ;
+    void SetPipeline(GraphicsAPI::Pipeline  pipeline) ;
     void SetDescriptor(const GraphicsAPI::DescriptorInfo& descriptorInfo) ;
     void UpdateDescriptors() ;
     void SetVertexBuffers(VkBuffer* vertexBuffers, size_t count) ;

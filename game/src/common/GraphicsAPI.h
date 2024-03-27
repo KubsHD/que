@@ -349,6 +349,11 @@ public:
 		VmaAllocation allocation;
 	};
 
+    struct Pipeline {
+        VkPipeline pipeline;
+        VkPipelineLayout layout;
+    };
+
 	struct Image {
 		VkImage image;
         VkImageView view;

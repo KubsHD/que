@@ -72,7 +72,7 @@ private:
 	VkBuffer m_sceneData;
 	VkBuffer m_instanceData;
 
-	VkPipeline m_pipeline = nullptr;
+	GraphicsAPI::Pipeline m_pipeline;
 
 	entt::registry m_registry;
 	std::unique_ptr<PhysicsWorld> m_physics_world;
