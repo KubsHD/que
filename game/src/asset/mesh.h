@@ -5,6 +5,7 @@
 #include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>
 #include <common/xr_linear_algebra.h>
+#include <glm/glm.hpp>
 
 struct Mesh {
 	VkBuffer index_buffer;
@@ -15,6 +16,10 @@ struct Mesh {
 
 struct GPUModelConstant {
 	XrMatrix4x4f model;
+};
+
+struct GPUEqui2CubeConstant {
+	glm::mat4 viewProj;
 };
 
 struct Material {

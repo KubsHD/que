@@ -329,6 +329,7 @@ public:
         enum class Type : uint8_t {
             BUFFER,
             IMAGE,
+            IMAGE_ARRAY,
             SAMPLER
         } type;
         enum class Stage : uint8_t {
@@ -352,6 +353,8 @@ public:
     struct Pipeline {
         VkPipeline pipeline;
         VkPipelineLayout layout;
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+        VkRenderPass renderPass;
     };
 
 	struct Image {

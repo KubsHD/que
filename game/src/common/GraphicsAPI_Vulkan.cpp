@@ -1163,6 +1163,8 @@ GraphicsAPI::Pipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInf
 
     pip.pipeline = pipeline;
     pip.layout = pipelineLayout;
+    pip.descriptorSetLayouts = descSetLayouts;
+    pip.renderPass = renderPass;
     return pip;
 }
 
@@ -1588,6 +1590,24 @@ void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkImageView object)
 	vkSetDebugUtilsObjectNameEXT(device, &name_info);
 }
 
+void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkRenderPass object)
+{
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_RENDER_PASS;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
+void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkCommandBuffer object)
+{
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_COMMAND_BUFFER;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
 // XR_DOCS_TAG_BEGIN_GraphicsAPI_Vulkan_LoadPFN_XrFunctions
 void GraphicsAPI_Vulkan::LoadPFN_XrFunctions(XrInstance m_xrInstance) {
     OPENXR_CHECK(xrGetInstanceProcAddr(m_xrInstance, "xrGetVulkanGraphicsRequirementsKHR", (PFN_xrVoidFunction *)&xrGetVulkanGraphicsRequirementsKHR), "Failed to get InstanceProcAddr for xrGetVulkanGraphicsRequirementsKHR.");
@@ -1647,5 +1667,11 @@ const std::vector<int64_t> GraphicsAPI_Vulkan::GetSupportedDepthSwapchainFormats
         VK_FORMAT_D32_SFLOAT,
         VK_FORMAT_D16_UNORM};
 }
+
+VkDescriptorPool GraphicsAPI_Vulkan::GetDescriptorPool()
+{
+    return descriptorPool;
+}
+
 // XR_DOCS_TAG_END_GraphicsAPI_Vulkan_GetSupportedSwapchainFormats
 #endif

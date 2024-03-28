@@ -18,6 +18,8 @@
 #include <gfx/sky.h>
 
 #include <common/vk_initializers.h>
+#include <gfx/pipeline/sky_cube_render_pipeline.h>
+#include <common/glm_helpers.h>
 
 entt::registry registry;
 
@@ -54,21 +56,25 @@ int currently_drawn_object = 0;
 
 void GameApp::render_model(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model)
 {
-	InstanceData id;
+	gfx::InstanceData id;
 
-	XrMatrix4x4f_CreateTranslationRotationScale(&id.model, &pos, &rot, &scale);
-	size_t offsetCameraUB = sizeof(InstanceData) * currently_drawn_object;
+	XrMatrix4x4f xr_model;
+	XrMatrix4x4f_CreateTranslationRotationScale(&xr_model, &pos, &rot, &scale);
+
+	id.model = glm::to_glm(xr_model);
+	size_t offsetCameraUB = sizeof(gfx::InstanceData) * currently_drawn_object;
 
 	m_graphicsAPI->SetPipeline(m_pipeline);
-	m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(InstanceData), &id);
+	m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(gfx::InstanceData), &id);
 
 	for (auto mesh : model.meshes)
 	{
-		m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(SceneData) });
-		m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(InstanceData) });
+		m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
+		m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(gfx::InstanceData) });
 		m_graphicsAPI->SetDescriptor({ 1, 1, model.materials.at(mesh.material_index).diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false});
 		m_graphicsAPI->SetDescriptor({ 1, 2, model.materials.at(mesh.material_index).norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 		m_graphicsAPI->SetDescriptor({ 1, 3, model.materials.at(mesh.material_index).orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 4, m_sky.skyCubemap.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 
 		m_graphicsAPI->UpdateDescriptors();
 		
@@ -92,6 +98,8 @@ void GameApp::render(FrameRenderInfo& info)
 	float farZ = 100.0f;
 
 	currently_drawn_object = 0;
+
+
 
 	// Rendering code to clear the color and depth image views.
 	m_graphicsAPI->BeginRendering();
@@ -123,10 +131,14 @@ void GameApp::render(FrameRenderInfo& info)
 
 	XrMatrix4x4f_CreateTranslationRotationScale(&toView, &final_camera_pos, & info.view.pose.orientation, & scale1m);
 	XrMatrix4x4f view;
+	XrMatrix4x4f viewProj;
 	XrMatrix4x4f_InvertRigidBody(&view, &toView);
-	XrMatrix4x4f_Multiply(&m_sceneDataCPU.viewProj, &proj, &view);
-	m_sceneDataCPU.camPos = info.view.pose.position;
-	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(SceneData), &m_sceneDataCPU);
+	XrMatrix4x4f_Multiply(&viewProj, &proj, &view);
+
+	m_sceneDataCPU.camPos = glm::to_glm(info.view.pose.position);
+	m_sceneDataCPU.viewProj = glm::to_glm(viewProj);
+
+	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
 	render_model({ posx, -1.0f, 0.0f}, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, mod);
 
@@ -151,7 +163,7 @@ void GameApp::render(FrameRenderInfo& info)
 
 	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant));
 
-	m_graphicsAPI->SetDescriptor({0,  0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(SceneData) });
+	m_graphicsAPI->SetDescriptor({0,  0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
 	m_graphicsAPI->SetDescriptor({0,  1, skybox_image.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 	
 	m_graphicsAPI->UpdateDescriptors();
@@ -174,23 +186,22 @@ void GameApp::destroy()
 void GameApp::create_resources()
 {
 	// per scene constants
-	m_sceneData = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(SceneData), nullptr });
+	m_sceneData = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(gfx::SceneData), nullptr });
 	
 	// per instance constants (allocating a lot for now)
 	// todo: make this dynamic
-	m_instanceData = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(InstanceData) * 1024, nullptr });
+	m_instanceData = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(gfx::InstanceData) * 1024, nullptr });
 
 	m_pipeline = pipeline::create_mesh_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
-	sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
-
-
+	m_sky_render_pipeline = pipeline::create_sky_cube_render_pipeline(*m_graphicsAPI, m_asset_manager);
 	mod = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 	controller = Asset::load_model_json(*m_graphicsAPI, "data/models/meta/model_controller_left.model");
-
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);
 
-	gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, sky_pipeline);
+
+	sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
+	m_sky = gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, m_sky_render_pipeline);
 
 	auto device = m_graphicsAPI->GetDevice();
 

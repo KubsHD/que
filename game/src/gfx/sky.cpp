@@ -6,11 +6,13 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include <gfx/buffers.h>
+
 namespace gfx {
 
 	Sky gfx::sky::create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, GraphicsAPI::Pipeline sky_pipeline)
 	{
-		Sky s;
+        Sky s{};
 
         VkImageView cubemapViews[6];
         VkFramebuffer framebuffers[6];
@@ -18,10 +20,7 @@ namespace gfx {
 		s.skyImage = Asset::load_image(gapi, hdriPath, TT_HDRI);
 
         // 1. create skybox cubemap image
-        GraphicsAPI::Image sky_cube;
-
-        VkImageCreateInfo imageCreateInfo = vkinit::image_create_info(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, { 512,512,1 });
-        
+        VkImageCreateInfo imageCreateInfo = vkinit::image_create_info(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, { 512,512,1 });
         imageCreateInfo.mipLevels = 1;
         // Cube faces count as array layers in Vulkan
         imageCreateInfo.arrayLayers = 6;
@@ -31,9 +30,23 @@ namespace gfx {
         VmaAllocationCreateInfo vai{};
         vai.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
 
-        VULKAN_CHECK_NOMSG(vmaCreateImage(gapi.GetAllocator(), &imageCreateInfo, &vai, &sky_cube.image, &sky_cube.allocation, nullptr));
+        VULKAN_CHECK_NOMSG(vmaCreateImage(gapi.GetAllocator(), &imageCreateInfo, &vai, &s.skyCubemap.image, &s.skyCubemap.allocation, nullptr));
         
-        // change image layout
+        // create cubemap view
+		VkImageViewCreateInfo sky_cubemap_view_info = {};
+        sky_cubemap_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        sky_cubemap_view_info.pNext = nullptr;
+        sky_cubemap_view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        sky_cubemap_view_info.image = s.skyCubemap.image;
+        sky_cubemap_view_info.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+        sky_cubemap_view_info.subresourceRange.baseMipLevel = 0;
+        sky_cubemap_view_info.subresourceRange.levelCount = 1;
+        sky_cubemap_view_info.subresourceRange.baseArrayLayer = 0;
+        sky_cubemap_view_info.subresourceRange.layerCount = 6;
+        sky_cubemap_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		VULKAN_CHECK_NOMSG(vkCreateImageView(gapi.GetDevice(), &sky_cubemap_view_info, nullptr, &s.skyCubemap.view));
+
+        // change image layout for rendering
 
         gapi.immediate_submit([&](VkCommandBuffer cmd) {
             VkImageSubresourceRange range{};
@@ -50,8 +63,8 @@ namespace gfx {
             imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
             imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageBarrier_toTransfer.image = sky_cube.image;
+            imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            imageBarrier_toTransfer.image = s.skyCubemap.image;
             imageBarrier_toTransfer.subresourceRange = range;
 
             imageBarrier_toTransfer.srcAccessMask = 0;
@@ -71,66 +84,15 @@ namespace gfx {
             ivinfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             ivinfo.pNext = nullptr;
             ivinfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            ivinfo.image = sky_cube.image;
-            ivinfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            ivinfo.image = s.skyCubemap.image;
+            ivinfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
             ivinfo.subresourceRange.baseMipLevel = 0;
             ivinfo.subresourceRange.levelCount = 1;
             ivinfo.subresourceRange.baseArrayLayer = i;
             ivinfo.subresourceRange.layerCount = 1;
             ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            vkCreateImageView(gapi.GetDevice(), &ivinfo, nullptr, &cubemapViews[i]);
+            VULKAN_CHECK_NOMSG(vkCreateImageView(gapi.GetDevice(), &ivinfo, nullptr, &cubemapViews[i]));
         }
-
-		// create sampler cube
-        VkAttachmentDescription colorAttDesc{};
-        colorAttDesc.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        colorAttDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        VkAttachmentReference colorAttRef{};
-        colorAttRef.attachment = 0;
-        colorAttRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription subpassDescription;
-        subpassDescription.flags = static_cast<VkSubpassDescriptionFlags>(0);
-        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpassDescription.inputAttachmentCount = 0;
-        subpassDescription.pInputAttachments = nullptr;
-        subpassDescription.colorAttachmentCount = 1;
-        subpassDescription.pColorAttachments = &colorAttRef;
-        subpassDescription.pResolveAttachments = nullptr;
-        subpassDescription.pDepthStencilAttachment = nullptr;
-        subpassDescription.preserveAttachmentCount = 0;
-        subpassDescription.pPreserveAttachments = nullptr;
-
-        VkSubpassDependency subpassDependency;
-        subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        subpassDependency.dstSubpass = 0;
-        subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        subpassDependency.srcAccessMask = VkAccessFlagBits(0);
-        subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        subpassDependency.dependencyFlags = VkDependencyFlagBits(0);
-
-        VkRenderPass renderPass{};
-        VkRenderPassCreateInfo renderPassCI;
-        renderPassCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassCI.pNext = nullptr;
-        renderPassCI.flags = 0;
-        renderPassCI.attachmentCount = 1;
-        renderPassCI.pAttachments = &colorAttDesc;
-        renderPassCI.subpassCount = 1;
-        renderPassCI.pSubpasses = &subpassDescription;
-        renderPassCI.dependencyCount = 1;
-        renderPassCI.pDependencies = &subpassDependency;
-        VULKAN_CHECK(vkCreateRenderPass(gapi.GetDevice(), &renderPassCI, nullptr, &renderPass), "Failed to create RenderPass.");
-
-     
 
         for (int i = 0; i < 6; i++)
         {
@@ -139,14 +101,14 @@ namespace gfx {
 
             VkFramebufferCreateInfo fbufCreateInfo{};
             fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            fbufCreateInfo.renderPass = renderPass;
+            fbufCreateInfo.renderPass = sky_pipeline.renderPass;
             fbufCreateInfo.attachmentCount = 1;
             fbufCreateInfo.pAttachments = attachments;
             fbufCreateInfo.width = 512;
             fbufCreateInfo.height = 512;
             fbufCreateInfo.layers = 1;
 
-            vkCreateFramebuffer(gapi.GetDevice(), &fbufCreateInfo, nullptr, &framebuffers[i]);
+            VULKAN_CHECK_NOMSG(vkCreateFramebuffer(gapi.GetDevice(), &fbufCreateInfo, nullptr, &framebuffers[i]));
         }
 
         // rendering to cube sides
@@ -162,8 +124,17 @@ namespace gfx {
 		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
 		};
 
+        VkSampler sampler;
+		VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+        VULKAN_CHECK_NOMSG(vkCreateSampler(gapi.GetDevice(), &sinfo, nullptr, &sampler));
+
+        // prepare buffer 
+        gfx::SceneData sd;
+        VkBuffer sd_buf = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(gfx::SceneData), nullptr });
 
         gapi.immediate_submit([&](VkCommandBuffer cmd) {
+            gapi.SetDebugName("equi2cube cmd", cmd);
+
             VkClearValue clearValues[2];
             clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
             clearValues[1].depthStencil = { 1.0f, 0 };
@@ -172,7 +143,7 @@ namespace gfx {
             {
                 VkRenderPassBeginInfo renderPassBeginInfo{};
                 renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-                renderPassBeginInfo.renderPass = renderPass;
+                renderPassBeginInfo.renderPass = sky_pipeline.renderPass;
                 renderPassBeginInfo.framebuffer = framebuffers[i];
                 renderPassBeginInfo.renderArea.extent.width = 512;
                 renderPassBeginInfo.renderArea.extent.height = 512;
@@ -181,20 +152,33 @@ namespace gfx {
 
                 vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-
                 vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, sky_pipeline.pipeline);
                 
-                auto projView = captureProjection * captureViews[i];
+                GPUEqui2CubeConstant c;
+                c.viewProj = captureProjection * captureViews[i];
 
-                GPUModelConstant c;
-                XrMatrix4x4f_CreateIdentity(&c.model);
-                vkCmdPushConstants(cmd, sky_pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUModelConstant), &c);
+                XrVector3f pos = { 0,0,0 };
+				XrVector3f scale = { 5,5,5 };
+                XrQuaternionf rot{};
+
+                vkCmdPushConstants(cmd, sky_pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUEqui2CubeConstant), &c);
+
+                VkDescriptorSet set{};
+
+				VkDescriptorSetAllocateInfo descSetAI;
+				descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+				descSetAI.pNext = nullptr;
+				descSetAI.descriptorPool = gapi.GetDescriptorPool();
+				descSetAI.descriptorSetCount = 1;
+				descSetAI.pSetLayouts = sky_pipeline.descriptorSetLayouts.data();
+				VULKAN_CHECK(vkAllocateDescriptorSets(gapi.GetDevice(), &descSetAI, &set), "Failed to allocate DescriptorSet.");
+
 
                 // desc 0
-                VkWriteDescriptorSet writeDescSet;
+                VkWriteDescriptorSet writeDescSet{};
                 writeDescSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 writeDescSet.pNext = nullptr;
-                writeDescSet.dstSet = VK_NULL_HANDLE;
+                writeDescSet.dstSet = set;
                 writeDescSet.dstBinding = 0;
                 writeDescSet.dstArrayElement = 0;
                 writeDescSet.descriptorCount = 1;
@@ -202,44 +186,86 @@ namespace gfx {
                 writeDescSet.pImageInfo = nullptr;
                 writeDescSet.pTexelBufferView = nullptr;
 
-
-                writeDescSet.pBufferInfo = descBufferInfo;
-                if (descriptorInfo.type == DescriptorInfo::Type::BUFFER) {
-                }
-                else if (descriptorInfo.type == DescriptorInfo::Type::IMAGE) {
-                    VkDescriptorImageInfo& descImageInfo = std::get<3>(writeDescSets.back());
-                    VkImageView imageView = (VkImageView)descriptorInfo.resource;
-                    descImageInfo.sampler = (VkSampler)descriptorInfo.additionalResource;
-                    descImageInfo.imageView = imageView;
-                    descImageInfo.imageLayout = descriptorInfo.readWrite ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                }
-                else if (descriptorInfo.type == DescriptorInfo::Type::SAMPLER) {
-                    VkDescriptorImageInfo& descImageInfo = std::get<3>(writeDescSets.back());
-                    VkSampler sampler = (VkSampler)descriptorInfo.resource;
-                    descImageInfo.sampler = sampler;
-                    descImageInfo.imageView = VK_NULL_HANDLE;
-                    descImageInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                }
-                else {
-                    std::cout << "Unknown Descriptor Type" << std::endl;
-                    DEBUG_BREAK;
-                    return;
-                }
-
-                m_graphicsAPI->SetDescriptor({ 0,  0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(SceneData) });
-                m_graphicsAPI->SetDescriptor({ 0,  1, skybox_image.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-
-                m_graphicsAPI->UpdateDescriptors();
                 
-                vkCmdBindVertexBuffers(cmd, 0, 1, &cube.meshes[0].vertex_buffer, nullptr);
-                vkCmdBindIndexBuffer(cmd, cube.meshes[0].index_buffer, 0, VK_INDEX_TYPE_UINT16);
+                VkDescriptorBufferInfo descBufferInfo{};
+				descBufferInfo.buffer = sd_buf;
+				descBufferInfo.offset = 0;
+				descBufferInfo.range = sizeof(gfx::SceneData);
+                writeDescSet.pBufferInfo = &descBufferInfo;
+
+                //desc 1
+                VkWriteDescriptorSet writeDescSet2{};
+                writeDescSet2.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writeDescSet2.pNext = nullptr;
+                writeDescSet2.dstSet = set;
+                writeDescSet2.dstBinding = 1;
+                writeDescSet2.dstArrayElement = 0;
+                writeDescSet2.descriptorCount = 1;
+                writeDescSet2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                writeDescSet2.pTexelBufferView = nullptr;
+
+
+				VkDescriptorImageInfo descImageInfo{};
+                descImageInfo.imageView = s.skyImage.view;
+                descImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                descImageInfo.sampler = sampler;
+                writeDescSet2.pImageInfo = &descImageInfo;
+
+                VkPipelineLayout pipelineLayout = sky_pipeline.layout;
+
+                std::vector<VkWriteDescriptorSet> vkWriteDescSets = {writeDescSet, writeDescSet2};
+
+				vkUpdateDescriptorSets(gapi.GetDevice(), static_cast<uint32_t>(vkWriteDescSets.size()), vkWriteDescSets.data(), 0, nullptr);
+				vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &set, 0, nullptr);
+				
+				std::vector<VkViewport> vkViewports;
+                vkViewports.reserve(1);
+				vkViewports.push_back({ 0,0,512,512, 0, 1});
+				vkCmdSetViewport(cmd, 0, static_cast<uint32_t>(vkViewports.size()), vkViewports.data());
+
+				std::vector<VkRect2D> vkRect2D;
+				vkRect2D.reserve(1);
+				vkRect2D.push_back({ {0,0}, {512,512} });
+				vkCmdSetScissor(cmd, 0, static_cast<uint32_t>(vkRect2D.size()), vkRect2D.data());
+
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(cmd, 0, 1, &cube.meshes[0].vertex_buffer, offsets);
+                vkCmdBindIndexBuffer(cmd, cube.meshes[0].index_buffer, 0, VK_INDEX_TYPE_UINT32);
                 vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);
 
                 vkCmdEndRenderPass(cmd);
             }
         });
 
-		return s;
+        // change to image layout ready to be used in a shader
+		gapi.immediate_submit([&](VkCommandBuffer cmd) {
+			VkImageSubresourceRange range{};
+			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			range.baseMipLevel = 0;
+			range.baseArrayLayer = 0;
+			range.levelCount = 1;
+			range.layerCount = 6;
+
+			VkImageMemoryBarrier imageBarrier_toTransfer = {};
+			imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+			imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+			imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageBarrier_toTransfer.image = s.skyCubemap.image;
+			imageBarrier_toTransfer.subresourceRange = range;
+
+			imageBarrier_toTransfer.srcAccessMask = 0;
+			imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+
+			});
+
+        
+        return s;
 	}
 
 }

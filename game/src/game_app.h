@@ -4,7 +4,7 @@
 #include <entt/entt.hpp>
 #include <core/physics.h>
 
-
+#include <gfx/buffers.h>
 
 //namespace glm {
 //	// rot: {x,y,z, angle}
@@ -17,6 +17,9 @@
 //		return m;
 //	}
 //}
+
+#include <gfx/sky.h>
+
 
 class GameApp : public App
 {
@@ -40,17 +43,6 @@ public:
 
 private:
 
-	struct SceneData {
-		XrMatrix4x4f viewProj;
-		XrMatrix4x4f view;
-		XrMatrix4x4f proj;
-		XrVector3f camPos;
-	};
-
-	struct InstanceData {
-		XrMatrix4x4f model{};
-		XrMatrix4x4f modelInvTrans{};
-	};
 
 
 	XrVector4f normals[6] = {
@@ -67,12 +59,14 @@ private:
 
 	float m_viewHeightM = 1.5f;
 
-	SceneData m_sceneDataCPU;
+	gfx::SceneData m_sceneDataCPU;
+	gfx::Sky m_sky;
 
 	VkBuffer m_sceneData;
 	VkBuffer m_instanceData;
 
 	GraphicsAPI::Pipeline m_pipeline;
+	GraphicsAPI::Pipeline m_sky_render_pipeline;
 
 	entt::registry m_registry;
 	std::unique_ptr<PhysicsWorld> m_physics_world;

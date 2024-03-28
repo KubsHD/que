@@ -122,6 +122,10 @@ public:
     void SetDebugName(std::string name, VkBuffer object);
 	void SetDebugName(std::string name, VkImage object);
 	void SetDebugName(std::string name, VkImageView object);
+	void SetDebugName(std::string name, VkRenderPass object);
+	void SetDebugName(std::string name, VkCommandBuffer object);
+
+
 
 
     VkDevice GetDevice() { return device; }
@@ -190,5 +194,7 @@ private:
     std::vector<std::tuple<uint32_t, VkWriteDescriptorSet, VkDescriptorBufferInfo, VkDescriptorImageInfo>> writeDescSets;
 
     VmaAllocator m_allocator;
+public:
+    VkDescriptorPool GetDescriptorPool();
 };
 #endif
