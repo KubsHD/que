@@ -15,7 +15,7 @@ namespace glm {
 
 	inline glm::vec3 to_glm(const XrVector3f& v)
 	{
-		return glm::make_vec3(&v.x);
+		return glm::vec3(v.x, v.y, v.z);
 	}
 
 	inline glm::mat4 to_glm(const XrPosef& p)

@@ -3,8 +3,10 @@
 #include <asset/mesh.h>
 #include <core/asset.h>
 
-
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 #include <lib/tiny_gltf.h>
 
 #include <lib/stb_image.h>
@@ -54,14 +56,15 @@ VkSampler sampler;
 
 int currently_drawn_object = 0;
 
-void GameApp::render_model(XrVector3f pos, XrVector3f scale, XrQuaternionf rot, const Model& model)
+void GameApp::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model)
 {
 	gfx::InstanceData id;
 
-	XrMatrix4x4f xr_model;
-	XrMatrix4x4f_CreateTranslationRotationScale(&xr_model, &pos, &rot, &scale);
+	id.model = glm::mat4(1.0f);
+	id.model = glm::translate(id.model, pos);
+	id.model *= glm::mat4(rot);
+	id.model = glm::scale(id.model, scale);
 
-	id.model = glm::to_glm(xr_model);
 	size_t offsetCameraUB = sizeof(gfx::InstanceData) * currently_drawn_object;
 
 	m_graphicsAPI->SetPipeline(m_pipeline);
@@ -140,17 +143,23 @@ void GameApp::render(FrameRenderInfo& info)
 
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
-	render_model({ posx, -1.0f, 0.0f}, { 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 0.0f }, mod);
+	render_model({ posx, -1.0f, 0.0f}, { 0.5f, 0.5f, 0.5f }, glm::quat(1,0,0,0), mod);
 
 	for (auto& pose : input->get_controller_poses())
 	{
-		std::cout << "POS: " << pose.position.x << ";" << pose.position.y << ";" << pose.position.z << std::endl;
 
-		XrVector3f target_pos = pose.position;
-		XrVector3f offset = { 0, m_viewHeightM, 0 };
-		XrVector3f_Add(&target_pos, &target_pos, &offset);
+		glm::vec3 target_pos = glm::to_glm(pose.position);
+		target_pos += glm::vec3{ 0, m_viewHeightM, 0 };
+		std::cout << "POS: " << target_pos.x << ";" << target_pos.y << ";" << target_pos.z << std::endl;
 
-		render_model(target_pos, { 0.01f, 0.01f, 0.01f }, pose.orientation, controller);
+		glm::quat xr_source_rotation = glm::to_glm(pose.orientation);
+
+
+		//angle.y = glm::radians(glm::degrees(angle.y) + 180.0f);
+
+		glm::quat rot = glm::rotate(xr_source_rotation, glm::radians(180.0f), glm::vec3(0,1,0));
+
+		render_model(target_pos, { 0.01f, 0.01f, 0.01f }, rot, controller);
 	}
 
 	// draw skybox

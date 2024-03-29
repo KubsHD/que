@@ -1,21 +1,45 @@
 #include <game_app.h>
 
+
 void App_Main(GraphicsAPI_Type apiType) {
 	DebugOutput debugOutput;  // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
 	XR_TUT_LOG("Que MAIN");
 	GameApp app(apiType);
-
-
 	app.Run();
+	
 }
 
 
 #if defined(XR_OS_WINDOWS)
 
+
+#include "LivePP/API/x64/LPP_API_x64_CPP.h"
 #include <windows.h>
 
+#if defined(LIVEPP_ENABLED)
+#include "../../projects/Game/config.generated.h"
+#endif
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+
+#if (_DEBUG && LIVEPP_ENABLED)
+	lpp::LppDefaultAgent lppAgent = lpp::LppCreateDefaultAgent(nullptr, LIVEPP_PATH);
+
+	if (lpp::LppIsValidDefaultAgent(&lppAgent))
+	{
+		lppAgent.EnableModule(lpp::LppGetCurrentModulePath(), lpp::LPP_MODULES_OPTION_ALL_IMPORT_MODULES, nullptr, nullptr);
+	}
+
+#endif
+
 	App_Main(VULKAN);
+
+#if (_DEBUG && LIVEPP_ENABLED)
+	if (lpp::LppIsValidDefaultAgent(&lppAgent))
+	{
+		lpp::LppDestroyDefaultAgent(&lppAgent);
+	}
+#endif
 }
 
 #endif

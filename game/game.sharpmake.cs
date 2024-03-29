@@ -22,7 +22,6 @@ namespace Que
             SourceFiles.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android\native_app_glue\android_native_app_glue.c"));
             SourceFiles.Add(Path.Combine(Globals.RootDirectory, @"deps\tracy\public\TracyClient.cpp"));
 
-
             SourceFilesExtensions.Add(".xml");
             SourceFilesExtensions.Add(".gradle");
             SourceFilesExtensions.Add(".vert");
@@ -35,6 +34,18 @@ namespace Que
             var projectPath = Path.Combine(Globals.RootDirectory, "projects", Name);
             GenerateCopyAndroidResourcesBatchFile(projectPath);
 
+            var configPath = Path.Combine(projectPath, @"config.generated.h");
+
+            if (File.Exists(configPath))
+                File.Delete(configPath);
+
+            File.Create(configPath).Close();
+            SourceFiles.Add(configPath);
+        }
+
+        public string GetConfigFilePath(Configuration conf, CommonTarget target)
+        {
+            return ResolveString(conf.ProjectPath, conf, target) + "/config.generated.h";
         }
 
         public override void ConfigureAll(Configuration conf, CommonTarget target)
@@ -125,6 +136,18 @@ namespace Que
 
             conf.EventPreBuild.Add($"call  {conf.TargetPath + "\\data\\shader\\shader_compile.bat"}");
 
+            if (target.Optimization == Optimization.Debug)
+                CheckForLivePPSupport(conf, target);
+        }
+
+        private void CheckForLivePPSupport(Configuration conf, CommonTarget target)
+        {
+            if (Directory.Exists("deps/LivePP"))
+            {
+                Console.WriteLine("Found Live++, enabling support");
+                conf.Defines.Add("LIVEPP_ENABLED");
+                File.AppendAllText(GetConfigFilePath(conf, target), $"#define LIVEPP_PATH L\"{Path.GetFullPath("deps/LivePP")}\"");
+            }
         }
 
         public override void ConfigureAgde(Configuration conf, CommonTarget target)
@@ -185,28 +208,16 @@ namespace Que
 
         private void GenerateCopyAndroidResourcesBatchFile(string projectPath)
         {
-            //string dstPath = Path.Combine(projectPath, @"src\main");
-            //if (!Directory.Exists(dstPath))
-            //{
-            //    Directory.CreateDirectory(dstPath);
-            //}
-            //string srcManifestFile = Path.Combine(SharpmakeCsProjectPath, @"..\platform\meta\resources\AndroidManifest.xml");
-            //string dstManifestFile = Path.Combine(dstPath, "AndroidManifest.xml");
-            //Util.ForceCopy(srcManifestFile, dstManifestFile);
-
-            //// Copy module build gradle file to project folder
-            //string srcModulePath = Path.Combine(SharpmakeCsProjectPath, @"..\platform\meta\gradle\app");
-            //AndroidUtil.DirectoryCopy(srcModulePath, projectPath);
-
-            // translate above code to batch files
             Directory.CreateDirectory(projectPath + "\\src\\main");
+
             string copyResBat = Path.Combine(projectPath, "copy_resources.bat");
             string copyResCmd = $"xcopy /E /Y /I {SharpmakeCsProjectPath}\\..\\platform\\meta\\resources\\AndroidManifest.xml {projectPath}\\src\\main";
+            
             File.WriteAllText(copyResBat, copyResCmd);
             File.AppendAllText(copyResBat, "\n");
+            
             string copyGradeCmd = $"xcopy /E /Y /I {SharpmakeCsProjectPath}\\..\\platform\\meta\\gradle\\app {projectPath}";
             File.AppendAllText(copyResBat, copyGradeCmd);
-
         }
 
         private string GetABI(CommonTarget target)

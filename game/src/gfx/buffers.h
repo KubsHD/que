@@ -12,7 +12,7 @@ namespace gfx {
 	};
 
 	struct InstanceData {
-		glm::mat4 model{};
+		glm::mat4 model;
 		glm::mat4 modelInvTrans{};
 	};
 
