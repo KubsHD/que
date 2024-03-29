@@ -14,7 +14,7 @@ layout(set = 0,binding = 0) uniform SceneData {
 
 layout( push_constant ) uniform constants
 {
-	mat4 model;
+	mat4 viewProj;
 } PushConstants;
 
 layout(location = 0) in vec3 a_Positions;
@@ -29,7 +29,7 @@ layout(location = 2) out vec3 o_Pos;
 
 void main() {
     o_Pos = a_Positions;
-    vec4 pos = viewProj * PushConstants.model * vec4(a_Positions, 1.0f);
+    vec4 pos = PushConstants.viewProj * vec4(a_Positions, 1.0f);
     gl_Position = pos.xyww;
 	o_TexCoord = a_TexCoord;
 	o_Normal = a_Normals;

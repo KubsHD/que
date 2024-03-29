@@ -69,5 +69,5 @@ private:
 	GraphicsAPI::Pipeline m_sky_render_pipeline;
 
 	entt::registry m_registry;
-	std::unique_ptr<PhysicsWorld> m_physics_world;
+	std::unique_ptr<PhysicsSystem> m_physics_world;
 };

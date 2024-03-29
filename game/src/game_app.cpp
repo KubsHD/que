@@ -35,14 +35,15 @@ GameApp::~GameApp()
 
 void GameApp::init()
 {
-	//m_physics_world = std::make_unique<PhysicsWorld>();
+	PhysicsSystem::init_static();
+	m_physics_world = std::make_unique<PhysicsSystem>();
 
 	create_resources();
 }
 
 void GameApp::update(float dt)
 {
-	//m_physics_world->update(dt, m_registry);
+	m_physics_world->update(dt, m_registry);
 }
 
 Model mod;

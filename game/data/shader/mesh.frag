@@ -21,6 +21,7 @@ layout(set = 1, binding = 0) uniform InstanceData {
 layout(set = 1, binding = 1) uniform sampler2D tex_diffuse;
 layout(set = 1, binding = 2) uniform sampler2D tex_normal;
 layout(set = 1, binding = 3) uniform sampler2D tex_orm;
+layout(set = 1, binding = 4) uniform samplerCube tex_sky;
 
 layout(location = 0) in vec2 i_TexCoord;
 layout(location = 1) in vec3 i_Normal;
@@ -76,7 +77,6 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 }
 
 void main() {
-
 	float metallic = texture(tex_orm, i_TexCoord).z;
 	float roughness = texture(tex_orm, i_TexCoord).y;
 	float ao = 0.0f;
@@ -116,7 +116,7 @@ void main() {
     float NdotL = max(dot(norm, lightDir), 0.0);        
     vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
 
-	vec3 ambient = vec3(0.02) * albedo * ao;
+	vec3 ambient = texture(tex_sky, norm).rgb * albedo * ao;
     vec3 color = ambient + Lo;
 	
     //color = color / (color + vec3(1.0));

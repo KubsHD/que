@@ -96,6 +96,9 @@ namespace Que
                 conf.Defines.Add("JPH_DEBUG_RENDERER");
             }
 
+            conf.Defines.Add("JPH_FLOATING_POINT_EXCEPTIONS_ENABLED");
+            conf.Defines.Add("JPH_PROFILE_ENABLED");
+
             // if not set, no precompile option will be used.
             //conf.PrecompHeader = "pch.h";
             //conf.PrecompSource = "pch.cpp";
