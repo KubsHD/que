@@ -1,4 +1,5 @@
 #include "app.h"
+#include <core/profiler.h>
 
 
 #if defined(__ANDROID__)
@@ -21,25 +22,28 @@ void App::Run()
 	m_asset_manager = std::make_shared<Asset>();
 #endif
 
+	{
+		QUE_PROFILE_SECTION("OpenXr Init");
 
-	create_instance();
-	create_debug();
-	get_properties();
-	get_system();
+		create_instance();
+		create_debug();
+		get_properties();
+		get_system();
 
-	get_view_configuration_views();
-	get_enviroment_blend_modes();
+		get_view_configuration_views();
+		get_enviroment_blend_modes();
 
-	input = std::make_shared<Input>(m_xrInstance, &m_session);
-	input->create_action_set();
-	input->suggest_bindings();
+		input = std::make_shared<Input>(m_xrInstance, &m_session);
+		input->create_action_set();
+		input->suggest_bindings();
 
-	create_session();
-	create_swapchains();
-	create_reference_space();
+		create_session();
+		create_swapchains();
+		create_reference_space();
 
-	input->create_action_poses();
-	input->attach_action_set();
+		input->create_action_poses();
+		input->attach_action_set();
+	}
 
 	init();
 
@@ -55,6 +59,8 @@ void App::Run()
 			update(m_delta_time);
 			render_frame();
 		}
+
+		QUE_PROFILE_FRAME();
 	}
 
 	destroy();
@@ -85,6 +91,8 @@ void App::destroy_reference_space()
 
 bool App::render_layer(RenderLayerInfo& info)
 {
+	QUE_PROFILE;
+
 	// Locate the views from the view configuration within the (reference) space at the display time.
 	std::vector<XrView> views(m_viewConfigurationViews.size(), { XR_TYPE_VIEW });
 
@@ -330,6 +338,8 @@ void App::destroy_swapchains()
 
 void App::render_frame()
 {
+	QUE_PROFILE;
+
 	XrFrameState frameState{ XR_TYPE_FRAME_STATE };
 	XrFrameWaitInfo frameWaitInfo{ XR_TYPE_FRAME_WAIT_INFO };
 	OPENXR_CHECK(xrWaitFrame(m_session, &frameWaitInfo, &frameState), "Failed to wait for XR Frame.");
@@ -498,6 +508,8 @@ void App::destroy_session()
 
 void App::poll_events()
 {
+	QUE_PROFILE;
+
 	XrEventDataBuffer eventData{ XR_TYPE_EVENT_DATA_BUFFER };
 	auto XrPollEvents = [&]() -> bool {
 		eventData = { XR_TYPE_EVENT_DATA_BUFFER };

@@ -4,6 +4,7 @@
 #include <string>
 #include <common/OpenXRHelper.h>
 #include <common/DebugOutput.h>
+#include "profiler.h"
 
 static XrPath CreateXrPath(XrInstance instance, const char* path_string) {
 	XrPath xrPath;
@@ -119,6 +120,8 @@ void Input::attach_action_set()
 
 void Input::poll_actions(XrTime time, XrSpace local_space)
 {
+	QUE_PROFILE;
+
 	XrActiveActionSet activeActionSet{};
 	activeActionSet.actionSet = m_actionSet;
 	activeActionSet.subactionPath = XR_NULL_PATH;

@@ -18,6 +18,7 @@
 #include <app.h>
 
 #include <lib/json.hpp>
+#include "profiler.h"
 
 using json = nlohmann::json;
 
@@ -62,6 +63,8 @@ std::vector<char> Asset::read_all_bytes(String path)
 
 Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 {
+	QUE_PROFILE;
+
 	Model mod;
 
 	Assimp::Importer imp;
@@ -140,6 +143,8 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 
 GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, TextureType type)
 {
+	QUE_PROFILE;
+
 	stbi_set_flip_vertically_on_load(true);
 
 	GraphicsAPI::Image img;
@@ -163,30 +168,33 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 	
 	void* pixel_ptr;
 
+
+	{
+		QUE_PROFILE_SECTION("Load data from disk");
 #if defined(__ANDROID__)
-	auto am = App::androidApp->activity->assetManager;
-	AAsset* asset = AAssetManager_open(am, path.c_str(), AASSET_MODE_BUFFER);
+			auto am = App::androidApp->activity->assetManager;
+		AAsset* asset = AAssetManager_open(am, path.c_str(), AASSET_MODE_BUFFER);
 
-	long fileLength = AAsset_getLength(asset);
-	char* buffer = new char[fileLength];
-	int bytesRead = AAsset_read(asset, buffer, fileLength);
-
-	if (type == TT_HDRI)
-	{
-		float* temp = stbi_loadf_from_memory((stbi_uc*)buffer, fileLength, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		pixel_ptr = temp;
-	}
-	else
-		pixel_ptr = stbi_load_from_memory((stbi_uc*)buffer, fileLength, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		long fileLength = AAsset_getLength(asset);
+		char* buffer = new char[fileLength];
+		int bytesRead = AAsset_read(asset, buffer, fileLength);
+		if (type == TT_HDRI)
+		{
+			float* temp = stbi_loadf_from_memory((stbi_uc*)buffer, fileLength, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+			pixel_ptr = temp;
+		}
+		else
+			pixel_ptr = stbi_load_from_memory((stbi_uc*)buffer, fileLength, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 #else
-	if (type == TT_HDRI)
-	{
-		float* temp = stbi_loadf(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		pixel_ptr = temp;
-}
-	else
-		pixel_ptr = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		if (type == TT_HDRI)
+		{
+			float* temp = stbi_loadf(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+			pixel_ptr = temp;
+		}
+		else
+			pixel_ptr = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 #endif
+	}
 
 	if (!pixel_ptr)
 		DEBUG_BREAK;
@@ -266,58 +274,61 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	vkCreateImageView(device, &ivinfo, nullptr, &img.view);
 
+	{
+		QUE_PROFILE_SECTION("Upload image to gpu");
 
-	gapi.immediate_submit([&](VkCommandBuffer cmd) {
-		VkImageSubresourceRange range{};
-		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		range.baseMipLevel = 0;
-		range.levelCount = 1;
-		range.baseArrayLayer = 0;
-		range.layerCount = 1;
+		gapi.immediate_submit([&](VkCommandBuffer cmd) {
+			VkImageSubresourceRange range{};
+			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			range.baseMipLevel = 0;
+			range.levelCount = 1;
+			range.baseArrayLayer = 0;
+			range.layerCount = 1;
 
-		VkImageMemoryBarrier imageBarrier_toTransfer = {};
-		imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			VkImageMemoryBarrier imageBarrier_toTransfer = {};
+			imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 
-		imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-		imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imageBarrier_toTransfer.image = img.image;
-		imageBarrier_toTransfer.subresourceRange = range;
+			imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			imageBarrier_toTransfer.image = img.image;
+			imageBarrier_toTransfer.subresourceRange = range;
 
-		imageBarrier_toTransfer.srcAccessMask = 0;
-		imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			imageBarrier_toTransfer.srcAccessMask = 0;
+			imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
 
-		//barrier the image into the transfer-receive layout
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+			//barrier the image into the transfer-receive layout
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
 
-		VkBufferImageCopy copyRegion = {};
-		copyRegion.bufferOffset = 0;
-		copyRegion.bufferRowLength = 0;
-		copyRegion.bufferImageHeight = 0;
+			VkBufferImageCopy copyRegion = {};
+			copyRegion.bufferOffset = 0;
+			copyRegion.bufferRowLength = 0;
+			copyRegion.bufferImageHeight = 0;
 
-		copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		copyRegion.imageSubresource.mipLevel = 0;
-		copyRegion.imageSubresource.baseArrayLayer = 0;
-		copyRegion.imageSubresource.layerCount = 1;
-		copyRegion.imageExtent = imageExtent;
+			copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			copyRegion.imageSubresource.mipLevel = 0;
+			copyRegion.imageSubresource.baseArrayLayer = 0;
+			copyRegion.imageSubresource.layerCount = 1;
+			copyRegion.imageExtent = imageExtent;
 
-		vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, img.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+			vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, img.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-		VkImageMemoryBarrier imgBarrier_toShaderReadable = imageBarrier_toTransfer;
-		imgBarrier_toShaderReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imgBarrier_toShaderReadable.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			VkImageMemoryBarrier imgBarrier_toShaderReadable = imageBarrier_toTransfer;
+			imgBarrier_toShaderReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			imgBarrier_toShaderReadable.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		imgBarrier_toShaderReadable.image = img.image;
-		imgBarrier_toShaderReadable.subresourceRange = range;
+			imgBarrier_toShaderReadable.image = img.image;
+			imgBarrier_toShaderReadable.subresourceRange = range;
 
-		imgBarrier_toShaderReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imgBarrier_toShaderReadable.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			imgBarrier_toShaderReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			imgBarrier_toShaderReadable.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier_toShaderReadable);
-	});
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier_toShaderReadable);
+		});
+	}
 
 	gapi.SetDebugName("texture: " + path, img.image);
 	gapi.SetDebugName("texture view: " + path, img.view);
@@ -327,6 +338,8 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 
 Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 {
+	QUE_PROFILE;
+
 	Model model;
 
 

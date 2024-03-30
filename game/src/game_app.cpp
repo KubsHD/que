@@ -6,12 +6,13 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>
-
 #include <lib/tiny_gltf.h>
-
 #include <lib/stb_image.h>
-
 #include <vulkan/vulkan.h>
+#include <lib/imgui/imgui_impl_vulkan.h>
+
+
+
 #include <common/GraphicsAPI.h>
 #include <gfx/pipeline/sky_pipeline.h>
 #include <gfx/pipeline/mesh_pipeline.h>
@@ -22,6 +23,8 @@
 #include <common/vk_initializers.h>
 #include <gfx/pipeline/sky_cube_render_pipeline.h>
 #include <common/glm_helpers.h>
+#include <core/profiler.h>
+#include <lib/netimgui/NetImgui_Api.h>
 
 entt::registry registry;
 
@@ -35,14 +38,31 @@ GameApp::~GameApp()
 
 void GameApp::init()
 {
+	QUE_PROFILE;
+
 	PhysicsSystem::init_static();
 	m_physics_world = std::make_unique<PhysicsSystem>();
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.Fonts->AddFontDefault();
+	io.Fonts->Build();
+	io.Fonts->SetTexID(0);
+	io.DisplaySize = ImVec2(8, 8);
+	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;	
+	ImGui::StyleColorsDark();
+
+	NetImgui::Startup();
+	NetImgui::ConnectFromApp("que");
 
 	create_resources();
 }
 
 void GameApp::update(float dt)
 {
+	QUE_PROFILE;
+
 	m_physics_world->update(dt, m_registry);
 }
 
@@ -97,6 +117,8 @@ static GPUModelConstant pushConst;
 
 void GameApp::render(FrameRenderInfo& info)
 {
+	QUE_PROFILE;
+
 	GraphicsAPI::Viewport viewport = { 0.0f, 0.0f, (float)info.width, (float)info.height, 0.0f, 1.0f };
 	GraphicsAPI::Rect2D scissor = { {(int32_t)0, (int32_t)0}, {(uint32_t)info.width,(uint32_t)info.height} };
 	float nearZ = 0.05f;
@@ -185,6 +207,26 @@ void GameApp::render(FrameRenderInfo& info)
 	}
 
 	m_graphicsAPI->EndRendering();
+
+	ImGui::NewFrame();
+
+	ImGui::SetNextWindowPos(ImVec2(32, 48), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_Once);
+	if (ImGui::Begin("Sample Basic", nullptr))
+	{
+		ImGui::TextColored(ImVec4(0.1, 1, 0.1, 1), "Basic demonstration of NetImgui code integration.");
+		ImGui::TextWrapped("Create a basic Window with some text.");
+		ImGui::NewLine();
+		ImGui::TextColored(ImVec4(0.1, 1, 0.1, 1), "Where are we drawing: ");
+		ImGui::SameLine();
+		ImGui::TextUnformatted(NetImgui::IsDrawingRemote() ? "Remote Draw" : "Local Draw");
+		ImGui::NewLine();
+		ImGui::TextColored(ImVec4(0.1, 1, 0.1, 1), "Filler content");
+		ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
+	}
+	ImGui::End();
+
+	ImGui::Render();
 }
 
 void GameApp::destroy()
@@ -194,6 +236,8 @@ void GameApp::destroy()
 
 void GameApp::create_resources()
 {
+	QUE_PROFILE;
+
 	// per scene constants
 	m_sceneData = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(gfx::SceneData), nullptr });
 	
