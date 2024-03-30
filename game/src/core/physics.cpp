@@ -79,37 +79,58 @@ PhysicsSystem::PhysicsSystem()
 	// can check floor_shape_result for
 	// HasError() / GetError()
 
-	// Optional step: Before starting the physics simulation you can optimize
-	// the broad phase. This improves collision detection performance (it's
-	// pointless here because we only have 2 bodies).  You should definitely
-	// not call this every frame or when e.g. streaming in a new level section
-	// as it is an expensive operation. Instead insert all new objects in
-	// batches instead of 1 at a time to keep the broad phase efficient.
+
+	JPH::BodyCreationSettings floor_settings(
+		floor_shape,
+		JPH::RVec3(0.0, 1.0, 0.0),
+		JPH::Quat::sIdentity(),
+		JPH::EMotionType::Static,
+		Layers::NON_MOVING);
+
+	// Create the actual rigid body
+	floor = body_interface.CreateBody(floor_settings);
+
+	body_interface.AddBody(floor->GetID(), JPH::EActivation::DontActivate);
+
+	JPH::BodyCreationSettings obj_settings(
+		new JPH::SphereShape(0.01f),
+		JPH::RVec3(0, 10.8, 0),
+		JPH::Quat::sIdentity(),
+		JPH::EMotionType::Dynamic,
+		Layers::MOVING);
+	obj = body_interface.CreateAndAddBody(obj_settings, JPH::EActivation::Activate);
+
+	body_interface.SetAngularVelocity(obj, JPH::Vec3(0.7f, -1.0f, 0.1f));
+
 	m_system.OptimizeBroadPhase();
 }
 
+static int step = 0;
+
+const float cDeltaTime = 1.0f / 60.0f;
+
 void PhysicsSystem::update(float dt, entt::registry& reg)
 {
-	m_system.Update(dt, 1, nullptr, nullptr);
+
+	if (m_system.GetBodyInterface().IsActive(obj)) {
+		JPH::RVec3 position = m_system.GetBodyInterface().GetCenterOfMassPosition(obj);
+		JPH::Vec3 velocity = m_system.GetBodyInterface().GetLinearVelocity(obj);
+		obj_pos = { position.GetX(), position.GetY(), position.GetZ() };
+
+		std::cout << "Step " << step << ": Position = (" << position.GetX() << ", "
+			<< position.GetY() << ", " << position.GetZ() << "), Velocity = ("
+			<< velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")"
+			<< std::endl;
+		step++;
+	}
+	m_system.Update(cDeltaTime, 1, m_allocator.get(), &m_job_system);
 }
 
 void PhysicsSystem::init_static()
 {
 	JPH::RegisterDefaultAllocator();
-
-	// Install trace and assert callbacks
 	JPH::Trace = TraceImpl;
 	JPH_IF_ENABLE_ASSERTS(JPH::AssertFailed = AssertFailedImpl;)
-
-	// Create a factory, this class is responsible for creating instances of classes based on their
-	// name or hash and is mainly used for deserialization of saved data. It is not directly used in
-	// this example but still required.
 	JPH::Factory::sInstance = new JPH::Factory();
-
-	// Register all physics types with the factory and install their collision handlers with the
-	// CollisionDispatch class. If you have your own custom shape types you probably need to
-	// register their handlers with the CollisionDispatch before calling this function. If you
-	// implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it
-	// before this function or else this function will create one for you.
 	JPH::RegisterTypes();
 }

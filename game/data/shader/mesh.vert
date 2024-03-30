@@ -1,24 +1,8 @@
-// Copyright 2023, The Khronos Group Inc.
-//
-// SPDX-License-Identifier: Apache-2.0
-
 #version 450
 #extension GL_KHR_vulkan_glsl : enable
+#extension GL_GOOGLE_include_directive : require
 
-
-layout(set = 0,binding = 0) uniform SceneData {
-	mat4 viewProj;
-	mat4 view;
-	mat4 proj;
-	vec3 camPos;
-};
-
-layout(set = 0, binding = 1) uniform samplerCube tex_sky;
-
-layout(set = 1, binding = 0) uniform InstanceData {
-	mat4 model;
-	mat4 modelInvTrans;
-};
+#include "common.glsl"
 
 
 layout(location = 0) in vec3 a_Positions;

@@ -51,6 +51,7 @@ Model controller;
 
 Model skybox_cube;
 GraphicsAPI::Image skybox_image;
+GraphicsAPI::Image blank_texture;
 
 GraphicsAPI::Pipeline sky_pipeline;
 VkSampler sampler;
@@ -151,17 +152,14 @@ void GameApp::render(FrameRenderInfo& info)
 
 		glm::vec3 target_pos = glm::to_glm(pose.position);
 		target_pos += glm::vec3{ 0, m_viewHeightM, 0 };
-		std::cout << "POS: " << target_pos.x << ";" << target_pos.y << ";" << target_pos.z << std::endl;
 
 		glm::quat xr_source_rotation = glm::to_glm(pose.orientation);
-
-
-		//angle.y = glm::radians(glm::degrees(angle.y) + 180.0f);
-
 		glm::quat rot = glm::rotate(xr_source_rotation, glm::radians(180.0f), glm::vec3(0,1,0));
 
 		render_model(target_pos, { 0.01f, 0.01f, 0.01f }, rot, controller);
 	}
+
+	render_model(m_physics_world->obj_pos, { 0.1f,0.1f,0.1f }, glm::quat(), controller);
 
 	// draw skybox
 	XrVector3f pos = info.view.pose.position;
@@ -169,6 +167,7 @@ void GameApp::render(FrameRenderInfo& info)
 	XrQuaternionf rot = { 0.0f, 0.0f, 0.0f };
 
 	XrMatrix4x4f_CreateTranslationRotationScale(&pushConst.model, &pos, &rot, &scale);
+
 	m_graphicsAPI->SetPipeline(sky_pipeline);
 
 	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant));
@@ -204,11 +203,11 @@ void GameApp::create_resources()
 
 	m_pipeline = pipeline::create_mesh_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 	m_sky_render_pipeline = pipeline::create_sky_cube_render_pipeline(*m_graphicsAPI, m_asset_manager);
+	
 	mod = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 	controller = Asset::load_model_json(*m_graphicsAPI, "data/models/meta/model_controller_left.model");
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);
-
 
 	sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 	m_sky = gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, m_sky_render_pipeline);

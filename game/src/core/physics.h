@@ -21,7 +21,7 @@
 #include <thread>
 
 #include <entt/entt.hpp>
-
+#include <glm/glm.hpp>
 
 #pragma region JOLT_BOILERPLATE
 
@@ -213,11 +213,15 @@ public:
 
 	void update(float dt, entt::registry& reg);
 
+	glm::vec3 obj_pos;
+
 private:
 	JPH::PhysicsSystem m_system;
 	std::unique_ptr<JPH::TempAllocatorImpl> m_allocator;
 	JPH::JobSystemThreadPool m_job_system;
 
+	JPH::Body* floor;
+	JPH::BodyID obj;
 
 	BPLayerInterfaceImpl broad_phase_layer_interface;
 	ObjectVsBroadPhaseLayerFilterImpl object_vs_broadphase_layer_filter;

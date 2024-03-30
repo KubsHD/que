@@ -26,6 +26,7 @@ namespace Que
             SourceFilesExtensions.Add(".gradle");
             SourceFilesExtensions.Add(".vert");
             SourceFilesExtensions.Add(".frag");
+            SourceFilesExtensions.Add(".glsl");
 
             var platformPath = Path.Combine(Globals.RootDirectory, "platform");
             AdditionalSourceRootPaths.Add(platformPath);

@@ -1,8 +1,7 @@
-// Copyright 2023, The Khronos Group Inc.
-//
-// SPDX-License-Identifier: Apache-2.0
-
 #version 450
+
+#extension GL_GOOGLE_include_directive : require
+#include "pbr.glsl"
 
 layout(set = 0,binding = 0) uniform SceneData {
 	mat4 viewProj;
@@ -10,8 +9,6 @@ layout(set = 0,binding = 0) uniform SceneData {
 	mat4 proj;
 	vec3 camPos;
 };
-
-//layout (set = 0, binding = 1) uniform samplerCube tex_cubemap;
 
 layout(set = 1, binding = 0) uniform InstanceData {
 	mat4 model;
@@ -29,52 +26,8 @@ layout(location = 2) in vec3 i_Pos;
 layout(location = 3) in vec3 i_WorldPos;
 layout(location = 4) in mat3 i_TBN;
 
-
 layout(location = 0) out vec4 o_Color;
 
-// https://learnopengl.com/PBR/Lighting
-
-const float PI = 3.14159265359;
-
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
-{
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-}  
-
-
-float DistributionGGX(vec3 N, vec3 H, float roughness)
-{
-    float a      = roughness*roughness;
-    float a2     = a*a;
-    float NdotH  = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH*NdotH;
-	
-    float num   = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
-	
-    return num / denom;
-}
-
-float GeometrySchlickGGX(float NdotV, float roughness)
-{
-    float r = (roughness + 1.0);
-    float k = (r*r) / 8.0;
-
-    float num   = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
-	
-    return num / denom;
-}
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
-{
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
-	
-    return ggx1 * ggx2;
-}
 
 void main() {
 	float metallic = texture(tex_orm, i_TexCoord).z;
