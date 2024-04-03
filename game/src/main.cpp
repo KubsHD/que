@@ -13,11 +13,11 @@ void App_Main(GraphicsAPI_Type apiType) {
 #if defined(XR_OS_WINDOWS)
 
 
-#include "LivePP/API/x64/LPP_API_x64_CPP.h"
 #include <windows.h>
+#include "../../projects/Game/config.generated.h"
 
 #if defined(LIVEPP_ENABLED)
-#include "../../projects/Game/config.generated.h"
+#include "LivePP/API/x64/LPP_API_x64_CPP.h"
 #endif
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
