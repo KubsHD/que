@@ -17,6 +17,7 @@
 // - Introduction, links and more at the top of imgui.cpp
 
 #include "imgui.h"
+#ifndef XR_OS_ANDROID
 #ifndef IMGUI_DISABLE
 #include "imgui_impl_win32.h"
 #ifndef WIN32_LEAN_AND_MEAN
@@ -901,3 +902,4 @@ void ImGui_ImplWin32_EnableAlphaCompositing(void* hwnd)
 //---------------------------------------------------------------------------------------------------------
 
 #endif // #ifndef IMGUI_DISABLE
+#endif

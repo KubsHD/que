@@ -20,7 +20,7 @@ public:
 	void render(FrameRenderInfo& info) override;
 	void destroy() override;
 
-	void GameApp::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model);
+	void render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model);
 
 	entt::registry& get_registry()
 	{

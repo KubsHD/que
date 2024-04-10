@@ -51,6 +51,21 @@ void GameApp::init()
 	const auto entity = m_registry.create();
 	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
 	m_registry.emplace<mesh_component>(entity, mod);
+
+	const auto ball = m_registry.create();
+
+	m_registry.emplace<transform_component>(ball, glm::vec3{ 0.0f,5.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
+	m_registry.emplace<mesh_component>(ball, controller);
+
+	JPH::BodyCreationSettings obj_settings(
+		new JPH::SphereShape(0.01f),
+		JPH::RVec3(0, 10.8, 0),
+		JPH::Quat::sIdentity(),
+		JPH::EMotionType::Dynamic,
+		Layers::MOVING);
+
+	
+	m_registry.emplace<rigidbody_component>(ball, m_physics_system->spawn_body(obj_settings, JPH::Vec3(0.7f, -1.0f, 0.1f)));
 }
 
 void GameApp::init_imgui()
@@ -171,8 +186,16 @@ void GameApp::render(FrameRenderInfo& info)
 	auto modelsToRender = m_registry.view<transform_component, mesh_component>();
 	for (const auto&& [e, tc, mc] : modelsToRender.each())
 	{
-		render_model(tc.position, tc.scale, tc.rotation, mc.model);
+		//render_model(tc.position, tc.scale, tc.rotation, mc.model);
 	};
+
+
+	auto physEntities = m_registry.view<transform_component, rigidbody_component>();
+	for (const auto&& [e, tc, rc] : physEntities.each())
+	{
+		tc.position = m_physics_system->get_body_position(rc.id);
+	};
+
 
 	for (auto& pose : input->get_controller_poses())
 	{
@@ -185,8 +208,6 @@ void GameApp::render(FrameRenderInfo& info)
 
 		render_model(target_pos, { 0.01f, 0.01f, 0.01f }, rot, controller);
 	}
-
-	render_model(m_physics_system->obj_pos, { 0.1f,0.1f,0.1f }, glm::quat(), controller);
 
 	// draw skybox
 	XrVector3f pos = info.view.pose.position;
@@ -237,16 +258,7 @@ void GameApp::render(FrameRenderInfo& info)
 
 	if (ImGui::Begin("ECS Debug", nullptr))
 	{
-		// Iterate over all the entities in the registry
-		for (auto&& [entity, transform, mesh] : m_registry.view<transform_component, mesh_component>().each())
-		{
-			ImGui::Text("Entity %d", entity);
-			ImGui::Text("Position: %f %f %f", transform.position.x, transform.position.y, transform.position.z);
-			ImGui::Text("Scale: %f %f %f", transform.scale.x, transform.scale.y, transform.scale.z);
-			ImGui::Text("Rotation: %f %f %f %f", transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w);
-			ImGui::Text("Mesh: %s", mesh.model.c_str());
-			ImGui::Separator();
-		}
+	
 	}
 	ImGui::End();
 

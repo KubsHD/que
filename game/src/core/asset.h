@@ -12,6 +12,7 @@
 #include <common/GraphicsAPI.h>
 #include <assimp/material.h>
 
+
 class GraphicsAPI_Vulkan;
 struct aiScene;
 struct aiMaterial;
@@ -24,7 +25,11 @@ enum TextureType {
 
 class Asset {
 public:
-	Asset() = default;
+	static Asset* Instance;
+
+	Asset() {
+		Instance = this;
+	};
 	Asset(void* android_ass);
 	~Asset();
 

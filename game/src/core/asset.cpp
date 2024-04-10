@@ -20,10 +20,14 @@
 #include <lib/json.hpp>
 #include "profiler.h"
 
+Asset* Asset::Instance;
+
 using json = nlohmann::json;
 
 Asset::Asset(void* android_ass)
 {
+	Instance = this;
+
 #if defined(__ANDROID__)
 	m_android_asset_manager = (AAssetManager*)android_ass;
 #endif
@@ -390,11 +394,12 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 			meshes.push_back(internal_mesh);
 		}
 
+
 		return meshes;
 	};
 		
-	std::ifstream ifs(path);
-	auto desc = json::parse(ifs);
+	auto file_bytes = Asset::Instance->read_all_bytes(path.string());
+	auto desc = json::parse(file_bytes);
 
 	auto desc_directory = path.parent_path().string();
 

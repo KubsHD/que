@@ -112,17 +112,13 @@ const float cDeltaTime = 1.0f / 60.0f;
 void PhysicsSystem::update(float dt, entt::registry& reg)
 {
 
-	for (auto obj : m_bodies)
+	for (auto& obj : m_bodies)
 	{
-		if (m_system.GetBodyInterface().IsActive(obj)) {
-			JPH::RVec3 position = m_system.GetBodyInterface().GetCenterOfMassPosition(obj);
-			JPH::Vec3 velocity = m_system.GetBodyInterface().GetLinearVelocity(obj);
-			obj_pos = { position.GetX(), position.GetY(), position.GetZ() };
-
-			std::cout << "Step " << step << ": Position = (" << position.GetX() << ", "
-				<< position.GetY() << ", " << position.GetZ() << "), Velocity = ("
-				<< velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")"
-				<< std::endl;
+		if (m_system.GetBodyInterface().IsActive(obj.first)) {
+			JPH::RVec3 position = m_system.GetBodyInterface().GetCenterOfMassPosition(obj.first);
+			JPH::Vec3 velocity = m_system.GetBodyInterface().GetLinearVelocity(obj.first);
+			obj.second = { position.GetX(), position.GetY(), position.GetZ() };
+	
 			step++;
 		}
 	}
@@ -137,9 +133,14 @@ JPH::BodyID PhysicsSystem::spawn_body(JPH::BodyCreationSettings settings, JPH::V
 	auto id = body_interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
 	body_interface.AddLinearVelocity(id, initial_velocity);
 
-	m_bodies.push_back(id);
+	m_bodies.emplace(id, JPH::Vec3(0,0,0));
 
 	return id;
+}
+
+glm::vec3 PhysicsSystem::get_body_position(JPH::BodyID bodyId)
+{
+	return glm::vec3(m_bodies[bodyId].GetX(), m_bodies[bodyId].GetY(), m_bodies[bodyId].GetZ());
 }
 
 void PhysicsSystem::init_static()

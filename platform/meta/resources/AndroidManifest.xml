@@ -27,7 +27,10 @@
         android:name="android.hardware.vr.headtracking"
         android:required="false" />
 
-    <!-- This .apk has no Java code itself, so set hasCode to false. -->
+	<uses-permission android:name="android.permission.INTERNET"/>
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+	<!-- This .apk has no Java code itself, so set hasCode to false. -->
     <application android:label="que" android:hasCode="false">
 
         <activity
@@ -43,6 +46,8 @@
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="game" />
+			
+			
 
             <!-- Standard Khronos OpenXR launcher intent filter. -->
             <intent-filter>

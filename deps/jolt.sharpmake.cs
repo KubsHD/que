@@ -39,6 +39,9 @@ public class Jolt : CommonProject
         base.ConfigureAgde(conf, target);
 
         // todo
+
+        conf.LibraryFiles.Add(@$"[project.SourceRootPath]\Build\Android\UnitTests\.cxx\{((target.Optimization == Optimization.Debug) ? target.Optimization : "RelWithDebInfo")}\arm64-v8a\libjolt.a");
+
     }
 
     public override void ConfigureDebug(Configuration conf, CommonTarget target)

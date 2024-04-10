@@ -97,7 +97,6 @@ namespace Que
                 conf.Defines.Add("JPH_DEBUG_RENDERER");
             }
 
-            conf.Defines.Add("JPH_FLOATING_POINT_EXCEPTIONS_ENABLED");
             conf.Defines.Add("JPH_PROFILE_ENABLED");
 
             // if not set, no precompile option will be used.
@@ -139,6 +138,8 @@ namespace Que
             GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", ResolveString(conf.TargetPath, conf, target) + "\\data\\shader");
 
             conf.EventPreBuild.Add($"call  {conf.TargetPath + "\\data\\shader\\shader_compile.bat"}");
+
+            conf.Defines.Add("JPH_FLOATING_POINT_EXCEPTIONS_ENABLED");
 
             if (target.Optimization == Optimization.Debug)
                 CheckForLivePPSupport(conf, target);
@@ -184,6 +185,7 @@ namespace Que
             GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", androidAssetsPath + "\\data\\shader");
 
             conf.EventPreBuild.Add($"call  {androidAssetsPath + "\\data\\shader\\shader_compile.bat"}");
+
         }
 
         private void GenerateShaderCompileBat(string srcPath, string targetPath)
