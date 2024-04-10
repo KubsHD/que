@@ -212,6 +212,7 @@ public:
 	static void init_static();
 
 	void update(float dt, entt::registry& reg);
+	JPH::BodyID spawn_body(JPH::BodyCreationSettings settings, JPH::Vec3 initial_velocity = JPH::Vec3(0, 0, 0));
 
 	glm::vec3 obj_pos;
 
@@ -222,6 +223,8 @@ private:
 
 	JPH::Body* floor;
 	JPH::BodyID obj;
+
+	std::vector<JPH::BodyID> m_bodies;
 
 	BPLayerInterfaceImpl broad_phase_layer_interface;
 	ObjectVsBroadPhaseLayerFilterImpl object_vs_broadphase_layer_filter;

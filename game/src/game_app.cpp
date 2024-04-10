@@ -25,6 +25,7 @@
 #include <common/glm_helpers.h>
 #include <core/profiler.h>
 #include <lib/netimgui/NetImgui_Api.h>
+#include <game/components.h>
 
 entt::registry registry;
 
@@ -41,8 +42,19 @@ void GameApp::init()
 	QUE_PROFILE;
 
 	PhysicsSystem::init_static();
-	m_physics_world = std::make_unique<PhysicsSystem>();
+	m_physics_system = std::make_unique<PhysicsSystem>();
 
+	init_imgui();
+
+	create_resources();
+
+	const auto entity = m_registry.create();
+	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
+	m_registry.emplace<mesh_component>(entity, mod);
+}
+
+void GameApp::init_imgui()
+{
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
@@ -50,31 +62,21 @@ void GameApp::init()
 	io.Fonts->Build();
 	io.Fonts->SetTexID(0);
 	io.DisplaySize = ImVec2(8, 8);
-	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;	
+	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
 	ImGui::StyleColorsDark();
 
 	NetImgui::Startup();
 	NetImgui::ConnectFromApp("que");
-
-	create_resources();
 }
 
 void GameApp::update(float dt)
 {
 	QUE_PROFILE;
 
-	m_physics_world->update(dt, m_registry);
+	m_physics_system->update(dt, m_registry);
 }
 
-Model mod;
-Model controller;
 
-Model skybox_cube;
-GraphicsAPI::Image skybox_image;
-GraphicsAPI::Image blank_texture;
-
-GraphicsAPI::Pipeline sky_pipeline;
-VkSampler sampler;
 
 int currently_drawn_object = 0;
 
@@ -126,8 +128,6 @@ void GameApp::render(FrameRenderInfo& info)
 
 	currently_drawn_object = 0;
 
-
-
 	// Rendering code to clear the color and depth image views.
 	m_graphicsAPI->BeginRendering();
 
@@ -167,7 +167,12 @@ void GameApp::render(FrameRenderInfo& info)
 
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
-	render_model({ posx, -1.0f, 0.0f}, { 0.5f, 0.5f, 0.5f }, glm::quat(1,0,0,0), mod);
+
+	auto modelsToRender = m_registry.view<transform_component, mesh_component>();
+	for (const auto&& [e, tc, mc] : modelsToRender.each())
+	{
+		render_model(tc.position, tc.scale, tc.rotation, mc.model);
+	};
 
 	for (auto& pose : input->get_controller_poses())
 	{
@@ -181,7 +186,7 @@ void GameApp::render(FrameRenderInfo& info)
 		render_model(target_pos, { 0.01f, 0.01f, 0.01f }, rot, controller);
 	}
 
-	render_model(m_physics_world->obj_pos, { 0.1f,0.1f,0.1f }, glm::quat(), controller);
+	render_model(m_physics_system->obj_pos, { 0.1f,0.1f,0.1f }, glm::quat(), controller);
 
 	// draw skybox
 	XrVector3f pos = info.view.pose.position;
@@ -208,21 +213,40 @@ void GameApp::render(FrameRenderInfo& info)
 
 	m_graphicsAPI->EndRendering();
 
+	
 	ImGui::NewFrame();
 
 	ImGui::SetNextWindowPos(ImVec2(32, 48), ImGuiCond_Once);
 	ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_Once);
-	if (ImGui::Begin("Sample Basic", nullptr))
+	if (ImGui::Begin("Phys Debug", nullptr))
 	{
-		ImGui::TextColored(ImVec4(0.1, 1, 0.1, 1), "Basic demonstration of NetImgui code integration.");
-		ImGui::TextWrapped("Create a basic Window with some text.");
-		ImGui::NewLine();
-		ImGui::TextColored(ImVec4(0.1, 1, 0.1, 1), "Where are we drawing: ");
-		ImGui::SameLine();
-		ImGui::TextUnformatted(NetImgui::IsDrawingRemote() ? "Remote Draw" : "Local Draw");
-		ImGui::NewLine();
-		ImGui::TextColored(ImVec4(0.1, 1, 0.1, 1), "Filler content");
-		ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
+		if (ImGui::Button("Spawn object at hmd's position"))
+		{
+
+			JPH::BodyCreationSettings obj_settings(
+				new JPH::SphereShape(0.01f),
+				JPH::RVec3(0, 10.8, 0),
+				JPH::Quat::sIdentity(),
+				JPH::EMotionType::Dynamic,
+				Layers::MOVING);
+			m_physics_system->spawn_body(obj_settings, JPH::Vec3(0.7f, -1.0f, 0.1f));
+		}
+	}
+	ImGui::End();
+
+
+	if (ImGui::Begin("ECS Debug", nullptr))
+	{
+		// Iterate over all the entities in the registry
+		for (auto&& [entity, transform, mesh] : m_registry.view<transform_component, mesh_component>().each())
+		{
+			ImGui::Text("Entity %d", entity);
+			ImGui::Text("Position: %f %f %f", transform.position.x, transform.position.y, transform.position.z);
+			ImGui::Text("Scale: %f %f %f", transform.scale.x, transform.scale.y, transform.scale.z);
+			ImGui::Text("Rotation: %f %f %f %f", transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w);
+			ImGui::Text("Mesh: %s", mesh.model.c_str());
+			ImGui::Separator();
+		}
 	}
 	ImGui::End();
 

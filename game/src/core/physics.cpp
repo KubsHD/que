@@ -112,18 +112,34 @@ const float cDeltaTime = 1.0f / 60.0f;
 void PhysicsSystem::update(float dt, entt::registry& reg)
 {
 
-	if (m_system.GetBodyInterface().IsActive(obj)) {
-		JPH::RVec3 position = m_system.GetBodyInterface().GetCenterOfMassPosition(obj);
-		JPH::Vec3 velocity = m_system.GetBodyInterface().GetLinearVelocity(obj);
-		obj_pos = { position.GetX(), position.GetY(), position.GetZ() };
+	for (auto obj : m_bodies)
+	{
+		if (m_system.GetBodyInterface().IsActive(obj)) {
+			JPH::RVec3 position = m_system.GetBodyInterface().GetCenterOfMassPosition(obj);
+			JPH::Vec3 velocity = m_system.GetBodyInterface().GetLinearVelocity(obj);
+			obj_pos = { position.GetX(), position.GetY(), position.GetZ() };
 
-		std::cout << "Step " << step << ": Position = (" << position.GetX() << ", "
-			<< position.GetY() << ", " << position.GetZ() << "), Velocity = ("
-			<< velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")"
-			<< std::endl;
-		step++;
+			std::cout << "Step " << step << ": Position = (" << position.GetX() << ", "
+				<< position.GetY() << ", " << position.GetZ() << "), Velocity = ("
+				<< velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")"
+				<< std::endl;
+			step++;
+		}
 	}
+
 	m_system.Update(cDeltaTime, 1, m_allocator.get(), &m_job_system);
+}
+
+JPH::BodyID PhysicsSystem::spawn_body(JPH::BodyCreationSettings settings, JPH::Vec3 initial_velocity /*= JPH::Vec3(0, 0, 0)*/)
+{
+	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
+
+	auto id = body_interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
+	body_interface.AddLinearVelocity(id, initial_velocity);
+
+	m_bodies.push_back(id);
+
+	return id;
 }
 
 void PhysicsSystem::init_static()
