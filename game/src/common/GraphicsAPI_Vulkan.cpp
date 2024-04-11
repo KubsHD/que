@@ -12,6 +12,7 @@
 #include "GraphicsAPI_Vulkan.h"
 
 #include <vulkan/vk_enum_string_helper.h>
+#include <map>
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
 
@@ -922,8 +923,24 @@ GraphicsAPI::Pipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInf
     renderPassCI.pDependencies = &subpassDependency;
     VULKAN_CHECK(vkCreateRenderPass(device, &renderPassCI, nullptr, &renderPass), "Failed to create RenderPass.");
 
-    // Pipeline Layout and DescriptorSetLayout
-    std::vector<VkDescriptorSetLayoutBinding> descSetLayouBindings;
+
+	// Pipeline Layout and DescriptorSetLayout
+	std::map<int, std::vector<VkDescriptorSetLayoutBinding>> descSetLayouBindings;
+
+	// todo
+	// count how many uniqe ints are in the writeDescSets vector
+	std::vector<uint32_t> setCounts;
+	for (auto& writeDescSet : pipelineCI.layout) {
+		setCounts.push_back(writeDescSet.set);
+	}
+	std::sort(setCounts.begin(), setCounts.end());
+	setCounts.erase(std::unique(setCounts.begin(), setCounts.end()), setCounts.end());
+
+    for (const auto& setId : setCounts)
+    {
+        descSetLayouBindings.emplace(setId, std::vector<VkDescriptorSetLayoutBinding>());
+    }
+
     for (const DescriptorInfo &descInfo : pipelineCI.layout) {
         VkDescriptorSetLayoutBinding descSetLayouBinding;
         descSetLayouBinding.binding = descInfo.bindingIndex;
@@ -931,17 +948,9 @@ GraphicsAPI::Pipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInf
         descSetLayouBinding.descriptorCount = 1;
         descSetLayouBinding.stageFlags = VK_SHADER_STAGE_ALL; /* static_cast<VkShaderStageFlagBits>(1 << (uint32_t)descInfo.stage);*/
         descSetLayouBinding.pImmutableSamplers = nullptr;
-        descSetLayouBindings.push_back(descSetLayouBinding);
+        descSetLayouBindings[descInfo.set].push_back(descSetLayouBinding);
     }
 
-    // todo
-	// count how many uniqe ints are in the writeDescSets vector
-	std::vector<uint32_t> setCounts;
-    for (auto& writeDescSet : pipelineCI.layout) {
-        setCounts.push_back(writeDescSet.set);
-	}
-	std::sort(setCounts.begin(), setCounts.end());
-	setCounts.erase(std::unique(setCounts.begin(), setCounts.end()), setCounts.end());
 
 	std::vector<VkDescriptorSetLayout> descSetLayouts;
     descSetLayouts.resize(setCounts.size());
@@ -951,8 +960,8 @@ GraphicsAPI::Pipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInf
 		descSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		descSetLayoutCI.pNext = nullptr;
 		descSetLayoutCI.flags = 0;
-		descSetLayoutCI.bindingCount = static_cast<uint32_t>(descSetLayouBindings.size());
-		descSetLayoutCI.pBindings = descSetLayouBindings.data();
+		descSetLayoutCI.bindingCount = static_cast<uint32_t>(descSetLayouBindings[setCounts[i]].size());
+		descSetLayoutCI.pBindings = descSetLayouBindings[setCounts[i]].data();
 		VULKAN_CHECK(vkCreateDescriptorSetLayout(device, &descSetLayoutCI, nullptr, &descSetLayouts[i]), "Failed to create PipelineLayout.");
 	}
 
