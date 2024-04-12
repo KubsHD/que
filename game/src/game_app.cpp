@@ -179,6 +179,7 @@ void GameApp::render(FrameRenderInfo& info)
 
 	m_sceneDataCPU.camPos = glm::to_glm(info.view.pose.position);
 	m_sceneDataCPU.viewProj = glm::to_glm(viewProj);
+	m_sceneDataCPU.proj = glm::mat4(0.0f);
 
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
@@ -186,7 +187,7 @@ void GameApp::render(FrameRenderInfo& info)
 	auto modelsToRender = m_registry.view<transform_component, mesh_component>();
 	for (const auto&& [e, tc, mc] : modelsToRender.each())
 	{
-		//render_model(tc.position, tc.scale, tc.rotation, mc.model);
+		render_model(tc.position, tc.scale, tc.rotation, mc.model);
 	};
 
 

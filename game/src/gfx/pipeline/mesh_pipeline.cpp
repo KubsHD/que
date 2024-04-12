@@ -13,7 +13,7 @@ namespace pipeline
 		std::vector<char> fragmentSource = asset_mgr->read_all_bytes("data/shader/mesh.frag.spv");
 		auto ps = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
 
-		GraphicsAPI::PipelineCreateInfo pipelineCI;
+		GraphicsAPI::PipelineCreateInfo pipelineCI{};
 
 		pipelineCI.shaders = { vs, ps };
 		pipelineCI.vertexInputState.attributes = {

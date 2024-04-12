@@ -974,9 +974,11 @@ GraphicsAPI::Pipeline GraphicsAPI_Vulkan::CreatePipeline(const PipelineCreateInf
     PLCI.flags = 0;
 	PLCI.setLayoutCount = static_cast<uint32_t>(descSetLayouts.size());
     PLCI.pSetLayouts = descSetLayouts.data();
+
+   
     PLCI.pushConstantRangeCount = pipelineCI.pushConstantRange.size != 0 ? 1 : 0;
     // this may crash
-	PLCI.pPushConstantRanges = &pipelineCI.pushConstantRange;
+    PLCI.pPushConstantRanges = &pipelineCI.pushConstantRange;
     VULKAN_CHECK(vkCreatePipelineLayout(device, &PLCI, nullptr, &pipelineLayout), "Failed to create PipelineLayout.");
 
     // ShaderStages
