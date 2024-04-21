@@ -27,8 +27,6 @@
 #include <lib/netimgui/NetImgui_Api.h>
 #include <game/components.h>
 
-entt::registry registry;
-
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
 }
@@ -55,7 +53,7 @@ void GameApp::init()
 	const auto ball = m_registry.create();
 
 	m_registry.emplace<transform_component>(ball, glm::vec3{ 0.0f,5.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
-	m_registry.emplace<mesh_component>(ball, controller);
+	m_registry.emplace<mesh_component>(ball, test_cube);
 
 	JPH::BodyCreationSettings obj_settings(
 		new JPH::SphereShape(0.01f),
@@ -183,7 +181,6 @@ void GameApp::render(FrameRenderInfo& info)
 
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
-
 	auto modelsToRender = m_registry.view<transform_component, mesh_component>();
 	for (const auto&& [e, tc, mc] : modelsToRender.each())
 	{
@@ -244,14 +241,18 @@ void GameApp::render(FrameRenderInfo& info)
 	{
 		if (ImGui::Button("Spawn object at hmd's position"))
 		{
+			const auto ent = m_registry.create();
+			m_registry.emplace<transform_component>(ent, glm::vec3(0.0f, 10.0f, 0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(0.2f, 0.2f, 0.2f));
+			m_registry.emplace<mesh_component>(ent, controller);
 
-			JPH::BodyCreationSettings obj_settings(
-				new JPH::SphereShape(0.01f),
-				JPH::RVec3(0, 10.8, 0),
+			auto pid = m_physics_system->spawn_body(JPH::BodyCreationSettings(
+				new JPH::SphereShape(2.0f),
+				JPH::RVec3(0, 10, 0),
 				JPH::Quat::sIdentity(),
 				JPH::EMotionType::Dynamic,
-				Layers::MOVING);
-			m_physics_system->spawn_body(obj_settings, JPH::Vec3(0.7f, -1.0f, 0.1f));
+				Layers::MOVING), JPH::Vec3(0.0f, 1.0f, 1.0f));
+
+			m_registry.emplace<rigidbody_component>(ent, pid);
 		}
 	}
 	ImGui::End();
@@ -259,7 +260,16 @@ void GameApp::render(FrameRenderInfo& info)
 
 	if (ImGui::Begin("ECS Debug", nullptr))
 	{
-	
+		ImGui::Text("Models to render");
+		// get all mesh components
+		auto modelsToRender = m_registry.view<transform_component, mesh_component>();
+		for (const auto&& [e, tc, mc] : modelsToRender.each())
+		{
+			
+			ImGui::Text("Entity: %d", e);
+			ImGui::Text("Position: %f %f %f", tc.position.x, tc.position.y, tc.position.z);
+			ImGui::Text("Scale: %f %f %f", tc.scale.x, tc.scale.y, tc.scale.z);
+		}
 	}
 	ImGui::End();
 
@@ -289,6 +299,8 @@ void GameApp::create_resources()
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 	controller = Asset::load_model_json(*m_graphicsAPI, "data/models/meta/model_controller_left.model");
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);
+
+	test_cube = Asset::load_model_json(*m_graphicsAPI, "data/models/blocks/brick/Cube.model");
 
 	sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, m_asset_manager, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 	m_sky = gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, m_sky_render_pipeline);

@@ -151,6 +151,12 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 
 	stbi_set_flip_vertically_on_load(true);
 
+	if (!std::filesystem::is_regular_file("./" + path))
+	{
+		std::cout << "[asset] texture doest exist: " << path << std::endl;
+		return gapi.tex_placeholder;
+	}
+
 	GraphicsAPI::Image img;
 
 	VkFormat format;

@@ -54,4 +54,5 @@ private:
 
 	GraphicsAPI::Pipeline sky_pipeline;
 	VkSampler sampler;
+	Model test_cube;
 };

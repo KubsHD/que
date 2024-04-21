@@ -4,6 +4,7 @@ using Sharpmake;
 using System;
 using System.Text;
 using System.Net.Http.Headers;
+using System.Diagnostics;
 
 namespace Que
 {
@@ -133,14 +134,19 @@ namespace Que
             var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
 
             conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
-            conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
+            //conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
 
-            GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", ResolveString(conf.TargetPath, conf, target) + "\\data\\shader");
+            var dataPath = Path.Combine(realProjectPath, "data");
+            var targetPath = Path.Combine(ResolveString(conf.TargetPath, conf, target), "data");
+            if (!Util.CreateSymbolicLink(targetPath, dataPath, true))
+                Debug.Assert(false);
 
-            conf.EventPreBuild.Add($"call  {conf.TargetPath + "\\data\\shader\\shader_compile.bat"}");
+            // shader pipeline
+            GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", ResolveString(conf.TargetPath, conf, target) + "\\shader");
+            conf.EventPreBuild.Add($"call  {conf.TargetPath + "\\shader\\shader_compile.bat"}");
+
 
             conf.Defines.Add("JPH_FLOATING_POINT_EXCEPTIONS_ENABLED");
-
             if (target.Optimization == Optimization.Debug)
                 CheckForLivePPSupport(conf, target);
         }

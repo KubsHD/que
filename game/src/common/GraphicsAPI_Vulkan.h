@@ -45,6 +45,9 @@ public:
         VkCommandBuffer buffer;
     };
 
+    // sample resources
+    GraphicsAPI::Image tex_placeholder;
+
     UploadContext m_uploadContext;
 
     void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);

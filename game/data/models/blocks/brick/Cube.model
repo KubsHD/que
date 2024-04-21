@@ -1,0 +1,11 @@
+{
+    "file": "Cube.fbx",
+    "materials": [
+        {
+            "id": 0,
+            "diffuse": "TCom_Wall_Stone3_2x2_1K_albedo.png",
+            "normal": "TCom_Wall_Stone3_2x2_1K_normal.png",
+            "orm": ""
+        }
+    ]
+}

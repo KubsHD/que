@@ -21,6 +21,8 @@
 #define VK_MAKE_API_VERSION(variant, major, minor, patch) VK_MAKE_VERSION(major, minor, patch)
 #endif
 
+#include <common/vk_initializers.h>
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -518,6 +520,36 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     allocateInfo2.commandBufferCount = 1;
     VULKAN_CHECK(vkAllocateCommandBuffers(device, &allocateInfo2, &m_uploadContext.buffer), "Failed to allocate CommandBuffers.");
 
+    // create image 1x1
+    vkinit::image_create_info(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VkExtent3D{ 1,1,1 });
+
+    GraphicsAPI::ImageCreateInfo ici{};
+    ici.width = 1;
+    ici.height = 1;
+    ici.depth = 1;
+    ici.format = VK_FORMAT_R8G8B8A8_UNORM;
+    ici.dimension = 2;
+    ici.sampleCount = 1;
+    ici.mipLevels = 1;
+    ici.arrayLayers = 1;
+
+    tex_placeholder.image = CreateImage(ici);
+
+    vmaBindImageMemory(m_allocator, imageResources[tex_placeholder.image].first, tex_placeholder.image);
+
+    GraphicsAPI::ImageViewCreateInfo ivci{};
+    ivci.format = VK_FORMAT_R8G8B8A8_UNORM;
+    ivci.image = tex_placeholder.image;
+    ivci.type = GraphicsAPI::ImageViewCreateInfo::Type::RTV;
+    ivci.view = GraphicsAPI::ImageViewCreateInfo::View::TYPE_2D;
+    ivci.baseArrayLayer = 0;
+    ivci.baseMipLevel = 0;
+    ivci.layerCount = 1;
+    ivci.levelCount = 1;
+    ivci.aspect = GraphicsAPI::ImageViewCreateInfo::Aspect::COLOR_BIT;
+
+
+    tex_placeholder.view = CreateImageView(ivci);
 }
 
 GraphicsAPI_Vulkan::~GraphicsAPI_Vulkan() {

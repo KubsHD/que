@@ -205,6 +205,11 @@ public:
 
 #pragma endregion JOLT_BOILERPLATE
 
+static glm::vec3 to_glm(JPH::Vec3 vec)
+{
+	return glm::vec3(vec.GetX(), vec.GetY(), vec.GetZ());
+}
+
 class PhysicsSystem {
 public:
 	PhysicsSystem();
