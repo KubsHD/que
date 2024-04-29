@@ -2,7 +2,10 @@
 
 
 
+#include <jolt/Physics/StateRecorderImpl.h>
+#include <lib/imgui/imgui.h>
 
+JPH::StateRecorderImpl impl;
 
 PhysicsSystem::PhysicsSystem()
 {
@@ -82,7 +85,7 @@ PhysicsSystem::PhysicsSystem()
 
 	JPH::BodyCreationSettings floor_settings(
 		floor_shape,
-		JPH::RVec3(0.0, 1.0, 0.0),
+		JPH::RVec3(0.0, -1.0, 0.0),
 		JPH::Quat::sIdentity(),
 		JPH::EMotionType::Static,
 		Layers::NON_MOVING);
@@ -105,6 +108,10 @@ PhysicsSystem::PhysicsSystem()
 	m_system.OptimizeBroadPhase();
 }
 
+PhysicsSystem::~PhysicsSystem()
+{
+}
+
 static int step = 0;
 
 const float cDeltaTime = 1.0f / 60.0f;
@@ -124,6 +131,8 @@ void PhysicsSystem::update(float dt, entt::registry& reg)
 	}
 
 	m_system.Update(cDeltaTime, 1, m_allocator.get(), &m_job_system);
+
+
 }
 
 JPH::BodyID PhysicsSystem::spawn_body(JPH::BodyCreationSettings settings, JPH::Vec3 initial_velocity /*= JPH::Vec3(0, 0, 0)*/)
@@ -141,6 +150,27 @@ JPH::BodyID PhysicsSystem::spawn_body(JPH::BodyCreationSettings settings, JPH::V
 glm::vec3 PhysicsSystem::get_body_position(JPH::BodyID bodyId)
 {
 	return glm::vec3(m_bodies[bodyId].GetX(), m_bodies[bodyId].GetY(), m_bodies[bodyId].GetZ());
+}
+
+void PhysicsSystem::set_body_position(JPH::BodyID bid, glm::vec3 pos)
+{
+	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
+
+	body_interface.SetPosition(bid, JPH::to_jph(pos), JPH::EActivation::Activate);
+}
+
+void PhysicsSystem::add_velocity(JPH::BodyID bid, glm::vec3 vel)
+{
+	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
+
+	body_interface.AddLinearVelocity(bid, JPH::to_jph(vel));
+}
+
+JPH::EMotionType PhysicsSystem::get_body_type(JPH::BodyID bodyId)
+{
+	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
+
+	return body_interface.GetMotionType(bodyId);
 }
 
 void PhysicsSystem::init_static()

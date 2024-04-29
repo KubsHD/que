@@ -6,13 +6,14 @@ void App_Main(GraphicsAPI_Type apiType) {
 	XR_TUT_LOG("Que MAIN");
 	GameApp app(apiType);
 	app.Run();
-	
+
+
 }
 
 
 #if defined(XR_OS_WINDOWS)
 
-
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "../../projects/Game/config.generated.h"
 

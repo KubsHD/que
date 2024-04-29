@@ -9,3 +9,8 @@ tools/MetaXRSimulator/*
 !tools/MetaXRSimulator/put_simulator_here
 **/*.pdb
 output/
+deps/LivePP
+deps/assimp
+netImgui.cfg
+netImgui_2.cfg
+*.blend1

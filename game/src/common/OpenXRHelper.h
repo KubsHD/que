@@ -8,6 +8,7 @@
 // Define any XR_USE_PLATFORM_... / XR_USE_GRAPHICS_API_... before this header file.
 
 #if defined(XR_OS_WINDOWS)
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <Unknwn.h>
 #endif

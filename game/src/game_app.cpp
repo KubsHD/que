@@ -27,6 +27,8 @@
 #include <lib/netimgui/NetImgui_Api.h>
 #include <game/components.h>
 
+#include <lib/im3d/im3d.h>
+
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
 }
@@ -46,6 +48,8 @@ void GameApp::init()
 
 	create_resources();
 
+
+
 	const auto entity = m_registry.create();
 	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
 	m_registry.emplace<mesh_component>(entity, mod);
@@ -56,14 +60,28 @@ void GameApp::init()
 	m_registry.emplace<mesh_component>(ball, test_cube);
 
 	JPH::BodyCreationSettings obj_settings(
-		new JPH::SphereShape(0.01f),
-		JPH::RVec3(0, 10.8, 0),
+		new JPH::BoxShape(JPH::Vec3(0.5f, 0.5f, 0.5f)),
+		JPH::RVec3(0, 5, 0),
 		JPH::Quat::sIdentity(),
 		JPH::EMotionType::Dynamic,
 		Layers::MOVING);
-
 	
-	m_registry.emplace<rigidbody_component>(ball, m_physics_system->spawn_body(obj_settings, JPH::Vec3(0.7f, -1.0f, 0.1f)));
+	m_registry.emplace<physics_component>(ball, m_physics_system->spawn_body(obj_settings, JPH::Vec3(0, -1.0f, 0.0f)));
+
+	// controllers
+	const auto controller1 = m_registry.create();
+	JPH::BodyCreationSettings c_settings(
+		new JPH::SphereShape(0.5f),
+		JPH::RVec3(0, 10.8, 0),
+		JPH::Quat::sIdentity(),
+		JPH::EMotionType::Kinematic,
+		Layers::MOVING);
+
+	m_registry.emplace<transform_component>(controller1, glm::vec3{ 0.0f,5.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
+	m_registry.emplace<physics_component>(controller1, m_physics_system->spawn_body(c_settings, JPH::Vec3(0.7f, -1.0f, 0.1f)));
+	m_registry.emplace<mesh_component>(controller1, controller);
+	m_registry.emplace<controller_component>(controller1, 0);
+
 }
 
 void GameApp::init_imgui()
@@ -134,6 +152,8 @@ void GameApp::render(FrameRenderInfo& info)
 {
 	QUE_PROFILE;
 
+
+
 	GraphicsAPI::Viewport viewport = { 0.0f, 0.0f, (float)info.width, (float)info.height, 0.0f, 1.0f };
 	GraphicsAPI::Rect2D scissor = { {(int32_t)0, (int32_t)0}, {(uint32_t)info.width,(uint32_t)info.height} };
 	float nearZ = 0.05f;
@@ -181,31 +201,43 @@ void GameApp::render(FrameRenderInfo& info)
 
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
+
+
+	auto physEntities = m_registry.view<transform_component, physics_component>();
+	for (const auto&& [e, tc, pc] : physEntities.each())
+	{
+		auto type = m_physics_system->get_body_type(pc.id);
+		if (type == JPH::EMotionType::Dynamic)
+			tc.position = m_physics_system->get_body_position(pc.id);
+	};
+
+	auto controllerObjects = m_registry.view<transform_component, mesh_component, physics_component, controller_component>();
+	for (const auto&& [e, tc, mc, pc, cc] : controllerObjects.each())
+	{
+		auto& poses = input->get_controller_poses();
+		auto pose = poses[cc.index];
+
+		glm::vec3 target_pos = glm::to_glm(pose.position);
+		target_pos += glm::vec3{ 0, m_viewHeightM, 0 };
+		glm::quat xr_source_rotation = glm::to_glm(pose.orientation);
+		glm::quat rot = glm::rotate(xr_source_rotation, glm::radians(180.0f), glm::vec3(0, 1, 0));
+
+		auto vel = cc.last_pos - target_pos;
+
+		m_physics_system->set_body_position(pc.id, target_pos);
+
+		tc.position = target_pos;
+		tc.scale = { 0.01f, 0.01f, 0.01f };
+		tc.rotation = rot;
+
+		cc.last_pos = target_pos;
+	};
+
 	auto modelsToRender = m_registry.view<transform_component, mesh_component>();
 	for (const auto&& [e, tc, mc] : modelsToRender.each())
 	{
 		render_model(tc.position, tc.scale, tc.rotation, mc.model);
 	};
-
-
-	auto physEntities = m_registry.view<transform_component, rigidbody_component>();
-	for (const auto&& [e, tc, rc] : physEntities.each())
-	{
-		tc.position = m_physics_system->get_body_position(rc.id);
-	};
-
-
-	for (auto& pose : input->get_controller_poses())
-	{
-
-		glm::vec3 target_pos = glm::to_glm(pose.position);
-		target_pos += glm::vec3{ 0, m_viewHeightM, 0 };
-
-		glm::quat xr_source_rotation = glm::to_glm(pose.orientation);
-		glm::quat rot = glm::rotate(xr_source_rotation, glm::radians(180.0f), glm::vec3(0,1,0));
-
-		render_model(target_pos, { 0.01f, 0.01f, 0.01f }, rot, controller);
-	}
 
 	// draw skybox
 	XrVector3f pos = info.view.pose.position;
@@ -231,7 +263,6 @@ void GameApp::render(FrameRenderInfo& info)
 	}
 
 	m_graphicsAPI->EndRendering();
-
 	
 	ImGui::NewFrame();
 
@@ -252,7 +283,7 @@ void GameApp::render(FrameRenderInfo& info)
 				JPH::EMotionType::Dynamic,
 				Layers::MOVING), JPH::Vec3(0.0f, 1.0f, 1.0f));
 
-			m_registry.emplace<rigidbody_component>(ent, pid);
+			m_registry.emplace<physics_component>(ent, pid);
 		}
 	}
 	ImGui::End();
@@ -270,6 +301,25 @@ void GameApp::render(FrameRenderInfo& info)
 			ImGui::Text("Position: %f %f %f", tc.position.x, tc.position.y, tc.position.z);
 			ImGui::Text("Scale: %f %f %f", tc.scale.x, tc.scale.y, tc.scale.z);
 		}
+	}
+	ImGui::End();
+
+	// draw imgui debug
+	if (ImGui::Begin("Phys debug"))
+	{
+		ImGui::Text("Bodies");
+		// get all mesh components
+		auto modelsToRender = m_registry.view<physics_component>();
+		for (const auto&& [e, pc] : modelsToRender.each())
+		{
+			auto ppos = m_physics_system->get_body_position(pc.id);
+			auto ptype = m_physics_system->get_body_type(pc.id);
+
+			ImGui::Text("Body: %d", pc.id);
+			ImGui::Text("Position: %f %f %f", ppos.x, ppos.y, ppos.z);
+			ImGui::Text("Type: %d", (int)ptype);
+		}
+
 	}
 	ImGui::End();
 

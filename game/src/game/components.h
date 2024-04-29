@@ -13,10 +13,20 @@ struct transform_component {
 	glm::vec3 scale;
 };
 
-struct rigidbody_component {
+struct physics_component {
 	JPH::BodyID id;
 };
 
 struct mesh_component {
 	Model model;
+};
+
+struct scriptable_component {
+	std::filesystem::path script;
+};
+
+struct controller_component {
+	int index = 0;
+	glm::vec3 last_pos;
+	glm::vec3 current_pos;
 };

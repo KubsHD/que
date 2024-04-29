@@ -205,14 +205,21 @@ public:
 
 #pragma endregion JOLT_BOILERPLATE
 
-static glm::vec3 to_glm(JPH::Vec3 vec)
-{
-	return glm::vec3(vec.GetX(), vec.GetY(), vec.GetZ());
-}
+namespace JPH {
+	static glm::vec3 to_glm(JPH::Vec3 vec)
+	{
+		return glm::vec3(vec.GetX(), vec.GetY(), vec.GetZ());
+	}
 
+	static JPH::Vec3 to_jph(glm::vec3 vec)
+	{
+		return JPH::Vec3(vec.x, vec.y, vec.z);
+	}
+}
 class PhysicsSystem {
 public:
 	PhysicsSystem();
+	~PhysicsSystem();
 
 	static void init_static();
 
@@ -220,7 +227,11 @@ public:
 	JPH::BodyID spawn_body(JPH::BodyCreationSettings settings, JPH::Vec3 initial_velocity = JPH::Vec3(0, 0, 0));
 
 	glm::vec3 get_body_position(JPH::BodyID bodyId);
+	void set_body_position(JPH::BodyID bid, glm::vec3 pos);
 
+	void add_velocity(JPH::BodyID bid, glm::vec3 vel);
+
+	JPH::EMotionType get_body_type(JPH::BodyID bodyId);
 	glm::vec3 obj_pos;
 
 private:

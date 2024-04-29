@@ -8,6 +8,7 @@
 #ifdef _MSC_VER
 #define NOMINMAX
 #include <direct.h>
+#define WIN32_LEAN_AND_MEAN 
 #include <windows.h>
 #ifndef _MAX_PATH
 #define _MAX_PATH 500
