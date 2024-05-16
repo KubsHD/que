@@ -5,14 +5,13 @@
 // OpenXR Tutorial for Khronos Group
 
 #pragma once
+
+#include "pch.h"
+
 #include "GraphicsAPI.h"
+#include "deletion_queue.h"
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
-
-
-#include <vulkan/vk_enum_string_helper.h>
-
-
 #define VULKAN_CHECK(x, y)                                                                         \
     {                                                                                              \
         VkResult result = (x);                                                                     \
@@ -33,9 +32,6 @@
         }                                                                                          \
     }
 
-#include <lib/vk_mem_alloc.h>
-#include <functional>
-#include "deletion_queue.h"
 
 class GraphicsAPI_Vulkan : public GraphicsAPI {
 public:

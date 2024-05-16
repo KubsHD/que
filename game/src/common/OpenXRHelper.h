@@ -5,23 +5,16 @@
 // OpenXR Tutorial for Khronos Group
 
 #pragma once
+
+#include "pch.h"
 // Define any XR_USE_PLATFORM_... / XR_USE_GRAPHICS_API_... before this header file.
 
-#if defined(XR_OS_WINDOWS)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <Unknwn.h>
-#endif
 
 #if defined(XR_OS_ANDROID)
 #include "jni.h"
 #endif
 
-#include <vulkan/vulkan.h>
 
-// OpenXR Headers
-#include <openxr/openxr.h>
-#include <openxr/openxr_platform.h>
 
 // For DEBUG_BREAK
 #include "HelperFunctions.h"

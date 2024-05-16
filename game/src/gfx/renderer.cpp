@@ -1,15 +1,13 @@
+#include "pch.h"
+
 #include "renderer.h"
+
 
 #include <asset/mesh.h>
 
 #include <core/asset.h>
 #include <core/profiler.h>
 
-#include <glm/ext.hpp>
-#include <glm/gtx/quaternion.hpp>
-
-#include <vulkan/vulkan.h>
-#include <entt/entt.hpp>
 
 #include <gfx/pipeline/sky_pipeline.h>
 #include <gfx/pipeline/mesh_pipeline.h>
@@ -17,14 +15,10 @@
 #include <gfx/sky.h>
 
 #include <common/GraphicsAPI.h>
+#include <common/GraphicsAPI_Vulkan.h>
 #include <common/vk_initializers.h>
 #include <common/glm_helpers.h>
 
-#include <lib/imgui/imgui_impl_vulkan.h>
-#include <lib/netimgui/NetImgui_Api.h>
-#include <lib/im3d/im3d.h>
-#include <lib/tiny_gltf.h>
-#include <lib/stb_image.h>
 
 #include <game/systems/systems.h>
 #include <game/tags.h>
@@ -71,7 +65,6 @@ void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 	XrVector3f offset{ 0.0f, 1.5f, 0.0f };
 	XrVector3f final_camera_pos;
 	XrVector3f_Add(&final_camera_pos, &info.view.pose.position, &offset);
-
 
 	XrMatrix4x4f_CreateTranslationRotationScale(&toView, &final_camera_pos, &info.view.pose.orientation, &scale1m);
 	XrMatrix4x4f view;

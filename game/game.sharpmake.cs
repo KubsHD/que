@@ -101,8 +101,10 @@ namespace Que
             conf.Defines.Add("JPH_PROFILE_ENABLED");
 
             // if not set, no precompile option will be used.
-            //conf.PrecompHeader = "pch.h";
-            //conf.PrecompSource = "pch.cpp";
+            conf.PrecompHeader = "pch.h";
+            conf.PrecompSource = "pch.cpp";
+
+            conf.PrecompSourceExcludeFolders = new Strings("src/lib/");
 
             conf.CustomProperties.Add("CustomOptimizationProperty", $"Custom-{target.Optimization}");
 
@@ -224,10 +226,10 @@ namespace Que
 
             string copyResBat = Path.Combine(projectPath, "copy_resources.bat");
             string copyResCmd = $"xcopy /E /Y /I {SharpmakeCsProjectPath}\\..\\platform\\meta\\resources\\AndroidManifest.xml {projectPath}\\src\\main";
-            
+
             File.WriteAllText(copyResBat, copyResCmd);
             File.AppendAllText(copyResBat, "\n");
-            
+
             string copyGradeCmd = $"xcopy /E /Y /I {SharpmakeCsProjectPath}\\..\\platform\\meta\\gradle\\app {projectPath}";
             File.AppendAllText(copyResBat, copyGradeCmd);
         }

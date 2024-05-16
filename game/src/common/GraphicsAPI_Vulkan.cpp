@@ -4,15 +4,13 @@
 
 // OpenXR Tutorial for Khronos Group
 
-;
+#include "pch.h"
 
 #if defined(_WIN32)
-#define VK_USE_PLATFORM_WIN32_KHR
 #endif
 #include "GraphicsAPI_Vulkan.h"
+#include "deletion_queue.h"
 
-#include <vulkan/vk_enum_string_helper.h>
-#include <map>
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
 

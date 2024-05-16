@@ -1,18 +1,13 @@
 #pragma once
 
+#include "pch.h"
+
 #include <common/GraphicsAPI_Vulkan.h>
 #include <common/OpenXRDebugUtils.h>
-
-#include <chrono>
-#include <memory>
 #include <common/xr_linear_algebra.h>
 
-#include <math.h>
 #include <core/asset.h>
-
 #include <core/ecs.h>
-
-#include <functional>
 #include <core/input.h>
 
 

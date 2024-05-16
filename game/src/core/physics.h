@@ -1,29 +1,6 @@
 #pragma once
 
-#include <Jolt/Jolt.h>
-#include <Jolt/Physics/PhysicsSystem.h>
-#include <Jolt/Core/TempAllocator.h>
-#include <Jolt/Core/JobSystemThreadPool.h>
-#include <Jolt/RegisterTypes.h>
-#include <Jolt/Core/Factory.h>
-#include <Jolt/Core/TempAllocator.h>
-#include <Jolt/Core/JobSystemThreadPool.h>
-#include <Jolt/Physics/PhysicsSettings.h>
-#include <Jolt/Physics/PhysicsSystem.h>
-#include <Jolt/Physics/Collision/Shape/BoxShape.h>
-#include <Jolt/Physics/Collision/Shape/SphereShape.h>
-#include <Jolt/Physics/Body/BodyCreationSettings.h>
-#include <Jolt/Physics/Body/BodyActivationListener.h>
-
-#include <iostream>
-#include <memory>
-#include <cstdarg>
-#include <thread>
-
-#define GLM_ENABLE_EXPERIMENTAL
-
-#include <entt/entt.hpp>
-#include <glm/glm.hpp>
+#include "pch.h"
 
 #pragma region JOLT_BOILERPLATE
 
@@ -242,9 +219,12 @@ private:
 	JPH::Body* floor;
 	JPH::BodyID obj;
 
+
+
 	std::unordered_map<JPH::BodyID, JPH::Vec3> m_bodies;
 
 	BPLayerInterfaceImpl broad_phase_layer_interface;
+
 	ObjectVsBroadPhaseLayerFilterImpl object_vs_broadphase_layer_filter;
 	ObjectLayerPairFilterImpl object_vs_object_layer_filter;
 

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "game_app.h"
 
 #include <asset/mesh.h>
@@ -5,11 +7,6 @@
 #include <core/asset.h>
 #include <core/profiler.h>
 
-#include <glm/ext.hpp>
-#include <glm/gtx/quaternion.hpp>
-
-#include <vulkan/vulkan.h>
-#include <entt/entt.hpp>
 
 #include <gfx/pipeline/sky_pipeline.h>
 #include <gfx/pipeline/mesh_pipeline.h>
@@ -19,12 +16,6 @@
 #include <common/GraphicsAPI.h>
 #include <common/vk_initializers.h>
 #include <common/glm_helpers.h>
-
-#include <lib/imgui/imgui_impl_vulkan.h>
-#include <lib/netimgui/NetImgui_Api.h>
-#include <lib/im3d/im3d.h>
-#include <lib/tiny_gltf.h>
-#include <lib/stb_image.h>
 
 #include <game/systems/systems.h>
 #include <game/tags.h>
@@ -48,6 +39,7 @@ void GameApp::init()
 	m_renderer = new Renderer(m_graphicsAPI, m_colorSwapchainInfos, m_depthSwapchainInfos);
 
 	init_imgui();
+
 
 	create_resources();
 
@@ -117,6 +109,9 @@ void GameApp::render(FrameRenderInfo& info)
 	QUE_PROFILE;
 
 	m_renderer->render(info, m_registry);
+
+
+
 
 
 
@@ -202,7 +197,6 @@ void GameApp::create_resources()
 	controller = Asset::load_model_json(*m_graphicsAPI, "data/models/meta/model_controller_left.model");
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);
 	test_cube = Asset::load_model_json(*m_graphicsAPI, "data/models/blocks/brick/Cube.model");
-	
 }
 
 void GameApp::destroy_resources()

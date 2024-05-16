@@ -9,10 +9,7 @@
 
 // Platform headers
 #if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <Windows.h>
-#include <unknwn.h>
+
 #define XR_USE_PLATFORM_WIN32
 
 #if defined(XR_TUTORIAL_USE_D3D11)
@@ -95,11 +92,6 @@
 
 #if defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 #include <gfxwrapper_opengl.h>
-#endif
-
-#if defined(XR_USE_GRAPHICS_API_VULKAN)
-#include <vulkan/vulkan.h>
-#include <lib/vk_mem_alloc.h>
 #endif
 
 // OpenXR Helper

@@ -1,12 +1,6 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
-#include <glm/glm.hpp>
-#include <filesystem>
-
-#include <vulkan/vulkan.h>
+#include "pch.h"
 
 using String = std::string;
 
