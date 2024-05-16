@@ -143,6 +143,8 @@ void GraphicsAPI_Vulkan::immediate_submit(std::function<void(VkCommandBuffer cmd
 
 GraphicsAPI_Vulkan::GraphicsAPI_Vulkan() {
 
+    assert(false);
+
     // NOT USED
     return;
     
@@ -550,6 +552,10 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 
 
     tex_placeholder.view = CreateImageView(ivci);
+
+
+
+
 }
 
 GraphicsAPI_Vulkan::~GraphicsAPI_Vulkan() {
@@ -741,7 +747,7 @@ VkImage GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
     vkImageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     vkImageCI.queueFamilyIndexCount = 0;
     vkImageCI.pQueueFamilyIndices = nullptr;
-    vkImageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    vkImageCI.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     VULKAN_CHECK(vkCreateImage(device, &vkImageCI, nullptr, &image), "Failed to create Image");
 
     VkMemoryRequirements memoryRequirements{};

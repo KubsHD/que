@@ -1,5 +1,7 @@
 #include "app.h"
 #include <core/profiler.h>
+#include <common/DebugOutput.h>
+
 
 
 #if defined(__ANDROID__)
@@ -492,7 +494,7 @@ void App::create_session()
 {
 	XrSessionCreateInfo sessionCI{ XR_TYPE_SESSION_CREATE_INFO };
 
-	m_graphicsAPI = std::make_unique<GraphicsAPI_Vulkan>(m_xrInstance, m_xrSystemId);
+	m_graphicsAPI = std::make_shared<GraphicsAPI_Vulkan>(m_xrInstance, m_xrSystemId);
 
 	sessionCI.next = m_graphicsAPI->GetGraphicsBinding();
 	sessionCI.createFlags = 0;

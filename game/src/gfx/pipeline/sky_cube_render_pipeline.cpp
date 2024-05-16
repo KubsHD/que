@@ -4,12 +4,12 @@
 #include <core/asset.h>
 namespace pipeline {
 
-	GraphicsAPI::Pipeline create_sky_cube_render_pipeline(GraphicsAPI_Vulkan& gapi, std::shared_ptr<Asset> asset_mgr)
+	GraphicsAPI::Pipeline create_sky_cube_render_pipeline(GraphicsAPI_Vulkan& gapi)
 	{
-		std::vector<char> vertexSource = asset_mgr->read_all_bytes("shader/equi2cube.vert.spv");
+		std::vector<char> vertexSource = Asset::Instance->read_all_bytes("shader/equi2cube.vert.spv");
 		auto vs = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
 
-		std::vector<char> fragmentSource = asset_mgr->read_all_bytes("shader/equi2cube.frag.spv");
+		std::vector<char> fragmentSource = Asset::Instance->read_all_bytes("shader/equi2cube.frag.spv");
 		auto ps = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
 
 		VkPushConstantRange range;

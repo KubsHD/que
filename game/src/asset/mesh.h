@@ -5,6 +5,9 @@
 #include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>
 #include <common/xr_linear_algebra.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/glm.hpp>
 
 struct Mesh {

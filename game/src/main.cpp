@@ -1,5 +1,7 @@
 #include <game_app.h>
 
+#include <common/DebugOutput.h>
+
 
 void App_Main(GraphicsAPI_Type apiType) {
 	DebugOutput debugOutput;  // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
@@ -14,7 +16,7 @@ void App_Main(GraphicsAPI_Type apiType) {
 #if defined(XR_OS_WINDOWS)
 
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include <Windows.h>
 #include "../../projects/Game/config.generated.h"
 
 #if defined(LIVEPP_ENABLED)

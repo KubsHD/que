@@ -6,6 +6,7 @@
 #include <core/physics.h>
 #include <gfx/buffers.h>
 #include <gfx/sky.h>
+#include <gfx/renderer.h>
 
 class GameApp : public App
 {
@@ -20,16 +21,12 @@ public:
 	void render(FrameRenderInfo& info) override;
 	void destroy() override;
 
-	void render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model);
-
-	entt::registry& get_registry()
-	{
-		return m_registry;
-	}
 private:
 	void create_resources();
 	void destroy_resources();
 	void init_imgui();
+
+	Renderer* m_renderer;
 
 	float m_viewHeightM = 1.5f;
 

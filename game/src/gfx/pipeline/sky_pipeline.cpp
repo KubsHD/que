@@ -5,12 +5,12 @@
 
 namespace pipeline
 {
-	GraphicsAPI::Pipeline create_sky_pipeline(GraphicsAPI_Vulkan& gapi, std::shared_ptr<Asset> asset_mgr, VkFormat drawImageFormat, VkFormat depthImageFormat)
+	GraphicsAPI::Pipeline create_sky_pipeline(GraphicsAPI_Vulkan& gapi, VkFormat drawImageFormat, VkFormat depthImageFormat)
 	{
-		std::vector<char> vertexSource = asset_mgr->read_all_bytes("shader/sky.vert.spv");
+		std::vector<char> vertexSource = Asset::Instance->read_all_bytes("shader/sky.vert.spv");
 		auto vs = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
 
-		std::vector<char> fragmentSource = asset_mgr->read_all_bytes("shader/sky.frag.spv");
+		std::vector<char> fragmentSource = Asset::Instance->read_all_bytes("shader/sky.frag.spv");
 		auto ps = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
 
 		VkPushConstantRange range;

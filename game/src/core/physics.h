@@ -20,6 +20,8 @@
 #include <cstdarg>
 #include <thread>
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
@@ -28,8 +30,6 @@
 // Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state
 JPH_SUPPRESS_WARNINGS
 
-// We're also using STL classes in this example
-using namespace std;
 
 // Callback for traces, connect this to your own trace function if you have one
 static void TraceImpl(const char* inFMT, ...)
@@ -42,7 +42,7 @@ static void TraceImpl(const char* inFMT, ...)
 	va_end(list);
 
 	// Print to the TTY
-	cout << buffer << endl;
+	std::cout << buffer << std::endl;
 }
 
 #ifdef JPH_ENABLE_ASSERTS
@@ -51,7 +51,7 @@ static void TraceImpl(const char* inFMT, ...)
 static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint32_t inLine)
 {
 	// Print to the TTY
-	cout << inFile << ":" << inLine << ": (" << inExpression << ") " << (inMessage != nullptr ? inMessage : "") << endl;
+	std::cout << inFile << ":" << inLine << ": (" << inExpression << ") " << (inMessage != nullptr ? inMessage : "") << std::endl;
 
 	// Breakpoint
 	return true;
@@ -166,7 +166,7 @@ public:
 	// See: ContactListener
 	virtual JPH::ValidateResult	OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override
 	{
-		cout << "Contact validate callback" << endl;
+		std::cout << "Contact validate callback" << std::endl;
 
 		// Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
 		return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
@@ -174,17 +174,17 @@ public:
 
 	virtual void			OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override
 	{
-		cout << "A contact was added" << endl;
+		std::cout << "A contact was added" << std::endl;
 	}
 
 	virtual void			OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override
 	{
-		cout << "A contact was persisted" << endl;
+		std::cout << "A contact was persisted" << std::endl;
 	}
 
 	virtual void			OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override
 	{
-		cout << "A contact was removed" << endl;
+		std::cout << "A contact was removed" << std::endl;
 	}
 };
 
@@ -194,12 +194,12 @@ class MyBodyActivationListener : public JPH::BodyActivationListener
 public:
 	virtual void		OnBodyActivated(const JPH::BodyID& inBodyID, uint64_t inBodyUserData) override
 	{
-		cout << "A body got activated" << endl;
+		std::cout << "A body got activated" << std::endl;
 	}
 
 	virtual void		OnBodyDeactivated(const JPH::BodyID& inBodyID, uint64_t inBodyUserData) override
 	{
-		cout << "A body went to sleep" << endl;
+		std::cout << "A body went to sleep" << std::endl;
 	}
 };
 

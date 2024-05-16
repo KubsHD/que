@@ -96,7 +96,7 @@ namespace gfx {
 
         for (int i = 0; i < 6; i++)
         {
-            VkImageView attachments[2];
+            VkImageView attachments[1];
             attachments[0] = cubemapViews[i];
 
             VkFramebufferCreateInfo fbufCreateInfo{};

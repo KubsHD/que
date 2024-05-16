@@ -1,6 +1,5 @@
 #pragma once
 
-#include <common/DebugOutput.h>
 #include <common/GraphicsAPI_Vulkan.h>
 #include <common/OpenXRDebugUtils.h>
 
@@ -113,7 +112,7 @@ protected:
 	std::vector<std::string> m_instanceExtensions = {};
 
 	// session stuff
-	std::unique_ptr<GraphicsAPI_Vulkan> m_graphicsAPI = nullptr;
+	std::shared_ptr<GraphicsAPI_Vulkan> m_graphicsAPI = nullptr;
 	XrSession m_session = XR_NULL_HANDLE;
 
 	XrSessionState m_sessionState = XR_SESSION_STATE_UNKNOWN;
