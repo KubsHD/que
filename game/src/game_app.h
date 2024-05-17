@@ -45,7 +45,7 @@ private:
 	entt::registry m_registry;
 	std::unique_ptr<PhysicsSystem> m_physics_system;
 
-	Model mod;
+	Model level_model;
 	Model controller;
 
 	Model skybox_cube;

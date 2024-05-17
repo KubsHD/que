@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "asset.h"
 
 #include <fstream>
@@ -441,5 +443,5 @@ GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, con
 		return load_image(gapi, root_path + "/" + std::string(path.C_Str()), type == aiTextureType_NORMALS ? TT_NORMAL : TT_DIFFUSE);
 	}
 	
-	return GraphicsAPI::Image();
+	return gapi.tex_placeholder;
 } 

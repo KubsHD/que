@@ -76,3 +76,4 @@
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 
+#include <core/types.h>

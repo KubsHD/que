@@ -45,7 +45,7 @@ void GameApp::init()
 
 	const auto entity = m_registry.create();
 	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
-	m_registry.emplace<mesh_component>(entity, mod);
+	m_registry.emplace<mesh_component>(entity, level_model);
 
 	const auto ball = m_registry.create();
 
@@ -190,9 +190,7 @@ void GameApp::create_resources()
 {
 	QUE_PROFILE;
 
-
-
-	mod = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
+	level_model = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 	controller = Asset::load_model_json(*m_graphicsAPI, "data/models/meta/model_controller_left.model");
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);

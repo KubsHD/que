@@ -72,9 +72,11 @@ void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 	XrMatrix4x4f_InvertRigidBody(&view, &toView);
 	XrMatrix4x4f_Multiply(&viewProj, &proj, &view);
 
+
 	m_sceneDataCPU.camPos = glm::to_glm(info.view.pose.position);
 	m_sceneDataCPU.viewProj = glm::to_glm(viewProj);
 	m_sceneDataCPU.proj = glm::mat4(0.0f);
+	m_sceneDataCPU.view = glm::mat4(0.0f);
 
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
