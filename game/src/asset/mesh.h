@@ -25,6 +25,8 @@ struct Material {
 	GraphicsAPI::Image diff;
 	GraphicsAPI::Image norm;
 	GraphicsAPI::Image orm;
+
+	glm::vec3 color;
 };
 
 struct Vertex {

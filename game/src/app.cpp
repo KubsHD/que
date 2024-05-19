@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "app.h"
 #include <core/profiler.h>
 #include <common/DebugOutput.h>
@@ -23,6 +25,8 @@ void App::Run()
 #else
 	m_asset_manager = std::make_shared<Asset>();
 #endif
+
+	m_asset_manager->Instance;
 
 	{
 		QUE_PROFILE_SECTION("OpenXr Init");

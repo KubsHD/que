@@ -27,10 +27,9 @@ class Asset {
 public:
 	static Asset* Instance;
 
-	Asset() {
-		Instance = this;
-	};
+	Asset();
 	Asset(void* android_ass);
+
 	~Asset();
 
 	std::vector<char> read_all_bytes(String path);

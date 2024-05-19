@@ -24,6 +24,7 @@
 #include <game/tags.h>
 #include <game/components.h>
 #include <app.h>
+#include "pipeline/unlit_mesh_pipeline.h"
 
 Renderer::Renderer(std::shared_ptr<GraphicsAPI_Vulkan> gapi, std::vector<App::SwapchainInfo> colorFormats, std::vector<App::SwapchainInfo> depthFormats) : m_colorSwapchainInfos(colorFormats), m_depthSwapchainInfos(depthFormats), m_graphicsAPI(gapi)
 {
@@ -165,6 +166,7 @@ void Renderer::create_resources()
 
 	m_pipeline = pipeline::create_mesh_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 	m_sky_render_pipeline = pipeline::create_sky_cube_render_pipeline(*m_graphicsAPI);
+	m_unlit_pipeline = pipeline::create_unlit_mesh_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);

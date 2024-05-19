@@ -39,6 +39,7 @@ private:
 	int currently_drawn_object = 0;
 
 	GraphicsAPI::Pipeline m_pipeline;
+	GraphicsAPI::Pipeline m_unlit_pipeline;
 	GraphicsAPI::Pipeline m_sky_pipeline;
 	GraphicsAPI::Pipeline m_sky_render_pipeline;
 

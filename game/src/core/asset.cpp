@@ -30,14 +30,37 @@ Asset::Asset(void* android_ass)
 {
 	Instance = this;
 
+
+
 #if defined(__ANDROID__)
 	m_android_asset_manager = (AAssetManager*)android_ass;
+#endif
+}
+
+Asset::Asset()
+{
+	Instance = this;
+#if defined(_WIN32)
+	STARTUPINFO si{};
+	PROCESS_INFORMATION pi{};
+
+	OutputDebugString("Compiling shaders...");
+	if (!CreateProcess(NULL, ".\\shader\\shader_compile.bat", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+		OutputDebugString("ERROR COMPILING SHADERS");
+	}
+	WaitForSingleObject(pi.hProcess, INFINITE);
+
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+	OutputDebugString(" Done!\n");
 #endif
 }
 
 Asset::~Asset()
 {
 }
+
 
 std::vector<char> Asset::read_all_bytes(String path)
 {

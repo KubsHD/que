@@ -47,19 +47,7 @@ void GameApp::init()
 	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
 	m_registry.emplace<mesh_component>(entity, level_model);
 
-	const auto ball = m_registry.create();
-
-	m_registry.emplace<transform_component>(ball, glm::vec3{ 0.0f,5.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
-	m_registry.emplace<mesh_component>(ball, test_cube);
-
-	JPH::BodyCreationSettings obj_settings(
-		new JPH::BoxShape(JPH::Vec3(0.5f, 0.5f, 0.5f)),
-		JPH::RVec3(0, 5, 0),
-		JPH::Quat::sIdentity(),
-		JPH::EMotionType::Dynamic,
-		Layers::MOVING);
 	
-	m_registry.emplace<physics_component>(ball, m_physics_system->spawn_body(obj_settings, JPH::Vec3(0, -1.0f, 0.0f)));
 
 	// controllers
 	const auto controller1 = m_registry.create();
@@ -75,6 +63,7 @@ void GameApp::init()
 	m_registry.emplace<mesh_component>(controller1, controller);
 	m_registry.emplace<controller_component>(controller1, 0);
 	m_registry.emplace<main_interacting_controller>(controller1);
+
 }
 
 void GameApp::init_imgui()
@@ -109,12 +98,6 @@ void GameApp::render(FrameRenderInfo& info)
 	QUE_PROFILE;
 
 	m_renderer->render(info, m_registry);
-
-
-
-
-
-
 
 	#pragma region Imgui
 

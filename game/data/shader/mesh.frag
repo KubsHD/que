@@ -2,18 +2,7 @@
 
 #extension GL_GOOGLE_include_directive : require
 #include "pbr.glsl"
-
-layout(set = 0,binding = 0) uniform SceneData {
-	mat4 viewProj;
-	mat4 view;
-	mat4 proj;
-	vec3 camPos;
-};
-
-layout(set = 1, binding = 0) uniform InstanceData {
-	mat4 model;
-	mat4 modelInvTrans;
-};
+#include "common.glsl"
 
 layout(set = 1, binding = 1) uniform sampler2D tex_diffuse;
 layout(set = 1, binding = 2) uniform sampler2D tex_normal;
@@ -32,7 +21,9 @@ layout(location = 0) out vec4 o_Color;
 void main() {
 	float metallic = texture(tex_orm, i_TexCoord).z;
 	float roughness = texture(tex_orm, i_TexCoord).y;
-	float ao = 0.0f;
+	float ao = texture(tex_orm, i_TexCoord).x;
+
+	//float ao = 0.1f;
 	vec3 lightPos = vec3(-3.0f, 4.0f, 0.0f);
 	vec3 lightColor = vec3(150.0f);
 	
@@ -40,7 +31,7 @@ void main() {
 	norm = (norm * 2.0 - 1.0);   
 	norm = normalize(i_TBN * norm);
 
-	vec3 albedo = texture(tex_diffuse,i_TexCoord).xyz;
+	vec3 albedo = pow(texture(tex_diffuse, i_TexCoord).rgb, vec3(2.2));
 
 	vec3 viewDir = normalize(camPos - i_WorldPos);
 	vec3 lightDir = normalize(lightPos); 
@@ -69,11 +60,11 @@ void main() {
     float NdotL = max(dot(norm, lightDir), 0.0);        
     vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
 
-	vec3 ambient = texture(tex_sky, norm).rgb * albedo * ao;
+	vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 color = ambient + Lo;
 	
-    //color = color / (color + vec3(1.0));
-    //color = pow(color, vec3(1.0/2.2));  
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0/2.2));  
 
 	o_Color = vec4(color, 1.0f);
 }
