@@ -12,6 +12,8 @@
 #include <gfx/pipeline/sky_pipeline.h>
 #include <gfx/pipeline/mesh_pipeline.h>
 #include <gfx/pipeline/sky_cube_render_pipeline.h>
+#include <gfx/pipeline/sky_irradiance_generate.h>
+
 #include <gfx/sky.h>
 
 #include <common/GraphicsAPI.h>
@@ -140,7 +142,7 @@ void Renderer::draw_sky(App::FrameRenderInfo& info)
 	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant));
 
 	m_graphicsAPI->SetDescriptor({ 0,  0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
-	m_graphicsAPI->SetDescriptor({ 0,  1, skybox_image.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+	m_graphicsAPI->SetDescriptor({ 0,  1, m_sky.skyIrradiance.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 
 	m_graphicsAPI->UpdateDescriptors();
 
@@ -169,7 +171,6 @@ void Renderer::create_resources()
 	m_unlit_pipeline = pipeline::create_unlit_mesh_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
-	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);
 
 	m_sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 	m_sky = gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, m_sky_render_pipeline);
@@ -182,10 +183,6 @@ void Renderer::create_resources()
 
 	m_graphicsAPI->MainDeletionQueue.push_function([&]() {
 		vkDestroySampler(m_graphicsAPI->GetDevice(), sampler, nullptr);
-
-		m_graphicsAPI->DestroyImage(skybox_image.image);
-		m_graphicsAPI->DestroyImageView(skybox_image.view);
-		vmaFreeMemory(m_graphicsAPI->GetAllocator(), skybox_image.allocation);
 
 		for (auto m : skybox_cube.meshes)
 		{

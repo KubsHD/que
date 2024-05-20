@@ -19,6 +19,8 @@ void App_Main(GraphicsAPI_Type apiType) {
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <shellapi.h>
+#include <Shlwapi.h>
 #include "../../projects/Game/config.generated.h"
 
 #if defined(LIVEPP_ENABLED)
@@ -35,6 +37,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		lppAgent.EnableModule(lpp::LppGetCurrentModulePath(), lpp::LPP_MODULES_OPTION_ALL_IMPORT_MODULES, nullptr, nullptr);
 	}
 
+#endif
+
+#if defined(_WIN32) && defined(_DEBUG)
+
+	std::wstring commandLineStr(GetCommandLineW());
+
+	std::wstring arg = L"--shader_compile";
+	if (commandLineStr.find(arg) != std::wstring::npos)
+	{
+		STARTUPINFO si{};
+		PROCESS_INFORMATION pi{};
+
+		OutputDebugString("Compiling shaders...");
+		if (!CreateProcess(NULL, ".\\shader\\shader_compile.bat", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+			OutputDebugString("ERROR COMPILING SHADERS");
+		}
+		WaitForSingleObject(pi.hProcess, INFINITE);
+
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+
+		OutputDebugString(" Done!\n");
+	}
 #endif
 
 	App_Main(VULKAN);

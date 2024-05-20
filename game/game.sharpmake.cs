@@ -146,6 +146,8 @@ namespace Que
             {
                 if (!Util.CreateSymbolicLink(targetPath, dataPath, true))
                     Debug.Assert(false);
+
+                conf.VcxprojUserFile.LocalDebuggerCommandArguments = "--shader_compile";    
             }
 
             // shader pipeline

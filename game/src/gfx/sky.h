@@ -8,11 +8,13 @@ struct Model;
 namespace gfx {
 	struct Sky {
 		GraphicsAPI::Image skyImage;
-		GraphicsAPI::Image skyCubemap;
 		// cube probably
+		GraphicsAPI::Image skyCubemap;
+
+		GraphicsAPI::Image skyIrradiance;
 	};
 
 	namespace sky {
-		Sky create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, GraphicsAPI::Pipeline sky_pipeline);
+		Sky create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, GraphicsAPI::Pipeline sky_render_pipeline);
 	}
 }

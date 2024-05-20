@@ -44,7 +44,6 @@ private:
 	GraphicsAPI::Pipeline m_sky_render_pipeline;
 
 	Model skybox_cube;
-	GraphicsAPI::Image skybox_image;
 	GraphicsAPI::Image blank_texture;
 
 	VkSampler sampler;

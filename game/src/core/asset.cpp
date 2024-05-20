@@ -40,21 +40,7 @@ Asset::Asset(void* android_ass)
 Asset::Asset()
 {
 	Instance = this;
-#if defined(_WIN32) && defined(_DEBUG)
-	STARTUPINFO si{};
-	PROCESS_INFORMATION pi{};
 
-	OutputDebugString("Compiling shaders...");
-	if (!CreateProcess(NULL, ".\\shader\\shader_compile.bat", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-		OutputDebugString("ERROR COMPILING SHADERS");
-	}
-	WaitForSingleObject(pi.hProcess, INFINITE);
-
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-
-	OutputDebugString(" Done!\n");
-#endif
 }
 
 Asset::~Asset()
