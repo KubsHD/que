@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "sky_pipeline.h"
 
 #include <asset/mesh.h>

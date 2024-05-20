@@ -90,6 +90,8 @@ void GameApp::update(float dt)
 	game::system::update_controller_system(m_registry, *input, *m_physics_system, m_viewHeightM);
 	game::system::update_block_pickup_system(m_registry, *input);
 
+	m_physics_system->overlap_sphere(glm::vec3(0, 0.5, 0), 10.0);
+
 	m_physics_system->update(dt, m_registry);
 }
 

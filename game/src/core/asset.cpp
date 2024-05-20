@@ -40,7 +40,7 @@ Asset::Asset(void* android_ass)
 Asset::Asset()
 {
 	Instance = this;
-#if defined(_WIN32)
+#if defined(_WIN32) && defined(_DEBUG)
 	STARTUPINFO si{};
 	PROCESS_INFORMATION pi{};
 

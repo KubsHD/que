@@ -93,18 +93,18 @@ namespace Que
                 LocalDebuggerEnvironment = File.Exists(Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json")) ? "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json") : "",
             };
 
+          
             if (target.Optimization == Optimization.Debug)
-            {
                 conf.Defines.Add("JPH_DEBUG_RENDERER");
-            }
 
+            conf.Defines.Add("JPH_OBJECT_STREAM");
             conf.Defines.Add("JPH_PROFILE_ENABLED");
 
             // if not set, no precompile option will be used.
             conf.PrecompHeader = "pch.h";
             conf.PrecompSource = "pch.cpp";
 
-            conf.PrecompSourceExcludeFolders = new Strings("src/lib/");
+            conf.PrecompSourceExcludeFolders = new Strings("src/lib/", "../deps/tracy/public/");
 
             conf.CustomProperties.Add("CustomOptimizationProperty", $"Custom-{target.Optimization}");
 
@@ -136,12 +136,17 @@ namespace Que
             var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
 
             conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
-            //conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
-
+            
             var dataPath = Path.Combine(realProjectPath, "data");
             var targetPath = Path.Combine(ResolveString(conf.TargetPath, conf, target), "data");
-            if (!Util.CreateSymbolicLink(targetPath, dataPath, true))
-                Debug.Assert(false);
+
+            if (target.Optimization == Optimization.Release)
+                conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
+            else
+            {
+                if (!Util.CreateSymbolicLink(targetPath, dataPath, true))
+                    Debug.Assert(false);
+            }
 
             // shader pipeline
             GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", ResolveString(conf.TargetPath, conf, target) + "\\shader");

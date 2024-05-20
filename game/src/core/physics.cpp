@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "physics.h"
 
 
@@ -166,6 +168,21 @@ void PhysicsSystem::add_velocity(JPH::BodyID bid, glm::vec3 vel)
 	body_interface.AddLinearVelocity(bid, JPH::to_jph(vel));
 }
 
+bool PhysicsSystem::overlap_sphere(glm::vec3 point, float radius)
+{
+	auto& bpq = m_system.GetBroadPhaseQuery();
+
+	JPH::AllHitCollisionCollector<JPH::CollideShapeBodyCollector> collector;
+	bpq.CollideSphere(JPH::to_jph(point), radius, collector);
+
+	for (const auto& hit : collector.mHits)
+	{
+		auto body = m_system.GetBodyLockInterface().TryGetBody(hit);
+	}
+
+	return false;
+}
+
 JPH::EMotionType PhysicsSystem::get_body_type(JPH::BodyID bodyId)
 {
 	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
@@ -175,8 +192,8 @@ JPH::EMotionType PhysicsSystem::get_body_type(JPH::BodyID bodyId)
 
 void PhysicsSystem::init_static()
 {
-	JPH::RegisterDefaultAllocator();
 	JPH::Trace = TraceImpl;
+	JPH::RegisterDefaultAllocator();
 	JPH_IF_ENABLE_ASSERTS(JPH::AssertFailed = AssertFailedImpl;)
 	JPH::Factory::sInstance = new JPH::Factory();
 	JPH::RegisterTypes();

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "block_pickup_system.h"
 
 
