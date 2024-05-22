@@ -8,6 +8,7 @@ layout(set = 1, binding = 1) uniform sampler2D tex_diffuse;
 layout(set = 1, binding = 2) uniform sampler2D tex_normal;
 layout(set = 1, binding = 3) uniform sampler2D tex_orm;
 layout(set = 1, binding = 4) uniform samplerCube tex_sky;
+layout(set = 1, binding = 5) uniform sampler2D tex_emission;
 
 layout(location = 0) in vec2 i_TexCoord;
 layout(location = 1) in vec3 i_Normal;
@@ -26,7 +27,7 @@ void main() {
 	float roughness = texture(tex_orm, i_TexCoord).y;
 	float metallic = texture(tex_orm, i_TexCoord).z;
 
-	//ao = 1.0f;
+	ao = 1.0f;
 	metallic = 0.9f;
 
 	vec3 lightPos = vec3(-3.0f, 2.0f, 0.0f);
@@ -62,7 +63,7 @@ void main() {
 	kD *= 1.0 - metallic;
 
     float NdotL = max(dot(norm, lightDir), 0.0);        
-    vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
+    vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL + texture(tex_emission, i_TexCoord).xyz;
 
 	// post directional light
 	

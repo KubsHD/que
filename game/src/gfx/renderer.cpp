@@ -117,6 +117,7 @@ void Renderer::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const
 		m_graphicsAPI->SetDescriptor({ 1, 2, model.materials.at(mesh.material_index).norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 		m_graphicsAPI->SetDescriptor({ 1, 3, model.materials.at(mesh.material_index).orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 		m_graphicsAPI->SetDescriptor({ 1, 4, m_sky.skyCubemap.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 5, model.materials.at(mesh.material_index).emission.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false});
 
 		m_graphicsAPI->UpdateDescriptors();
 

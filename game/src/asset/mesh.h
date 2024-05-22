@@ -27,6 +27,7 @@ struct Material {
 	GraphicsAPI::Image diff;
 	GraphicsAPI::Image norm;
 	GraphicsAPI::Image orm;
+	GraphicsAPI::Image emission;
 
 	glm::vec3 color;
 };

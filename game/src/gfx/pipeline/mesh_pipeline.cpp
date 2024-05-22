@@ -42,6 +42,7 @@ namespace pipeline
 							  {1, 2, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT},
 							  {1, 3, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT},
 							  {1, 4, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT},
+							  {1, 5, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT},
 		};
 
 		return gapi.CreatePipeline(pipelineCI);

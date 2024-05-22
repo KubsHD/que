@@ -146,6 +146,7 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 				mat.diff = try_to_load_texture_type(gapi, scene, material, aiTextureType_DIFFUSE, model_directory.string());
 				mat.norm = try_to_load_texture_type(gapi, scene, material, aiTextureType_NORMALS, model_directory.string());
 				mat.orm = try_to_load_texture_type(gapi, scene, material, aiTextureType_METALNESS, model_directory.string());
+				mat.emission = try_to_load_texture_type(gapi, scene, material, aiTextureType_EMISSIVE, model_directory.string());
 
 				mod.materials.emplace(mesh->mMaterialIndex, mat);
 			}
@@ -435,6 +436,7 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 		m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
 		m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"], TT_NORMAL);
 		m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+		m.emission = gapi.tex_placeholder;
 
 		model.materials.emplace((int)material["id"], m);
 	}
