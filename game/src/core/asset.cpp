@@ -82,6 +82,8 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 
 	Model mod;
 
+	mod.name = path.string();
+
 	Assimp::Importer imp;
 
 
@@ -140,6 +142,7 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 
 				Material mat;
 
+				mat.name = material->GetName().C_Str();
 				mat.diff = try_to_load_texture_type(gapi, scene, material, aiTextureType_DIFFUSE, model_directory.string());
 				mat.norm = try_to_load_texture_type(gapi, scene, material, aiTextureType_NORMALS, model_directory.string());
 				mat.orm = try_to_load_texture_type(gapi, scene, material, aiTextureType_METALNESS, model_directory.string());
@@ -362,7 +365,7 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 	QUE_PROFILE;
 
 	Model model;
-
+	model.name = path.string();
 
 	auto loadMeshes = [&](String modelPath) -> std::vector<Mesh> {
 

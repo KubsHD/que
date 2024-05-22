@@ -76,10 +76,10 @@ void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 	XrMatrix4x4f_Multiply(&viewProj, &proj, &view);
 
 
-	m_sceneDataCPU.camPos = glm::to_glm(info.view.pose.position);
+	m_sceneDataCPU.camPos = glm::to_glm(final_camera_pos);
 	m_sceneDataCPU.viewProj = glm::to_glm(viewProj);
-	m_sceneDataCPU.proj = glm::mat4(0.0f);
-	m_sceneDataCPU.view = glm::mat4(0.0f);
+	m_sceneDataCPU.proj = glm::mat4(1.0f);
+	m_sceneDataCPU.view = glm::mat4(1.0f);
 
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
@@ -142,7 +142,7 @@ void Renderer::draw_sky(App::FrameRenderInfo& info)
 	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant));
 
 	m_graphicsAPI->SetDescriptor({ 0,  0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
-	m_graphicsAPI->SetDescriptor({ 0,  1, m_sky.skyIrradiance.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+	m_graphicsAPI->SetDescriptor({ 0,  1, m_sky.skyCubemap.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 
 	m_graphicsAPI->UpdateDescriptors();
 

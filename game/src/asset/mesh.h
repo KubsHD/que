@@ -22,6 +22,8 @@ struct GPUEqui2CubeConstant {
 };
 
 struct Material {
+	std::string name;
+
 	GraphicsAPI::Image diff;
 	GraphicsAPI::Image norm;
 	GraphicsAPI::Image orm;
@@ -51,6 +53,7 @@ struct Vertex {
 };
 
 struct Model {
+	std::string name;
 	std::vector<Mesh> meshes;
 	std::unordered_map<unsigned int, Material> materials;
 };

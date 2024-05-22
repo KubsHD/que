@@ -390,7 +390,9 @@ void App::create_instance()
 	appInfo.engineVersion = 1;
 
 	// enable extensions
+#if defined(_DEBUG)
 	m_instanceExtensions.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
 	m_instanceExtensions.push_back(GetGraphicsAPIInstanceExtensionString(m_apiType));
 
 

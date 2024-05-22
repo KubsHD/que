@@ -20,10 +20,11 @@ layout(location = 4) out mat3 o_TBN;
 
 void main() {
     o_Pos = a_Positions;
-    gl_Position = viewProj * model * vec4(a_Positions, 1.0f);
 	o_TexCoord = a_TexCoord;
 	o_Normal = a_Normals;
 	o_WorldPos = vec3(model * vec4(a_Positions, 1.0f));
+
+    gl_Position = viewProj * vec4(o_WorldPos, 1.0f);
 
 	vec3 T = normalize(vec3(model * vec4(a_Tangents,   0.0)));
 	vec3 B = normalize(vec3(model * vec4(a_Bitangents, 0.0)));

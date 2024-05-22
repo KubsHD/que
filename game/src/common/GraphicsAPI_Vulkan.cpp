@@ -155,7 +155,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan() {
     ai.applicationVersion = 1;
     ai.pEngineName = "OpenXR Tutorial - Vulkan Engine";
     ai.engineVersion = 1;
-    ai.apiVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
+    ai.apiVersion = VK_API_VERSION_1_3;
 
     uint32_t instanceExtensionCount = 0;
     VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr), "Failed to enumerate InstanceExtensionProperties.");
@@ -164,7 +164,10 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan() {
     instanceExtensionProperties.resize(instanceExtensionCount);
     VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, instanceExtensionProperties.data()), "Failed to enumerate InstanceExtensionProperties.");
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-    const std::vector<std::string> &instanceExtensionNames = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME };
+    std::vector<std::string> instanceExtensionNames = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
+#if defined(_DEBUG)
+    instanceExtensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)
     const std::vector<std::string> &instanceExtensionNames = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME };
 #else
@@ -319,7 +322,12 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     ai.applicationVersion = 1;
     ai.pEngineName = "OpenXR Tutorial - Vulkan Engine";
     ai.engineVersion = 1;
+#if defined(XR_USE_PLATFORM_ANDROID)
+    // quest supports up to vulkan 1.1
     ai.apiVersion = VK_MAKE_API_VERSION(0, XR_VERSION_MAJOR(graphicsRequirements.maxApiVersionSupported), XR_VERSION_MINOR(graphicsRequirements.maxApiVersionSupported), 0);
+#else
+    ai.apiVersion = VK_API_VERSION_1_3;
+#endif
 
     uint32_t instanceExtensionCount = 0;
     VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr), "Failed to enumerate InstanceExtensionProperties.");
@@ -328,7 +336,9 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     instanceExtensionProperties.resize(instanceExtensionCount);
     VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, instanceExtensionProperties.data()), "Failed to enumerate InstanceExtensionProperties.");
     std::vector<std::string> openXrInstanceExtensionNames = GetInstanceExtensionsForOpenXR(m_xrInstance, systemId);
+#if defined(_DEBUG)
     openXrInstanceExtensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
 
     for (const std::string& requestExtension : openXrInstanceExtensionNames) {
         for (const VkExtensionProperties& extensionProperty : instanceExtensionProperties) {
@@ -340,7 +350,10 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
         }
     }
 
+#if defined(_DEBUG)
     activeInstanceLayers = { "VK_LAYER_KHRONOS_validation" };
+#endif
+
 
     VkInstanceCreateInfo instanceCI;
     instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -485,6 +498,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 
     VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &m_allocator), "Failed to create VMA allocator.");
 
+#if defined(_DEBUG)
     // add messenger
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -494,6 +508,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     createInfo.pUserData = nullptr; // Optional
 
     VULKAN_CHECK(vkCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger), "Failed to create debug messenger");
+#endif
 
     // create upload fence
     VkFenceCreateInfo ufenceCI{};
@@ -1612,6 +1627,10 @@ void GraphicsAPI_Vulkan::Draw(uint32_t vertexCount, uint32_t instanceCount, uint
 
 void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkImage object)
 {
+#ifndef _DEBUG
+    return;
+#endif
+
 	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 	name_info.objectType = VK_OBJECT_TYPE_IMAGE;
 	name_info.objectHandle = (uint64_t)object;
@@ -1621,6 +1640,10 @@ void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkImage object)
 
 void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkBuffer object)
 {
+#ifndef _DEBUG
+	return;
+#endif
+
 	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 	name_info.objectType = VK_OBJECT_TYPE_BUFFER;
 	name_info.objectHandle = (uint64_t)object;
@@ -1630,6 +1653,10 @@ void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkBuffer object)
 
 void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkImageView object)
 {
+#ifndef _DEBUG
+	return;
+#endif
+
 	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
     name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
 	name_info.objectHandle = (uint64_t)object;
@@ -1639,6 +1666,10 @@ void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkImageView object)
 
 void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkRenderPass object)
 {
+#ifndef _DEBUG
+	return;
+#endif
+
 	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 	name_info.objectType = VK_OBJECT_TYPE_RENDER_PASS;
 	name_info.objectHandle = (uint64_t)object;
@@ -1648,6 +1679,10 @@ void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkRenderPass object)
 
 void GraphicsAPI_Vulkan::SetDebugName(std::string name, VkCommandBuffer object)
 {
+#ifndef _DEBUG
+	return;
+#endif
+
 	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 	name_info.objectType = VK_OBJECT_TYPE_COMMAND_BUFFER;
 	name_info.objectHandle = (uint64_t)object;
