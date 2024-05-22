@@ -19,7 +19,9 @@ static void TraceImpl(const char* inFMT, ...)
 	va_end(list);
 
 	// Print to the TTY
+#if defined(WIN32)
 	OutputDebugString(buffer);
+#endif
 	std::cout << buffer << std::endl;
 }
 

@@ -70,6 +70,12 @@
 #include <Unknwn.h>
 #endif
 
+#if defined(XR_OS_ANDROID)
+#define XR_USE_PLATFORM_ANDROID
+#define VK_USE_PLATFORM_ANDROID
+#include <jni.h>
+#endif
+
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <lib/vk_mem_alloc.h>

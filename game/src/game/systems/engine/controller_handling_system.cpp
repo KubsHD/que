@@ -11,7 +11,7 @@ void game::system::update_controller_system(entt::registry& reg, Input& input, P
 	auto controllerObjects = reg.view<transform_component, mesh_component, controller_component>();
 	for (const auto&& [e, tc, mc, cc] : controllerObjects.each())
 	{
-		auto& poses = input.get_controller_poses();
+		const auto& poses = input.get_controller_poses();
 		auto pose = poses[cc.index];
 
 		glm::vec3 target_pos = glm::to_glm(pose.position);
