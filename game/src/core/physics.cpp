@@ -5,7 +5,6 @@
 
 
 #include <jolt/Physics/StateRecorderImpl.h>
-#include <lib/imgui/imgui.h>
 
 JPH::StateRecorderImpl impl;
 

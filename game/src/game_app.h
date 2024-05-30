@@ -16,6 +16,8 @@ public:
 	GameApp(GraphicsAPI_Type type);
 	~GameApp();
 
+	void run2();
+
 	void init() override;
 
 

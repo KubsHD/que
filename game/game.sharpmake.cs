@@ -93,7 +93,7 @@ namespace Que
                 LocalDebuggerEnvironment = File.Exists(Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json")) ? "XR_RUNTIME_JSON=" + Path.Combine(Globals.RootDirectory, @"tools\MetaXRSimulator\meta_openxr_simulator.json") : "",
             };
 
-          
+
             if (target.Optimization == Optimization.Debug)
                 conf.Defines.Add("JPH_DEBUG_RENDERER");
 
@@ -111,6 +111,7 @@ namespace Que
             conf.AddPublicDependency<OpenXRProject>(target);
             conf.AddPublicDependency<Assimp>(target);
             conf.AddPublicDependency<Jolt>(target);
+            conf.AddPublicDependency<SDL>(target);
 
             //conf.AddPublicDependency<EASTLProject>(target);
 
@@ -136,7 +137,7 @@ namespace Que
             var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
 
             conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
-            
+
             var dataPath = Path.Combine(realProjectPath, "data");
             var targetPath = Path.Combine(ResolveString(conf.TargetPath, conf, target), "data");
 
@@ -147,7 +148,7 @@ namespace Que
                 if (!Util.CreateSymbolicLink(targetPath, dataPath, true))
                     Debug.Assert(false);
 
-                conf.VcxprojUserFile.LocalDebuggerCommandArguments = "--shader_compile";    
+                conf.VcxprojUserFile.LocalDebuggerCommandArguments = "--shader_compile";
             }
 
             // shader pipeline

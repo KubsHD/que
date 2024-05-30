@@ -32,6 +32,13 @@ namespace pipeline
 										GraphicsAPI::CullMode::FRONT, GraphicsAPI::FrontFace::CLOCKWISE,
 										false, 0.0f, 0.0f, 0.0f, 1.0f };
 		pipelineCI.multisampleState = { 1, false, 1.0f, 0xFFFFFFFF, false, false };
+
+		VkPushConstantRange range;
+		range.offset = 0;
+		range.size = sizeof(ColorData);
+		range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		pipelineCI.pushConstantRange = range;
 		pipelineCI.depthStencilState = { true, true, GraphicsAPI::CompareOp::LESS_OR_EQUAL, false, false, {}, {}, 0.0f, 1.0f };
 		pipelineCI.colorBlendState = { false, GraphicsAPI::LogicOp::NO_OP, {{true, GraphicsAPI::BlendFactor::SRC_ALPHA, GraphicsAPI::BlendFactor::ONE_MINUS_SRC_ALPHA, GraphicsAPI::BlendOp::ADD, GraphicsAPI::BlendFactor::ONE, GraphicsAPI::BlendFactor::ZERO, GraphicsAPI::BlendOp::ADD, (GraphicsAPI::ColorComponentBit)15}}, {0.0f, 0.0f, 0.0f, 0.0f} };
 		pipelineCI.colorFormats = { drawImageFormat };

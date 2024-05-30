@@ -10,8 +10,6 @@ void App_Main(GraphicsAPI_Type apiType) {
 	XR_TUT_LOG("Que MAIN");
 	GameApp app(apiType);
 	app.Run();
-
-
 }
 
 

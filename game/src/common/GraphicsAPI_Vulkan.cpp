@@ -139,175 +139,6 @@ void GraphicsAPI_Vulkan::immediate_submit(std::function<void(VkCommandBuffer cmd
     VULKAN_CHECK_NOMSG(vkResetCommandPool(device, m_uploadContext.pool, 0));
 }
 
-GraphicsAPI_Vulkan::GraphicsAPI_Vulkan() {
-
-    assert(false);
-
-    // NOT USED
-    return;
-    
-    
-    // Instance
-    VkApplicationInfo ai;
-    ai.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    ai.pNext = nullptr;
-    ai.pApplicationName = "OpenXR Tutorial - Vulkan";
-    ai.applicationVersion = 1;
-    ai.pEngineName = "OpenXR Tutorial - Vulkan Engine";
-    ai.engineVersion = 1;
-    ai.apiVersion = VK_API_VERSION_1_3;
-
-    uint32_t instanceExtensionCount = 0;
-    VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr), "Failed to enumerate InstanceExtensionProperties.");
-
-    std::vector<VkExtensionProperties> instanceExtensionProperties;
-    instanceExtensionProperties.resize(instanceExtensionCount);
-    VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, instanceExtensionProperties.data()), "Failed to enumerate InstanceExtensionProperties.");
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-    std::vector<std::string> instanceExtensionNames = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
-#if defined(_DEBUG)
-    instanceExtensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-#endif
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-    const std::vector<std::string> &instanceExtensionNames = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME };
-#else
-    const std::vector<std::string> &instanceExtensionNames = {};
-#endif
-
-    for (const std::string &requestExtension : instanceExtensionNames) {
-        for (const VkExtensionProperties &extensionProperty : instanceExtensionProperties) {
-            if (strcmp(requestExtension.c_str(), extensionProperty.extensionName))
-                continue;
-            else
-                activeInstanceExtensions.push_back(requestExtension.c_str());
-            break;
-        }
-    }
-
-
-    VkInstanceCreateInfo instanceCI;
-    instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCI.pNext = nullptr;
-    instanceCI.flags = 0;
-    instanceCI.pApplicationInfo = &ai;
-    instanceCI.enabledLayerCount = static_cast<uint32_t>(activeInstanceLayers.size());
-    instanceCI.ppEnabledLayerNames = activeInstanceLayers.data();
-    instanceCI.enabledExtensionCount = static_cast<uint32_t>(activeInstanceExtensions.size());
-    instanceCI.ppEnabledExtensionNames = activeInstanceExtensions.data();
-    VULKAN_CHECK(vkCreateInstance(&instanceCI, nullptr, &instance), "Failed to create Vulkan Instance.");
-
-    // Physical Device
-    uint32_t physicalDeviceCount = 0;
-    std::vector<VkPhysicalDevice> physicalDevices;
-    VULKAN_CHECK(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr), "Failed to enumerate PhysicalDevices.");
-    physicalDevices.resize(physicalDeviceCount);
-    VULKAN_CHECK(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data()), "Failed to enumerate PhysicalDevices.");
-    // Select the first available device.
-    physicalDevice = physicalDevices[0];
-
-    // Device
-    std::vector<VkQueueFamilyProperties> queueFamilyProperties;
-    uint32_t queueFamilyPropertiesCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, nullptr);
-    queueFamilyProperties.resize(queueFamilyPropertiesCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, queueFamilyProperties.data());
-
-    std::vector<VkDeviceQueueCreateInfo> deviceQueueCIs;
-    std::vector<std::vector<float>> queuePriorities;
-    queuePriorities.resize(queueFamilyProperties.size());
-    deviceQueueCIs.resize(queueFamilyProperties.size());
-    for (size_t i = 0; i < deviceQueueCIs.size(); i++) {
-        for (size_t j = 0; j < queueFamilyProperties[i].queueCount; j++)
-            queuePriorities[i].push_back(1.0f);
-
-        deviceQueueCIs[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        deviceQueueCIs[i].pNext = nullptr;
-        deviceQueueCIs[i].flags = 0;
-        deviceQueueCIs[i].queueFamilyIndex = static_cast<uint32_t>(i);
-        deviceQueueCIs[i].queueCount = queueFamilyProperties[i].queueCount;
-        deviceQueueCIs[i].pQueuePriorities = queuePriorities[i].data();
-
-        if (BitwiseCheck(queueFamilyProperties[i].queueFlags, VkQueueFlags(VK_QUEUE_GRAPHICS_BIT)) && queueFamilyIndex == 0xFFFFFFFF && queueIndex == 0xFFFFFFFF) {
-            queueFamilyIndex = static_cast<uint32_t>(i);
-            queueIndex = 0;
-        }
-    }
-
-    uint32_t deviceExtensionCount = 0;
-    VULKAN_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, 0, &deviceExtensionCount, 0), "Failed to enumerate DeviceExtensionProperties.");
-    std::vector<VkExtensionProperties> deviceExtensionProperties;
-    deviceExtensionProperties.resize(deviceExtensionCount);
-
-    VULKAN_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, 0, &deviceExtensionCount, deviceExtensionProperties.data()), "Failed to enumerate DeviceExtensionProperties.");
-    const std::vector<std::string> &deviceExtensionNames = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    for (const std::string &requestExtension : deviceExtensionNames) {
-        for (const VkExtensionProperties &extensionProperty : deviceExtensionProperties) {
-            if (strcmp(requestExtension.c_str(), extensionProperty.extensionName))
-                continue;
-            else
-                activeDeviceExtensions.push_back(requestExtension.c_str());
-            break;
-        }
-    }
-
-    VkPhysicalDeviceFeatures features;
-    vkGetPhysicalDeviceFeatures(physicalDevice, &features);
-
-    VkDeviceCreateInfo deviceCI;
-    deviceCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCI.pNext = nullptr;
-    deviceCI.flags = 0;
-    deviceCI.queueCreateInfoCount = static_cast<uint32_t>(deviceQueueCIs.size());
-    deviceCI.pQueueCreateInfos = deviceQueueCIs.data();
-    deviceCI.enabledLayerCount = 0;
-    deviceCI.ppEnabledLayerNames = nullptr;
-    deviceCI.enabledExtensionCount = static_cast<uint32_t>(activeDeviceExtensions.size());
-    deviceCI.ppEnabledExtensionNames = activeDeviceExtensions.data();
-    deviceCI.pEnabledFeatures = &features;
-    VULKAN_CHECK(vkCreateDevice(physicalDevice, &deviceCI, nullptr, &device), "Failed to create Device.");
-
-    VkCommandPoolCreateInfo cmdPoolCI;
-    cmdPoolCI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    cmdPoolCI.pNext = nullptr;
-    cmdPoolCI.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    cmdPoolCI.queueFamilyIndex = queueFamilyIndex;
-    VULKAN_CHECK(vkCreateCommandPool(device, &cmdPoolCI, nullptr, &cmdPool), "Failed to create CommandPool.");
-
-    VkCommandBufferAllocateInfo allocateInfo;
-    allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocateInfo.pNext = nullptr;
-    allocateInfo.commandPool = cmdPool;
-    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocateInfo.commandBufferCount = 1;
-    VULKAN_CHECK(vkAllocateCommandBuffers(device, &allocateInfo, &cmdBuffer), "Failed to allocate CommandBuffers.");
-
-    vkGetDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
-
-    VkFenceCreateInfo fence2CI{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-    fence2CI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fence2CI.pNext = nullptr;
-    fence2CI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    VULKAN_CHECK(vkCreateFence(device, &fence2CI, nullptr, &fence), "Failed to create Fence.")
-    
-    uint32_t maxSets = 1024;
-    std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_SAMPLER, 16 * maxSets},
-        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 16 * maxSets},
-        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 16 * maxSets},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16 * maxSets},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 16 * maxSets}};
-
-    VkDescriptorPoolCreateInfo descPoolCI;
-    descPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descPoolCI.pNext = nullptr;
-    descPoolCI.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    descPoolCI.maxSets = maxSets;
-    descPoolCI.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-    descPoolCI.pPoolSizes = poolSizes.data();
-    VULKAN_CHECK(vkCreateDescriptorPool(device, &descPoolCI, nullptr, &descriptorPool), "Failed to create DescriptorPool");
-}
-
-// XR_DOCS_TAG_BEGIN_GraphicsAPI_Vulkan
 GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId systemId) {
     // Instance
     LoadPFN_XrFunctions(m_xrInstance);
@@ -336,6 +167,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     instanceExtensionProperties.resize(instanceExtensionCount);
     VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, instanceExtensionProperties.data()), "Failed to enumerate InstanceExtensionProperties.");
     std::vector<std::string> openXrInstanceExtensionNames = GetInstanceExtensionsForOpenXR(m_xrInstance, systemId);
+
 #if defined(_DEBUG)
     openXrInstanceExtensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
@@ -1345,11 +1177,11 @@ void GraphicsAPI_Vulkan::SetBufferData(VkBuffer buffer, size_t offset, size_t si
 	vmaUnmapMemory(m_allocator, bufferResources[vkBuffer].first);
 };
 
-void GraphicsAPI_Vulkan::PushConstant(void* data, size_t size)
+void GraphicsAPI_Vulkan::PushConstant(void* data, size_t size, VkShaderStageFlagBits stage)
 {
 	VkPipelineLayout pipelineLayout = std::get<0>(pipelineResources[(VkPipeline)setPipeline]);
 
-	vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, size, data);
+	vkCmdPushConstants(cmdBuffer, pipelineLayout, stage, 0, size, data);
 }
 
 void GraphicsAPI_Vulkan::ClearColor(VkImageView& imageView, float r, float g, float b, float a) {

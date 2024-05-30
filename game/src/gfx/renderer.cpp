@@ -3,6 +3,8 @@
 #include "renderer.h"
 
 
+#include <algorithm>
+
 #include <asset/mesh.h>
 
 #include <core/asset.h>
@@ -95,6 +97,8 @@ void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 	m_graphicsAPI->EndRendering();
 }
 
+
+
 void Renderer::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model)
 {
 	gfx::InstanceData id;
@@ -106,24 +110,64 @@ void Renderer::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const
 
 	size_t offsetCameraUB = sizeof(gfx::InstanceData) * currently_drawn_object;
 
+	std::vector<MeshRenderData> unlit_meshes;
+	std::vector<MeshRenderData> lit_meshes;
+
+
+	for (const auto& mesh : model.meshes)
+	{
+		const auto& material = model.materials.at(mesh.material_index);
+
+		if (material.type == PipelineType::UNLIT)
+		{
+		unlit_meshes.push_back({ mesh, material });
+		}
+		else if (material.type == PipelineType::LIT)
+		{
+			lit_meshes.push_back({ mesh, material });
+		}
+	}
+
+	// unlit pass
+	m_graphicsAPI->SetPipeline(m_unlit_pipeline);
+	m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(gfx::InstanceData), &id);
+
+	ColorData cd;
+	for (auto mesh : unlit_meshes)
+	{
+		cd.color = mesh.mat.color;
+
+		m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
+		m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(gfx::InstanceData) });
+
+
+		m_graphicsAPI->PushConstant(&cd, sizeof(cd), VK_SHADER_STAGE_FRAGMENT_BIT);
+	
+		m_graphicsAPI->UpdateDescriptors();
+
+		m_graphicsAPI->SetVertexBuffers(&mesh.mesh.vertex_buffer, 1);
+		m_graphicsAPI->SetIndexBuffer(mesh.mesh.index_buffer);
+		m_graphicsAPI->DrawIndexed(mesh.mesh.index_count);
+	}
+
 	m_graphicsAPI->SetPipeline(m_pipeline);
 	m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(gfx::InstanceData), &id);
 
-	for (auto mesh : model.meshes)
+	for (auto mesh : lit_meshes)
 	{
 		m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
 		m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(gfx::InstanceData) });
-		m_graphicsAPI->SetDescriptor({ 1, 1, model.materials.at(mesh.material_index).diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 2, model.materials.at(mesh.material_index).norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 3, model.materials.at(mesh.material_index).orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 1, mesh.mat.diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 2, mesh.mat.norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+		m_graphicsAPI->SetDescriptor({ 1, 3, mesh.mat.orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
 		m_graphicsAPI->SetDescriptor({ 1, 4, m_sky.skyCubemap.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 5, model.materials.at(mesh.material_index).emission.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false});
+		m_graphicsAPI->SetDescriptor({ 1, 5, mesh.mat.emission.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false});
 
 		m_graphicsAPI->UpdateDescriptors();
 
-		m_graphicsAPI->SetVertexBuffers(&mesh.vertex_buffer, 1);
-		m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
-		m_graphicsAPI->DrawIndexed(mesh.index_count);
+		m_graphicsAPI->SetVertexBuffers(&mesh.mesh.vertex_buffer, 1);
+		m_graphicsAPI->SetIndexBuffer(mesh.mesh.index_buffer);
+		m_graphicsAPI->DrawIndexed(mesh.mesh.index_count);
 	}
 
 	currently_drawn_object++;
@@ -140,7 +184,7 @@ void Renderer::draw_sky(App::FrameRenderInfo& info)
 
 	m_graphicsAPI->SetPipeline(m_sky_pipeline);
 
-	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant));
+	m_graphicsAPI->PushConstant(&pushConst, sizeof(GPUModelConstant), VK_SHADER_STAGE_VERTEX_BIT);
 
 	m_graphicsAPI->SetDescriptor({ 0,  0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
 	m_graphicsAPI->SetDescriptor({ 0,  1, m_sky.skyCubemap.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });

@@ -142,12 +142,29 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 
 				Material mat;
 
-				mat.name = material->GetName().C_Str();
+				// if diffuse texture is assigned it means we are using lit shader/pipeline
 				mat.diff = try_to_load_texture_type(gapi, scene, material, aiTextureType_DIFFUSE, model_directory.string());
-				mat.norm = try_to_load_texture_type(gapi, scene, material, aiTextureType_NORMALS, model_directory.string());
-				mat.orm = try_to_load_texture_type(gapi, scene, material, aiTextureType_METALNESS, model_directory.string());
-				mat.emission = try_to_load_texture_type(gapi, scene, material, aiTextureType_EMISSIVE, model_directory.string());
 
+				if (mat.diff.view != gapi.tex_placeholder.view)
+				{
+					// success
+
+					mat.type = PipelineType::LIT;
+
+					mat.name = material->GetName().C_Str();
+					mat.norm = try_to_load_texture_type(gapi, scene, material, aiTextureType_NORMALS, model_directory.string());
+					mat.orm = try_to_load_texture_type(gapi, scene, material, aiTextureType_METALNESS, model_directory.string());
+					mat.emission = try_to_load_texture_type(gapi, scene, material, aiTextureType_EMISSIVE, model_directory.string());
+				}
+				else {
+
+					mat.type = PipelineType::UNLIT;
+
+					aiColor4D color;
+					material->Get(AI_MATKEY_BASE_COLOR, color);
+
+					mat.color = glm::vec3(color.r, color.g, color.b);
+				}
 				mod.materials.emplace(mesh->mMaterialIndex, mat);
 			}
 			
@@ -433,10 +450,34 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 	for (auto material : desc["materials"])
 	{
 		Material m;
-		m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
-		m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"], TT_NORMAL);
-		m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
-		m.emission = gapi.tex_placeholder;
+
+		if (material.contains("shader"))
+		{
+			auto& shader_type = material["shader"];
+			if (shader_type == "lit")
+			{
+				m.type = PipelineType::LIT;
+
+				m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+				m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+				m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+				m.emission = gapi.tex_placeholder;
+			}
+			else if (shader_type == "unlit")
+			{
+				m.type = PipelineType::UNLIT;
+			}
+		}
+		else
+		{
+			m.type = PipelineType::LIT;
+
+			// legacy
+			m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+			m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+			m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+			m.emission = gapi.tex_placeholder;
+		}
 
 		model.materials.emplace((int)material["id"], m);
 	}

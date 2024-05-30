@@ -21,6 +21,12 @@ public:
 	void render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model);
 private:
 
+	struct MeshRenderData {
+		Mesh mesh;
+		Material mat;
+	};
+
+
 	void draw_sky(App::FrameRenderInfo& info);
 
 	void create_resources();

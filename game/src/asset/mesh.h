@@ -5,6 +5,7 @@
 #include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>
 #include <common/xr_linear_algebra.h>
+#include <gfx/pipeline/pipelines.h>
 
 struct Mesh {
 	VkBuffer index_buffer;
@@ -21,8 +22,14 @@ struct GPUEqui2CubeConstant {
 	glm::mat4 viewProj;
 };
 
+
+struct ColorData {
+	glm::vec3 color;
+};
+
 struct Material {
 	std::string name;
+	PipelineType type;
 
 	GraphicsAPI::Image diff;
 	GraphicsAPI::Image norm;

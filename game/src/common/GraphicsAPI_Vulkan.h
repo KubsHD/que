@@ -48,8 +48,6 @@ public:
 
     void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 public:
-
-    GraphicsAPI_Vulkan();
     GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId systemId);
     ~GraphicsAPI_Vulkan();
 
@@ -101,7 +99,7 @@ public:
     void EndRendering() ;
 
     void SetBufferData(VkBuffer buffer, size_t offset, size_t size, void* data) ;
-    void PushConstant(void* data, size_t size);
+    void PushConstant(void* data, size_t size, VkShaderStageFlagBits stage);
 
     void ClearColor(VkImageView& imageView, float r, float g, float b, float a) ;
     void ClearDepth(void* imageView, float d) ;

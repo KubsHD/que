@@ -23,12 +23,36 @@
 #include <game/templates/controller_template.h>
 #include <game/templates/block_template.h>
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
 }
 
 GameApp::~GameApp()
 {
+}
+
+void GameApp::run2()
+{
+	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Vulkan_LoadLibrary(nullptr);
+	SDL_Window* window = SDL_CreateWindow("test", 640, 360, SDL_WINDOW_VULKAN);
+
+	bool running = true;
+	while (running) {
+		SDL_Event windowEvent;
+		while (SDL_PollEvent(&windowEvent))
+			if (windowEvent.type == SDL_EVENT_QUIT) {
+				running = false;
+				break;
+			}
+	}
+
+	SDL_DestroyWindow(window);
+	SDL_Vulkan_UnloadLibrary();
+	SDL_Quit();
 }
 
 void GameApp::init()
