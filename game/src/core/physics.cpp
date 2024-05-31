@@ -120,16 +120,16 @@ const float cDeltaTime = 1.0f / 60.0f;
 void PhysicsSystem::update(float dt, entt::registry& reg)
 {
 
-	for (auto& obj : m_bodies)
+	/*for (auto& obj : m_bodies)
 	{
-		if (m_system.GetBodyInterface().IsActive(obj.first)) {
+		if (m_system.GetBodyInterface().IsActive(obj)) {
 			JPH::RVec3 position = m_system.GetBodyInterface().GetCenterOfMassPosition(obj.first);
 			JPH::Vec3 velocity = m_system.GetBodyInterface().GetLinearVelocity(obj.first);
 			obj.second = { position.GetX(), position.GetY(), position.GetZ() };
 	
 			step++;
 		}
-	}
+	}*/
 
 	m_system.Update(cDeltaTime, 1, m_allocator.get(), &m_job_system);
 
@@ -143,14 +143,18 @@ JPH::BodyID PhysicsSystem::spawn_body(JPH::BodyCreationSettings settings, JPH::V
 	auto id = body_interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
 	body_interface.AddLinearVelocity(id, initial_velocity);
 
-	m_bodies.emplace(id, JPH::Vec3(0,0,0));
+	m_bodies.push_back(id);
 
 	return id;
 }
 
 glm::vec3 PhysicsSystem::get_body_position(JPH::BodyID bodyId)
 {
-	return glm::vec3(m_bodies[bodyId].GetX(), m_bodies[bodyId].GetY(), m_bodies[bodyId].GetZ());
+	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
+
+	auto ppos = body_interface.GetPosition(bodyId);
+
+	return glm::vec3(ppos.GetX(), ppos.GetY(), ppos.GetZ());
 }
 
 void PhysicsSystem::set_body_position(JPH::BodyID bid, glm::vec3 pos)
@@ -167,19 +171,23 @@ void PhysicsSystem::add_velocity(JPH::BodyID bid, glm::vec3 vel)
 	body_interface.AddLinearVelocity(bid, JPH::to_jph(vel));
 }
 
-bool PhysicsSystem::overlap_sphere(glm::vec3 point, float radius)
+std::vector<JPH::Body*> PhysicsSystem::overlap_sphere(glm::vec3 point, float radius)
 {
 	auto& bpq = m_system.GetBroadPhaseQuery();
 
 	JPH::AllHitCollisionCollector<JPH::CollideShapeBodyCollector> collector;
 	bpq.CollideSphere(JPH::to_jph(point), radius, collector);
 
+	std::vector<JPH::Body*> bodies;
+
 	for (const auto& hit : collector.mHits)
 	{
 		auto body = m_system.GetBodyLockInterface().TryGetBody(hit);
+		bodies.push_back(body);
 	}
 
-	return false;
+
+	return bodies;
 }
 
 JPH::EMotionType PhysicsSystem::get_body_type(JPH::BodyID bodyId)

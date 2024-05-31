@@ -31,7 +31,7 @@ void main() {
 	metallic = 0.9f;
 
 	vec3 lightPos = vec3(-3.0f, 2.0f, 0.0f);
-	vec3 lightColor = vec3(100.0f);
+	vec3 lightColor = vec3(10.0f);
 	
 	vec3 norm = texture(tex_normal, i_TexCoord).xyz;
 	norm = (norm * 2.0 - 1.0);   
@@ -48,7 +48,7 @@ void main() {
 
 	float distance = length(lightPos);
 	float attenuation = 1.0 / (distance * distance);
-	vec3 radiance = lightColor * attenuation;
+	vec3 radiance = lightColor;
 
 	float NDF = DistributionGGX(norm, h, roughness);
 	float G = GeometrySmith(norm, viewDir, lightDir, roughness);

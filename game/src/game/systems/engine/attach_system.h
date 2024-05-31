@@ -3,10 +3,11 @@
 #include <entt/entt.hpp>
 #include <core/physics.h>
 #include <game/components.h>
+#include <common/glm_helpers.h>
 #include <core/input.h>
 
 namespace game {
 	namespace system {
-		void update_block_pickup_system(entt::registry& reg, Input& inp, PhysicsSystem& psys);
+		void update_attach_system(entt::registry& reg);
 	}
 }

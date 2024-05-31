@@ -64,6 +64,9 @@ void Input::create_action_set()
 	CreateAction(m_palmPoseAction, "palm-pose", XR_ACTION_TYPE_POSE_INPUT, { "/user/hand/left", "/user/hand/right" });
 	// An Action for a vibration output on one or other hand.
 	CreateAction(m_buzzAction, "buzz", XR_ACTION_TYPE_VIBRATION_OUTPUT, { "/user/hand/left", "/user/hand/right" });
+
+	CreateAction(m_grabCubeAction, "grab-cube", XR_ACTION_TYPE_FLOAT_INPUT, { "/user/hand/left", "/user/hand/right" });
+
 	// For later convenience we create the XrPaths for the subaction path names.
 	m_handPaths[0] = CreateXrPath(m_xrInstance, "/user/hand/left");
 	m_handPaths[1] = CreateXrPath(m_xrInstance, "/user/hand/right");
@@ -87,7 +90,11 @@ void Input::suggest_bindings()
 	any_ok |= SuggestBindings("/interaction_profiles/oculus/touch_controller", { {m_palmPoseAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/grip/pose")},
 																			  {m_palmPoseAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/grip/pose")},
 																			  {m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/left/output/haptic")},
-																			  {m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/right/output/haptic")} });
+																			  {m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/right/output/haptic")},
+																				{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/squeeze/value")},
+																				{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/squeeze/value")},
+
+		});
 }
 
 void Input::create_action_poses()
@@ -154,6 +161,12 @@ void Input::poll_actions(XrTime time, XrSpace local_space)
 			}
 		}
 	}
+
+	for (int i = 0; i < 2; i++) {
+		actionStateGetInfo.action = m_grabCubeAction;
+		actionStateGetInfo.subactionPath = m_handPaths[i];
+		OPENXR_CHECK(xrGetActionStateFloat(*m_session, &actionStateGetInfo, &m_grabState[i]), "Failed to get Float State of Grab Cube action.");
+	}
 }
 
 void Input::record_actions()
@@ -173,7 +186,22 @@ void Input::record_actions()
 	}
 }
 
+void Input::draw_imgui()
+{
+	if (ImGui::Begin("Input debug"))
+	{
+		ImGui::LabelText("Grab state:", "%f %f", m_grabState[0].currentState, m_grabState[1].currentState);
+
+		ImGui::End();
+	}
+}
+
 std::vector<XrPosef> Input::get_controller_poses()
 {
 	return { m_handPose[0], m_handPose[1] };
+}
+
+std::vector<float> Input::get_grab_state()
+{
+	return { m_grabState[0].currentState, m_grabState[1].currentState };
 }

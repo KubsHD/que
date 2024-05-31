@@ -25,6 +25,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
+#include <game/systems/engine/attach_system.h>
 
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
@@ -100,7 +101,8 @@ void GameApp::update(float dt)
 
 	game::system::update_physics_system(m_registry, *m_physics_system);
 	game::system::update_controller_system(m_registry, *input, *m_physics_system, m_viewHeightM);
-	game::system::update_block_pickup_system(m_registry, *input);
+	game::system::update_block_pickup_system(m_registry, *input, *m_physics_system);
+	game::system::update_attach_system(m_registry);
 
 	m_physics_system->overlap_sphere(glm::vec3(0, 0.5, 0), 10.0);
 	m_physics_system->update(dt, m_registry);
@@ -172,6 +174,8 @@ void GameApp::render(FrameRenderInfo& info)
 
 	}
 	ImGui::End();
+
+	input->draw_imgui();
 
 	ImGui::Render();
 #pragma endregion

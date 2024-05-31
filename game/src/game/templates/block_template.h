@@ -19,6 +19,7 @@ namespace game {
 				Layers::MOVING);
 
 			reg.emplace<physics_component>(ball, psys.spawn_body(obj_settings, JPH::Vec3(0, -1.0f, 0.0f)));
+			reg.emplace<pickupable_block>(ball);
 		}
 	}
 }

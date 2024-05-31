@@ -211,7 +211,7 @@ public:
 
 	void add_velocity(JPH::BodyID bid, glm::vec3 vel);
 
-	bool overlap_sphere(glm::vec3 point, float radius);
+	std::vector<JPH::Body*> overlap_sphere(glm::vec3 point, float radius);
 
 	JPH::EMotionType get_body_type(JPH::BodyID bodyId);
 	glm::vec3 obj_pos;
@@ -224,9 +224,7 @@ private:
 	JPH::Body* floor;
 	JPH::BodyID obj;
 
-
-
-	std::unordered_map<JPH::BodyID, JPH::Vec3> m_bodies;
+	std::vector<JPH::BodyID> m_bodies;
 
 	BPLayerInterfaceImpl broad_phase_layer_interface;
 

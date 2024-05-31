@@ -55,6 +55,10 @@ struct game_data_component {
 	float spawn_new_block_delay;
 };
 
+struct attach_component {
+	entt::entity parent_entity;
+};
+
 struct pickupable_block_component {};
 
 struct new_block_spawn_point_component {

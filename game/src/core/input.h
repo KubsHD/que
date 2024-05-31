@@ -18,7 +18,10 @@ public:
 
 	void record_actions();
 
+	void draw_imgui();
+
 	std::vector<XrPosef> get_controller_poses();
+	std::vector<float> get_grab_state();
 
 private:
 	XrInstance m_xrInstance;
