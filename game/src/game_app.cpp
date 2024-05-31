@@ -74,7 +74,7 @@ void GameApp::init()
 
 	// controllers
 	game::tmpl::create_controller(m_registry, controller, 0);
-	game::tmpl::create_controller(m_registry, controller, 1);
+	game::tmpl::create_controller(m_registry, controller, 1); 
 
 	game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0, 2, 0), test_cube);
 }
@@ -104,7 +104,6 @@ void GameApp::update(float dt)
 	game::system::update_block_pickup_system(m_registry, *input, *m_physics_system);
 	game::system::update_attach_system(m_registry);
 
-	m_physics_system->overlap_sphere(glm::vec3(0, 0.5, 0), 10.0);
 	m_physics_system->update(dt, m_registry);
 }
 

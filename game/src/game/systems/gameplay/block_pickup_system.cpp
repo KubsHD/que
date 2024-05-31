@@ -3,6 +3,7 @@
 #include "block_pickup_system.h"
 #include <game/tags.h>
 #include <core/profiler.h>
+#include <common/DebugOutput.h>
 
 
 static std::vector<entt::entity> get_entities_from_collision_result(entt::registry& reg, std::vector<JPH::Body*> bodies)
@@ -47,7 +48,8 @@ void game::system::update_block_pickup_system(entt::registry& reg, Input& inp, P
 
 	for (const auto& [e, tc, cc] : reg.view<transform_component, controller_component>().each())
 	{
-		auto bodies = psys.overlap_sphere(tc.position, 0.2f);
+
+		auto bodies = psys.overlap_sphere(tc.position, 0.0001f);
 		auto entities = get_entities_from_collision_result(reg, bodies);
 
 
@@ -65,13 +67,17 @@ void game::system::update_block_pickup_system(entt::registry& reg, Input& inp, P
 
 				if (grab_state > 0.5f)
 				{
-					OutputDebugString("ATTACHING\n");
-					reg.emplace_or_replace<attach_component>(ent, e);
+					if (reg.try_get<attach_component>(ent) == nullptr)
+					{
+						XR_TUT_LOG("attaching to controller index: " << cc.index << std::endl);
 
-					// disable physics if present
-					physics_component* pc = reg.try_get<physics_component>(ent);
-					if (pc)
-						pc->enabled = false;
+						reg.emplace_or_replace<attach_component>(ent, e);
+
+						// disable physics if present
+						physics_component* pc = reg.try_get<physics_component>(ent);
+						if (pc)
+							pc->enabled = false;
+					}
 				}
 				else {
 					reg.remove<attach_component>(ent);
