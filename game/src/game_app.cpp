@@ -135,7 +135,7 @@ void GameApp::render(FrameRenderInfo& info)
 				JPH::EMotionType::Dynamic,
 				Layers::MOVING), JPH::Vec3(0.0f, 1.0f, 1.0f));
 
-			m_registry.emplace<physics_component>(ent, pid);
+			m_registry.emplace<physics_component>(ent, true, pid);
 		}
 	}
 	ImGui::End();

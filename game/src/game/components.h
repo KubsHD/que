@@ -19,6 +19,7 @@ struct transform_component {
 };
 
 struct physics_component {
+	bool enabled;
 	JPH::BodyID id;
 };
 

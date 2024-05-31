@@ -67,9 +67,19 @@ void game::system::update_block_pickup_system(entt::registry& reg, Input& inp, P
 				{
 					OutputDebugString("ATTACHING\n");
 					reg.emplace_or_replace<attach_component>(ent, e);
+
+					// disable physics if present
+					physics_component* pc = reg.try_get<physics_component>(ent);
+					if (pc)
+						pc->enabled = false;
 				}
 				else {
 					reg.remove<attach_component>(ent);
+
+					// enable physics if present
+					physics_component* pc = reg.try_get<physics_component>(ent);
+					if (pc)
+						pc->enabled = true;
 				}
 
 				break;

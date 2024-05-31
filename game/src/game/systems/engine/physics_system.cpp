@@ -10,8 +10,9 @@ void game::system::update_physics_system(entt::registry& reg, PhysicsSystem& sys
 	for (const auto&& [e, tc, pc] : physEntities.each())
 	{
 		auto type = sys.get_body_type(pc.id);
-		if (type == JPH::EMotionType::Dynamic)
+		if (type == JPH::EMotionType::Dynamic && pc.enabled)
 			tc.position = sys.get_body_position(pc.id);
-
+		else
+			sys.set_body_position(pc.id, tc.position);
 	};
 }
