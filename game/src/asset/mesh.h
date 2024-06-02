@@ -7,12 +7,7 @@
 #include <common/xr_linear_algebra.h>
 #include <gfx/pipeline/pipelines.h>
 
-struct Mesh {
-	VkBuffer index_buffer;
-	VkBuffer vertex_buffer;
-	uint32_t index_count;
-	int material_index;
-};
+
 
 struct GPUModelConstant {
 	XrMatrix4x4f model;
@@ -58,6 +53,16 @@ struct Vertex {
 
 	float u;
 	float v;
+};
+
+struct Mesh {
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
+	VkBuffer index_buffer;
+	VkBuffer vertex_buffer;
+	uint32_t index_count;
+	int material_index;
 };
 
 struct Model {

@@ -75,7 +75,7 @@ PhysicsSystem::PhysicsSystem()
 	// Next we can create a rigid body to serve as the floor, we make a large
 	// box Create the settings for the collision volume (the shape).
 	// Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
-	JPH::BoxShapeSettings floor_shape_settings(JPH::Vec3(100.0f, 1.0f, 100.0f));
+	JPH::BoxShapeSettings floor_shape_settings(JPH::Vec3(100.0f, 0.2f, 100.0f));
 
 	// Create the shape
 	JPH::ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
@@ -144,6 +144,8 @@ JPH::BodyID PhysicsSystem::spawn_body(JPH::BodyCreationSettings settings, JPH::V
 	body_interface.AddLinearVelocity(id, initial_velocity);
 
 	m_bodies.push_back(id);
+
+	
 
 	return id;
 }

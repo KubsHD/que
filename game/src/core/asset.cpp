@@ -128,6 +128,9 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 		internal_mesh.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 		internal_mesh.index_count = indices.size();
 
+		internal_mesh.vertices = vertices;
+		internal_mesh.indices = indices;
+
 		auto model_directory = path.parent_path();
 
 		if (mesh->mMaterialIndex >= 0)
@@ -428,6 +431,9 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 			internal_mesh.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
 			internal_mesh.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 			internal_mesh.index_count = indices.size();
+
+			internal_mesh.vertices = vertices;
+			internal_mesh.indices = indices;
 
 			meshes.push_back(internal_mesh);
 		}

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include <game/components.h>
 #include <core/physics.h>
+#include <core/physics_util.h>
 
 namespace game {
 	namespace tmpl {
@@ -11,12 +12,18 @@ namespace game {
 			reg.emplace<transform_component>(ball, glm::vec3{ 0.0f,5.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
 			reg.emplace<mesh_component>(ball, mod);
 
+			auto shape = core::physics::create_convex_shape(mod.meshes[0]);
+
 			JPH::BodyCreationSettings obj_settings(
-				new JPH::BoxShape(JPH::Vec3(0.5f, 0.5f, 0.5f)),
+				shape,
 				JPH::RVec3(0, 5, 0),
 				JPH::Quat::sIdentity(),
 				JPH::EMotionType::Dynamic,
 				Layers::MOVING);
+
+
+			/*obj_settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+			obj_settings.mMassPropertiesOverride.SetMassAndInertiaOfSolidBox(2.0f * JPH::Vec3(2.0f, 2.0f, 2.0f), 1000.0f);*/
 
 			reg.emplace<physics_component>(ball, true, psys.spawn_body(obj_settings, JPH::Vec3(0, -1.0f, 0.0f)));
 			reg.emplace<pickupable_block>(ball);
