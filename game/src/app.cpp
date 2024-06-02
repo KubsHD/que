@@ -119,6 +119,8 @@ bool App::render_layer(RenderLayerInfo& info)
 
 	// Per view in the view configuration:
 	for (uint32_t i = 0; i < viewCount; i++) {
+		QUE_PROFILE_SECTION("Render eye");
+
 		SwapchainInfo& colorSwapchainInfo = m_colorSwapchainInfos[i];
 		SwapchainInfo& depthSwapchainInfo = m_depthSwapchainInfos[i];
 
@@ -348,7 +350,11 @@ void App::render_frame()
 
 	XrFrameState frameState{ XR_TYPE_FRAME_STATE };
 	XrFrameWaitInfo frameWaitInfo{ XR_TYPE_FRAME_WAIT_INFO };
-	OPENXR_CHECK(xrWaitFrame(m_session, &frameWaitInfo, &frameState), "Failed to wait for XR Frame.");
+
+	{
+		QUE_PROFILE_SECTION("XR Wait for frame");
+		OPENXR_CHECK(xrWaitFrame(m_session, &frameWaitInfo, &frameState), "Failed to wait for XR Frame.");
+	}
 
 	// Tell the OpenXR compositor that the application is beginning the frame.
 	XrFrameBeginInfo frameBeginInfo{ XR_TYPE_FRAME_BEGIN_INFO };
@@ -371,13 +377,16 @@ void App::render_frame()
 		}
 	}
 
-	// Tell OpenXR that we are finished with this frame; specifying its display time, environment blending and layers.
-	XrFrameEndInfo frameEndInfo{ XR_TYPE_FRAME_END_INFO };
-	frameEndInfo.displayTime = frameState.predictedDisplayTime;
-	frameEndInfo.environmentBlendMode = m_environmentBlendMode;
-	frameEndInfo.layerCount = static_cast<uint32_t>(renderLayerInfo.layers.size());
-	frameEndInfo.layers = renderLayerInfo.layers.data();
-	OPENXR_CHECK(xrEndFrame(m_session, &frameEndInfo), "Failed to end the XR Frame.");
+	{
+		QUE_PROFILE_SECTION("XR End frame");
+		// Tell OpenXR that we are finished with this frame; specifying its display time, environment blending and layers.
+		XrFrameEndInfo frameEndInfo{ XR_TYPE_FRAME_END_INFO };
+		frameEndInfo.displayTime = frameState.predictedDisplayTime;
+		frameEndInfo.environmentBlendMode = m_environmentBlendMode;
+		frameEndInfo.layerCount = static_cast<uint32_t>(renderLayerInfo.layers.size());
+		frameEndInfo.layers = renderLayerInfo.layers.data();
+		OPENXR_CHECK(xrEndFrame(m_session, &frameEndInfo), "Failed to end the XR Frame.");
+	}
 }
 
 void App::create_instance()

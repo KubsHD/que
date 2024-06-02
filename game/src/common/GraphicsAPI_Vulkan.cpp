@@ -20,6 +20,7 @@
 #endif
 
 #include <common/vk_initializers.h>
+#include <core/profiler.h>
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -696,7 +697,8 @@ VkBuffer GraphicsAPI_Vulkan::CreateBuffer(const BufferCreateInfo &bufferCI) {
     VmaAllocation bufferAllocation;
 
 	VmaAllocationCreateInfo vmaAllocationCI = {};
-	vmaAllocationCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+    vmaAllocationCI.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+    vmaAllocationCI.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
 	VULKAN_CHECK(vmaCreateBuffer(m_allocator, &vkBufferCI, &vmaAllocationCI, &buffer, &bufferAllocation, nullptr), "Failed to create Buffer.");
 
@@ -1124,6 +1126,8 @@ void GraphicsAPI_Vulkan::BeginRendering() {
 }
 
 void GraphicsAPI_Vulkan::EndRendering() {
+    QUE_PROFILE;
+
     if (inRenderPass) {
         vkCmdEndRenderPass(cmdBuffer);
         inRenderPass = false;
@@ -1166,6 +1170,8 @@ void GraphicsAPI_Vulkan::EndRendering() {
 }
 
 void GraphicsAPI_Vulkan::SetBufferData(VkBuffer buffer, size_t offset, size_t size, void *data) {
+    QUE_PROFILE;
+
     VkBuffer vkBuffer = (VkBuffer)buffer;
 
     void *mappedData = nullptr;
@@ -1333,11 +1339,14 @@ void GraphicsAPI_Vulkan::SetScissors(Rect2D *scissors, size_t count) {
     vkCmdSetScissor(cmdBuffer, 0, static_cast<uint32_t>(vkRect2D.size()), vkRect2D.data());
 }
 void GraphicsAPI_Vulkan::SetPipeline(GraphicsAPI::Pipeline pipeline) {
+    QUE_PROFILE;
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipeline)pipeline.pipeline);
     setPipeline = (VkPipeline)pipeline.pipeline;
 }
 
 void GraphicsAPI_Vulkan::SetDescriptor(const DescriptorInfo &descriptorInfo) {
+    QUE_PROFILE;
+
     VkWriteDescriptorSet writeDescSet;
     writeDescSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescSet.pNext = nullptr;
@@ -1379,6 +1388,8 @@ void GraphicsAPI_Vulkan::SetDescriptor(const DescriptorInfo &descriptorInfo) {
 }
 
 void GraphicsAPI_Vulkan::UpdateDescriptors() {
+    QUE_PROFILE;
+
     VkPipelineLayout pipelineLayout = std::get<0>(pipelineResources[(VkPipeline)setPipeline]);
     std::vector<VkDescriptorSetLayout> descSetLayouts = std::get<1>(pipelineResources[(VkPipeline)setPipeline]);
     PipelineCreateInfo pipelinCI = std::get<3>(pipelineResources[(VkPipeline)setPipeline]);
@@ -1432,6 +1443,8 @@ void GraphicsAPI_Vulkan::UpdateDescriptors() {
 }
 
 void GraphicsAPI_Vulkan::SetVertexBuffers(VkBuffer* vertexBuffers, size_t count) {
+    QUE_PROFILE;
+
     std::vector<VkBuffer> vkBuffers;
     std::vector<VkDeviceSize> offsets;
     for (size_t i = 0; i < count; i++) {

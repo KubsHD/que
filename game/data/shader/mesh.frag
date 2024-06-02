@@ -20,7 +20,6 @@ layout(location = 0) out vec4 o_Color;
 
 
 void main() {
-
 	// textures
 	vec3 albedo = pow(texture(tex_diffuse, i_TexCoord).rgb, vec3(2.2));
 	float ao = texture(tex_orm, i_TexCoord).x;

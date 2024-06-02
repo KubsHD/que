@@ -42,6 +42,8 @@ Renderer::~Renderer()
 
 void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 {
+	QUE_PROFILE;
+
 	currently_drawn_object = 0;
 
 	GraphicsAPI::Viewport viewport = { 0.0f, 0.0f, (float)info.width, (float)info.height, 0.0f, 1.0f };
@@ -101,6 +103,8 @@ void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 
 void Renderer::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model)
 {
+	QUE_PROFILE;
+
 	gfx::InstanceData id;
 
 	id.model = glm::mat4(1.0f);
@@ -110,64 +114,62 @@ void Renderer::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const
 
 	size_t offsetCameraUB = sizeof(gfx::InstanceData) * currently_drawn_object;
 
-	std::vector<MeshRenderData> unlit_meshes;
-	std::vector<MeshRenderData> lit_meshes;
+	GraphicsAPI_Vulkan::Pipeline* current_pipeline;
 
-
-	for (const auto& mesh : model.meshes)
-	{
-		const auto& material = model.materials.at(mesh.material_index);
-
-		if (material.type == PipelineType::UNLIT)
-		{
-		unlit_meshes.push_back({ mesh, material });
-		}
-		else if (material.type == PipelineType::LIT)
-		{
-			lit_meshes.push_back({ mesh, material });
-		}
-	}
 
 	// unlit pass
-	m_graphicsAPI->SetPipeline(m_unlit_pipeline);
-	m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(gfx::InstanceData), &id);
 
-	ColorData cd;
-	for (auto mesh : unlit_meshes)
+	if (model.sorted_meshes.at(PipelineType::UNLIT).size() > 0)
 	{
-		cd.color = mesh.mat.color;
 
-		m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
-		m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(gfx::InstanceData) });
+		m_graphicsAPI->SetPipeline(m_unlit_pipeline);
+		m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(gfx::InstanceData), &id);
+
+		ColorData cd;
+		for (auto mesh : model.sorted_meshes.at(PipelineType::UNLIT))
+		{
+			const auto& mat = model.materials.at(mesh.material_index);
+
+			cd.color = mat.color;
+
+			m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
+			m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(gfx::InstanceData) });
 
 
-		m_graphicsAPI->PushConstant(&cd, sizeof(cd), VK_SHADER_STAGE_FRAGMENT_BIT);
-	
-		m_graphicsAPI->UpdateDescriptors();
+			m_graphicsAPI->PushConstant(&cd, sizeof(cd), VK_SHADER_STAGE_FRAGMENT_BIT);
 
-		m_graphicsAPI->SetVertexBuffers(&mesh.mesh.vertex_buffer, 1);
-		m_graphicsAPI->SetIndexBuffer(mesh.mesh.index_buffer);
-		m_graphicsAPI->DrawIndexed(mesh.mesh.index_count);
+			m_graphicsAPI->UpdateDescriptors();
+
+			m_graphicsAPI->SetVertexBuffers(&mesh.vertex_buffer, 1);
+			m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
+			m_graphicsAPI->DrawIndexed(mesh.index_count);
+		}
 	}
 
-	m_graphicsAPI->SetPipeline(m_pipeline);
-	m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(gfx::InstanceData), &id);
-
-	for (auto mesh : lit_meshes)
 	{
-		m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
-		m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(gfx::InstanceData) });
-		m_graphicsAPI->SetDescriptor({ 1, 1, mesh.mat.diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 2, mesh.mat.norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 3, mesh.mat.orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 4, m_sky.skyCubemap.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
-		m_graphicsAPI->SetDescriptor({ 1, 5, mesh.mat.emission.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false});
+		QUE_PROFILE_SECTION("Draw lit");
+		m_graphicsAPI->SetPipeline(m_pipeline);
+		m_graphicsAPI->SetBufferData(m_instanceData, offsetCameraUB, sizeof(gfx::InstanceData), &id);
+	
 
-		m_graphicsAPI->UpdateDescriptors();
+		for (auto mesh : model.sorted_meshes.at(PipelineType::LIT))
+		{
+			const auto& mat = model.materials.at(mesh.material_index);
 
-		m_graphicsAPI->SetVertexBuffers(&mesh.mesh.vertex_buffer, 1);
-		m_graphicsAPI->SetIndexBuffer(mesh.mesh.index_buffer);
-		m_graphicsAPI->DrawIndexed(mesh.mesh.index_count);
+			m_graphicsAPI->SetDescriptor({ 0, 0, m_sceneData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, 0, sizeof(gfx::SceneData) });
+			m_graphicsAPI->SetDescriptor({ 1, 0, m_instanceData, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX, false, offsetCameraUB, sizeof(gfx::InstanceData) });
+			m_graphicsAPI->SetDescriptor({ 1, 1, mat.diff.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+			m_graphicsAPI->SetDescriptor({ 1, 2, mat.norm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+			m_graphicsAPI->SetDescriptor({ 1, 3, mat.orm.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+			m_graphicsAPI->SetDescriptor({ 1, 4, m_sky.skyCubemap.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+			m_graphicsAPI->SetDescriptor({ 1, 5, mat.emission.view, sampler, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT, false });
+
+			m_graphicsAPI->UpdateDescriptors();
+
+			m_graphicsAPI->SetVertexBuffers(&mesh.vertex_buffer, 1);
+			m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
+			m_graphicsAPI->DrawIndexed(mesh.index_count);
+		}
 	}
 
 	currently_drawn_object++;
@@ -175,6 +177,8 @@ void Renderer::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const
 
 void Renderer::draw_sky(App::FrameRenderInfo& info)
 {
+	QUE_PROFILE;
+
 	// draw skybox
 	XrVector3f pos = info.view.pose.position;
 	XrVector3f scale = { 5.0f, 5.0f, 5.0f };

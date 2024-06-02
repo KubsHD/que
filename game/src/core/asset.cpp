@@ -95,7 +95,7 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 #endif
 
 	// create models
-	const aiScene* scene = imp.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
+	const aiScene* scene = imp.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_CalcTangentSpace);
 
 
 	for (int m = 0; m < scene->mNumMeshes; m++)
@@ -176,6 +176,26 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 		mod.meshes.push_back(internal_mesh);
 	}
 
+	mod.sorted_meshes[PipelineType::LIT].reserve(1);
+	mod.sorted_meshes[PipelineType::UNLIT].reserve(1);
+
+
+	for (const auto& mesh : mod.meshes)
+	{
+
+		const auto& material = mod.materials.at(mesh.material_index);
+
+		if (material.type == PipelineType::UNLIT)
+		{
+			mod.sorted_meshes[PipelineType::UNLIT].push_back(mesh);
+		}
+		else if (material.type == PipelineType::LIT)
+		{
+			mod.sorted_meshes[PipelineType::LIT].push_back(mesh);
+		}
+	}
+
+	
 	return mod;
 }
 
@@ -488,6 +508,24 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 		model.materials.emplace((int)material["id"], m);
 	}
 
+	model.sorted_meshes[PipelineType::LIT].reserve(1);
+	model.sorted_meshes[PipelineType::UNLIT].reserve(1);
+
+	for (const auto& mesh : model.meshes)
+	{
+
+		const auto& material = model.materials.at(mesh.material_index);
+
+		if (material.type == PipelineType::UNLIT)
+		{
+			model.sorted_meshes[PipelineType::UNLIT].push_back(mesh);
+		}
+		else if (material.type == PipelineType::LIT)
+		{
+			model.sorted_meshes[PipelineType::LIT].push_back(mesh);
+		}
+	}
+
 	return model;
 }
 
@@ -503,6 +541,7 @@ GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, con
 	{
 		return load_image(gapi, root_path + "/" + std::string(path.C_Str()), type == aiTextureType_NORMALS ? TT_NORMAL : TT_DIFFUSE);
 	}
+	// TODO: embedded texture support
 	
 	return gapi.tex_placeholder;
 } 
