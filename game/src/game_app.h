@@ -1,6 +1,5 @@
 #include "app.h"
 
-#include "pch.h"
 
 #include <common/GraphicsAPI_Vulkan.h>
 
@@ -8,7 +7,8 @@
 #include <core/physics.h>
 #include <gfx/buffers.h>
 #include <gfx/sky.h>
-#include <gfx/renderer.h>
+
+class Renderer;
 
 class GameApp : public App
 {

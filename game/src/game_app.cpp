@@ -7,7 +7,7 @@
 #include <core/asset.h>
 #include <core/profiler.h>
 
-
+#include <gfx/renderer.h>
 #include <gfx/pipeline/sky_pipeline.h>
 #include <gfx/pipeline/mesh_pipeline.h>
 #include <gfx/pipeline/sky_cube_render_pipeline.h>
@@ -17,14 +17,11 @@
 #include <common/vk_initializers.h>
 #include <common/glm_helpers.h>
 
-#include <game/systems/systems.h>
 #include <game/tags.h>
 #include <game/components.h>
+#include <game/systems/systems.h>
 #include <game/templates/controller_template.h>
 #include <game/templates/block_template.h>
-
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
 #include <game/systems/engine/attach_system.h>
 
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
@@ -35,6 +32,9 @@ GameApp::~GameApp()
 {
 }
 
+#if SDL
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 void GameApp::run2()
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -56,6 +56,8 @@ void GameApp::run2()
 	SDL_Quit();
 }
 
+#endif
+
 void GameApp::init()
 {
 	QUE_PROFILE;
@@ -69,7 +71,7 @@ void GameApp::init()
 	create_resources();
 
 	const auto entity = m_registry.create();
-	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{1.0f, 1.0f, 1.0f });
+	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{0.5f, 0.5f, 0.5f });
 	m_registry.emplace<mesh_component>(entity, level_model);
 
 	// controllers
@@ -104,7 +106,7 @@ void GameApp::update(float dt)
 	game::system::update_block_pickup_system(m_registry, *input, *m_physics_system);
 	game::system::update_attach_system(m_registry);
 
-	m_physics_system->update(dt, m_registry);
+	m_physics_system->update(1.0f / 60.0f, m_registry);
 }
 
 void GameApp::render(FrameRenderInfo& info)
@@ -121,20 +123,11 @@ void GameApp::render(FrameRenderInfo& info)
 	ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_Once);
 	if (ImGui::Begin("Phys Debug", nullptr))
 	{
+		ImGui::LabelText("Deltatime: ", "%f", m_delta_time);
+
 		if (ImGui::Button("Spawn object at hmd's position"))
 		{
-			const auto ent = m_registry.create();
-			m_registry.emplace<transform_component>(ent, glm::vec3(0.0f, 10.0f, 0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(0.2f, 0.2f, 0.2f));
-			m_registry.emplace<mesh_component>(ent, controller);
-
-			auto pid = m_physics_system->spawn_body(JPH::BodyCreationSettings(
-				new JPH::SphereShape(2.0f),
-				JPH::RVec3(0, 10, 0),
-				JPH::Quat::sIdentity(),
-				JPH::EMotionType::Dynamic,
-				Layers::MOVING), JPH::Vec3(0.0f, 1.0f, 1.0f));
-
-			m_registry.emplace<physics_component>(ent, true, pid);
+			game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0.0f, 5.0f, 0.0f), test_cube);
 		}
 	}
 	ImGui::End();
@@ -189,7 +182,7 @@ void GameApp::create_resources()
 {
 	QUE_PROFILE;
 
-	level_model = Asset::load_model(*m_graphicsAPI, "data/level/sponza/sponza.gltf");
+	level_model = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");
 	controller = Asset::load_model_json(*m_graphicsAPI, "data/models/meta/model_controller_left.model");
 	skybox_image = Asset::load_image(*m_graphicsAPI, "data/apartment.hdr", TT_HDRI);

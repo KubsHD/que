@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "pch.h"
-
 #include "GraphicsAPI.h"
 #include "deletion_queue.h"
 

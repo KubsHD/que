@@ -5,6 +5,7 @@
 
 
 #include <jolt/Physics/StateRecorderImpl.h>
+#include "profiler.h"
 
 JPH::StateRecorderImpl impl;
 
@@ -106,6 +107,7 @@ PhysicsSystem::PhysicsSystem()
 
 	body_interface.SetAngularVelocity(obj, JPH::Vec3(0.7f, -1.0f, 0.1f));
 
+	//auto grav = m_system.GetGravity();
 	m_system.OptimizeBroadPhase();
 }
 
@@ -119,7 +121,7 @@ const float cDeltaTime = 1.0f / 60.0f;
 
 void PhysicsSystem::update(float dt, entt::registry& reg)
 {
-
+	QUE_PROFILE;
 	/*for (auto& obj : m_bodies)
 	{
 		if (m_system.GetBodyInterface().IsActive(obj)) {
@@ -159,11 +161,27 @@ glm::vec3 PhysicsSystem::get_body_position(JPH::BodyID bodyId)
 	return glm::vec3(ppos.GetX(), ppos.GetY(), ppos.GetZ());
 }
 
+glm::quat PhysicsSystem::get_body_rotation(JPH::BodyID bid)
+{
+	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
+
+	auto rot = body_interface.GetRotation(bid);
+
+	return glm::quat(rot.GetW(), rot.GetX(), rot.GetY(), rot.GetZ());
+}
+
 void PhysicsSystem::set_body_position(JPH::BodyID bid, glm::vec3 pos)
 {
 	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
 
 	body_interface.SetPosition(bid, JPH::to_jph(pos), JPH::EActivation::Activate);
+}
+
+void PhysicsSystem::set_body_rotation(JPH::BodyID bid, glm::quat rot)
+{
+	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
+
+	body_interface.SetRotation(bid, JPH::to_jph(rot), JPH::EActivation::Activate);
 }
 
 void PhysicsSystem::add_velocity(JPH::BodyID bid, glm::vec3 vel)
@@ -199,6 +217,12 @@ JPH::EMotionType PhysicsSystem::get_body_type(JPH::BodyID bodyId)
 	return body_interface.GetMotionType(bodyId);
 }
 
+void PhysicsSystem::set_motion_type(JPH::BodyID id, JPH::EMotionType param2)
+{
+	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
+	body_interface.SetMotionType(id, param2, JPH::EActivation::Activate);
+}
+
 void PhysicsSystem::init_static()
 {
 	JPH::Trace = TraceImpl;
@@ -206,4 +230,137 @@ void PhysicsSystem::init_static()
 	JPH_IF_ENABLE_ASSERTS(JPH::AssertFailed = AssertFailedImpl;)
 	JPH::Factory::sInstance = new JPH::Factory();
 	JPH::RegisterTypes();
+}
+
+JPH_SUPPRESS_WARNINGS
+
+
+
+void TraceImpl(const char* inFMT, ...)
+{
+	// Format the message
+	va_list list;
+	va_start(list, inFMT);
+	char buffer[1024];
+	vsnprintf(buffer, sizeof(buffer), inFMT, list);
+	va_end(list);
+
+	// Print to the TTY
+#if defined(WIN32)
+	OutputDebugString(buffer);
+#endif
+	std::cout << buffer << std::endl;
+}
+
+bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint32_t inLine)
+{
+	// Print to the TTY
+	std::cout << inFile << ":" << inLine << ": (" << inExpression << ") " << (inMessage != nullptr ? inMessage : "") << std::endl;
+
+	// Breakpoint
+	return true;
+}
+
+bool ObjectLayerPairFilterImpl::ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const
+{
+	switch (inObject1)
+	{
+	case Layers::NON_MOVING:
+		return inObject2 == Layers::MOVING; // Non moving only collides with moving
+	case Layers::MOVING:
+		return true; // Moving collides with everything
+	default:
+		JPH_ASSERT(false);
+		return false;
+	}
+}
+
+BPLayerInterfaceImpl::BPLayerInterfaceImpl()
+{
+	// Create a mapping table from object to broad phase layer
+	mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
+	mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
+}
+
+uint32_t BPLayerInterfaceImpl::GetNumBroadPhaseLayers() const
+{
+	return BroadPhaseLayers::NUM_LAYERS;
+}
+
+JPH::BroadPhaseLayer BPLayerInterfaceImpl::GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const
+{
+	JPH_ASSERT(inLayer < Layers::NUM_LAYERS);
+	return mObjectToBroadPhase[inLayer];
+}
+
+const char* BPLayerInterfaceImpl::GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const
+{
+	switch ((JPH::BroadPhaseLayer::Type)inLayer)
+	{
+	case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING:	return "NON_MOVING";
+	case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::MOVING:		return "MOVING";
+	default:													JPH_ASSERT(false); return "INVALID";
+	}
+}
+
+bool ObjectVsBroadPhaseLayerFilterImpl::ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const
+{
+	switch (inLayer1)
+	{
+	case Layers::NON_MOVING:
+		return inLayer2 == BroadPhaseLayers::MOVING;
+	case Layers::MOVING:
+		return true;
+	default:
+		JPH_ASSERT(false);
+		return false;
+	}
+}
+
+JPH::ValidateResult MyContactListener::OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult)
+{
+	std::cout << "Contact validate callback" << std::endl;
+
+	// Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
+	return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+}
+
+void MyContactListener::OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+{
+	std::cout << "A contact was added" << std::endl;
+}
+
+void MyContactListener::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+{
+	std::cout << "A contact was persisted" << std::endl;
+}
+
+void MyContactListener::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
+{
+	std::cout << "A contact was removed" << std::endl;
+}
+
+void MyBodyActivationListener::OnBodyActivated(const JPH::BodyID& inBodyID, uint64_t inBodyUserData)
+{
+	std::cout << "A body got activated" << std::endl;
+}
+
+void MyBodyActivationListener::OnBodyDeactivated(const JPH::BodyID& inBodyID, uint64_t inBodyUserData)
+{
+	std::cout << "A body went to sleep" << std::endl;
+}
+
+glm::vec3 JPH::to_glm(Vec3 vec)
+{
+	return glm::vec3(vec.GetX(), vec.GetY(), vec.GetZ());
+}
+
+JPH::Vec3 JPH::to_jph(glm::vec3 vec)
+{
+	return JPH::Vec3(vec.x, vec.y, vec.z);
+}
+
+JPH::Quat JPH::to_jph(glm::quat q)
+{
+	return JPH::Quat(q.w, q.x, q.y, q.z);
 }

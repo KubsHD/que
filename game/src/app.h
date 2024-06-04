@@ -1,7 +1,5 @@
 #pragma once
 
-#include "pch.h"
-
 #include <common/GraphicsAPI_Vulkan.h>
 #include <common/OpenXRDebugUtils.h>
 #include <common/xr_linear_algebra.h>

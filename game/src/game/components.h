@@ -1,16 +1,14 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
 
-#include <glm/glm.hpp>
-#include <openxr/openxr.h>
 #include <asset/mesh.h>
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Body/Body.h>
 
+#include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#include <filesystem>
 
 struct transform_component {
 	glm::vec3 position;
@@ -74,4 +72,10 @@ struct native_script_component {
 struct rotating_ball_component : public native_script_component {
 	void update() override {
 	}
+};
+
+struct game_state_component {
+	float elapsed_time;
+	float tower_height;
+	bool is_game_over;
 };

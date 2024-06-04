@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "pch.h"
 
 // Debugbreak
 #if defined(_MSC_VER)

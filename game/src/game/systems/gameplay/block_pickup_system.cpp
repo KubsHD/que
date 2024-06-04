@@ -4,6 +4,9 @@
 #include <game/tags.h>
 #include <core/profiler.h>
 #include <common/DebugOutput.h>
+#include <core/physics.h>
+#include <core/input.h>
+#include <game/components.h>
 
 
 static std::vector<entt::entity> get_entities_from_collision_result(entt::registry& reg, std::vector<JPH::Body*> bodies)
@@ -76,16 +79,23 @@ void game::system::update_block_pickup_system(entt::registry& reg, Input& inp, P
 						// disable physics if present
 						physics_component* pc = reg.try_get<physics_component>(ent);
 						if (pc)
+						{
+							psys.set_motion_type(pc->id, JPH::EMotionType::Kinematic);
 							pc->enabled = false;
+						}
 					}
 				}
 				else {
 					reg.remove<attach_component>(ent);
 
+					
 					// enable physics if present
 					physics_component* pc = reg.try_get<physics_component>(ent);
 					if (pc)
+					{
+						psys.set_motion_type(pc->id, JPH::EMotionType::Dynamic);
 						pc->enabled = true;
+					}
 				}
 
 				break;

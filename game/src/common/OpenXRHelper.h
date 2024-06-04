@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "pch.h"
 // Define any XR_USE_PLATFORM_... / XR_USE_GRAPHICS_API_... before this header file.
 
 

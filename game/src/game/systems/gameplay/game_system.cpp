@@ -2,7 +2,10 @@
 
 #include "game_system.h"
 
-
+#include <core/physics.h>
+#include <game/components.h>
+#include <common/glm_helpers.h>
+#include <core/input.h>
 
 void game::system::update_game_system(entt::registry& reg)
 {

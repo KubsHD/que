@@ -41,7 +41,7 @@ JPH::RefConst<JPH::Shape> core::physics::create_convex_shape(Mesh m)
 
 
 	JPH::ConvexHullShapeSettings settings(points);
-	settings.SetDensity(1000.0f);
+	settings.SetDensity(100.0f);
 
 	auto cook_result = settings.Create();
 	assert(cook_result.IsValid());
