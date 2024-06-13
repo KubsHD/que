@@ -85,6 +85,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <lib/vk_mem_alloc.h>
+#include <lib/VkBootstrap.h>
+
 
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>

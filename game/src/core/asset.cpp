@@ -95,7 +95,7 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 #endif
 
 	// create models
-	const aiScene* scene = imp.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_CalcTangentSpace);
+	const aiScene* scene = imp.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
 
 
 	for (int m = 0; m < scene->mNumMeshes; m++)

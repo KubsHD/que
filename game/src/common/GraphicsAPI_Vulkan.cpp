@@ -144,60 +144,21 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     // Instance
     LoadPFN_XrFunctions(m_xrInstance);
 
-    XrGraphicsRequirementsVulkanKHR graphicsRequirements{ XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR };
-    OPENXR_CHECK(xrGetVulkanGraphicsRequirementsKHR(m_xrInstance, systemId, &graphicsRequirements), "Failed to get Graphics Requirements for Vulkan.");
+	XrGraphicsRequirementsVulkanKHR graphicsRequirements{ XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR };
+	OPENXR_CHECK(xrGetVulkanGraphicsRequirementsKHR(m_xrInstance, systemId, &graphicsRequirements), "Failed to get Graphics Requirements for Vulkan.");
 
-    VkApplicationInfo ai;
-    ai.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    ai.pNext = nullptr;
-    ai.pApplicationName = "OpenXR Tutorial - Vulkan";
-    ai.applicationVersion = 1;
-    ai.pEngineName = "OpenXR Tutorial - Vulkan Engine";
-    ai.engineVersion = 1;
-#if defined(XR_USE_PLATFORM_ANDROID)
-    // quest supports up to vulkan 1.1
-    ai.apiVersion = VK_MAKE_API_VERSION(0, XR_VERSION_MAJOR(graphicsRequirements.maxApiVersionSupported), XR_VERSION_MINOR(graphicsRequirements.maxApiVersionSupported), 0);
-#else
-    ai.apiVersion = VK_API_VERSION_1_3;
-#endif
-
-    uint32_t instanceExtensionCount = 0;
-    VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr), "Failed to enumerate InstanceExtensionProperties.");
-
-    std::vector<VkExtensionProperties> instanceExtensionProperties;
-    instanceExtensionProperties.resize(instanceExtensionCount);
-    VULKAN_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, instanceExtensionProperties.data()), "Failed to enumerate InstanceExtensionProperties.");
-    std::vector<std::string> openXrInstanceExtensionNames = GetInstanceExtensionsForOpenXR(m_xrInstance, systemId);
-
-#if defined(_DEBUG)
-    openXrInstanceExtensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-#endif
-
-    for (const std::string& requestExtension : openXrInstanceExtensionNames) {
-        for (const VkExtensionProperties& extensionProperty : instanceExtensionProperties) {
-            if (strcmp(requestExtension.c_str(), extensionProperty.extensionName))
-                continue;
-            else
-                activeInstanceExtensions.push_back(requestExtension.c_str());
-            break;
-        }
-    }
-
-#if defined(_DEBUG)
-    activeInstanceLayers = { "VK_LAYER_KHRONOS_validation" };
-#endif
-
-
-    VkInstanceCreateInfo instanceCI;
-    instanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCI.pNext = nullptr;
-    instanceCI.flags = 0;
-    instanceCI.pApplicationInfo = &ai;
-    instanceCI.enabledLayerCount = static_cast<uint32_t>(activeInstanceLayers.size());
-    instanceCI.ppEnabledLayerNames = activeInstanceLayers.data();
-    instanceCI.enabledExtensionCount = static_cast<uint32_t>(activeInstanceExtensions.size());
-    instanceCI.ppEnabledExtensionNames = activeInstanceExtensions.data();
-    VULKAN_CHECK(vkCreateInstance(&instanceCI, nullptr, &instance), "Failed to create Vulkan Instance.");
+	vkb::InstanceBuilder builder;
+	auto inst_ret = builder.set_app_name("Example Vulkan Application")
+		.request_validation_layers()
+        .desire_api_version(1,1)
+		.use_default_debug_messenger()
+		.build();
+	if (!inst_ret) {
+		std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";
+        abort();
+	}
+	vkb_inst = inst_ret.value();
+    instance = vkb_inst.instance;
 
     // Physical Device
     uint32_t physicalDeviceCount = 0;
@@ -371,15 +332,15 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     // create image 1x1
     vkinit::image_create_info(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VkExtent3D{ 1,1,1 });
 
-    GraphicsAPI::ImageCreateInfo ici{};
-    ici.width = 1;
-    ici.height = 1;
-    ici.depth = 1;
-    ici.format = VK_FORMAT_R8G8B8A8_UNORM;
-    ici.dimension = 2;
-    ici.sampleCount = 1;
-    ici.mipLevels = 1;
-    ici.arrayLayers = 1;
+	GraphicsAPI::ImageCreateInfo ici{};
+	ici.width = 1;
+	ici.height = 1;
+	ici.depth = 1;
+	ici.format = VK_FORMAT_R8G8B8A8_UNORM;
+	ici.dimension = 2;
+	ici.sampleCount = 1;
+	ici.mipLevels = 1;
+	ici.arrayLayers = 1;
 
     tex_placeholder.image = CreateImage(ici);
 

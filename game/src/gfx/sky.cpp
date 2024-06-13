@@ -4,6 +4,7 @@
 #include "sky.h"
 #include <core/asset.h>
 #include <common/vk_initializers.h>
+#include <common/vk_image.h>
 
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -11,6 +12,7 @@
 
 #include <gfx/buffers.h>
 #include "pipeline/sky_irradiance_generate.h"
+
 
 namespace gfx {
 
@@ -55,32 +57,8 @@ namespace gfx {
 		// change image layout for rendering
 
 		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			VkImageSubresourceRange range{};
-			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			range.baseMipLevel = 0;
-			range.baseArrayLayer = 0;
-			range.levelCount = 1;
-			range.layerCount = 6;
-
-			VkImageMemoryBarrier imageBarrier_toTransfer = {};
-			imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-
-			imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-			imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			imageBarrier_toTransfer.image = s.skyCubemap.image;
-			imageBarrier_toTransfer.subresourceRange = range;
-
-			imageBarrier_toTransfer.srcAccessMask = 0;
-			imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
-
-			});
-
-
+			vkinit::transition_image(cmd, s.skyCubemap.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		});
 
 		// create view for the image
 
@@ -246,30 +224,8 @@ namespace gfx {
 
 		// change to image layout ready to be used in a shader
 		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			VkImageSubresourceRange range{};
-			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			range.baseMipLevel = 0;
-			range.baseArrayLayer = 0;
-			range.levelCount = 1;
-			range.layerCount = 6;
-
-			VkImageMemoryBarrier imageBarrier_toTransfer = {};
-			imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-
-			imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-			imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageBarrier_toTransfer.image = s.skyCubemap.image;
-			imageBarrier_toTransfer.subresourceRange = range;
-
-			imageBarrier_toTransfer.srcAccessMask = 0;
-			imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
-
-			});
+			vkinit::transition_image(cmd, s.skyCubemap.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		});
 
 
     }
@@ -313,30 +269,8 @@ namespace gfx {
 		// change image layout for rendering
 
 		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			VkImageSubresourceRange range{};
-			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			range.baseMipLevel = 0;
-			range.baseArrayLayer = 0;
-			range.levelCount = 1;
-			range.layerCount = 6;
-
-			VkImageMemoryBarrier imageBarrier_toTransfer = {};
-			imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-
-			imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-			imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			imageBarrier_toTransfer.image = s.skyIrradiance.image;
-			imageBarrier_toTransfer.subresourceRange = range;
-
-			imageBarrier_toTransfer.srcAccessMask = 0;
-			imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
-
-			});
+			vkinit::transition_image(cmd, s.skyIrradiance.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		});
 
 		// create view for the image
 
@@ -503,30 +437,8 @@ namespace gfx {
 
 		// change to image layout ready to be used in a shader
 		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			VkImageSubresourceRange range{};
-			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			range.baseMipLevel = 0;
-			range.baseArrayLayer = 0;
-			range.levelCount = 1;
-			range.layerCount = 6;
-
-			VkImageMemoryBarrier imageBarrier_toTransfer = {};
-			imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-
-			imageBarrier_toTransfer.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageBarrier_toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-			imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageBarrier_toTransfer.image = s.skyIrradiance.image;
-			imageBarrier_toTransfer.subresourceRange = range;
-
-			imageBarrier_toTransfer.srcAccessMask = 0;
-			imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
-
-			});
+			vkinit::transition_image(cmd, s.skyIrradiance.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		});
 
 	}
 

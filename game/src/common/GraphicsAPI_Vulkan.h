@@ -136,6 +136,7 @@ private:
     const std::vector<int64_t> GetSupportedDepthSwapchainFormats() ;
 
 private:
+    vkb::Instance vkb_inst{};
     VkInstance instance{};
     VkPhysicalDevice physicalDevice{};
     VkDevice device{};
