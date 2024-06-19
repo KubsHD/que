@@ -1,0 +1,21 @@
+{
+    "file": "testlevel.fbx",
+    "materials": [
+        {
+            "id": 0,
+            "shader": "unlit",
+            "color": {
+                "x": "0.4",
+                "y": "0.2",
+                "z": "0.2"
+            }
+        },
+        {
+            "id": 1,
+            "shader": "lit",
+            "diffuse": "TCom_Wall_Stone3_2x2_1K_albedo.png",
+            "normal": "TCom_Wall_Stone3_2x2_1K_normal.png",
+            "orm": "brick_orm.png"
+        }
+    ]
+}
