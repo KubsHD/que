@@ -49,7 +49,7 @@ void game::system::update_block_pickup_system(entt::registry& reg, Input& inp, P
 	// if yes, then attach the block to controller position
 	// if a block was already attached and player unpressed hold button, detach the block from controller and run its physics simulation
 
-	for (const auto& [e, tc, cc] : reg.view<transform_component, controller_component>().each())
+	for (const auto& [e, tc, cc, mic] : reg.view<transform_component, controller_component, main_interacting_controller>().each())
 	{
 
 		auto bodies = psys.overlap_sphere(tc.position, 0.0001f);
@@ -67,38 +67,33 @@ void game::system::update_block_pickup_system(entt::registry& reg, Input& inp, P
 			if (pb)
 			{
 				auto grab_state = inp.get_grab_state()[cc.index];
+				auto has_attach_component = reg.try_get<attach_component>(ent) != nullptr;
 
-				if (grab_state > 0.5f)
+				if (grab_state > 0.5f && !has_attach_component && !mic.busy)
 				{
-					if (reg.try_get<attach_component>(ent) == nullptr)
-					{
-						XR_TUT_LOG("attaching to controller index: " << cc.index << std::endl);
+					mic.busy = true;
+					reg.emplace<attach_component>(ent, e);
 
-						reg.emplace_or_replace<attach_component>(ent, e);
-
-						// disable physics if present
-						physics_component* pc = reg.try_get<physics_component>(ent);
-						if (pc)
-						{
-							psys.set_motion_type(pc->id, JPH::EMotionType::Kinematic);
-							pc->enabled = false;
-						}
-					}
-				}
-				else {
-					reg.remove<attach_component>(ent);
-
-					
-					// enable physics if present
 					physics_component* pc = reg.try_get<physics_component>(ent);
 					if (pc)
 					{
+						psys.set_motion_type(pc->id, JPH::EMotionType::Kinematic);
+						pc->enabled = false;
+					}
+				}
+				else if (grab_state < 0.5f && has_attach_component)
+				{
+					mic.busy = false;
+					reg.remove<attach_component>(ent);
+
+					physics_component* pc = reg.try_get<physics_component>(ent);
+					if (pc)
+					{
+						psys.add_velocity(pc->id, cc.vel * 10);
 						psys.set_motion_type(pc->id, JPH::EMotionType::Dynamic);
 						pc->enabled = true;
 					}
 				}
-
-				break;
 			}
 		}
 	}

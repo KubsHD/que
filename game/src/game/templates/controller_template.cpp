@@ -20,5 +20,5 @@ void game::tmpl::create_controller(entt::registry& reg, Model& controller, int i
 	//reg.emplace<physics_component>(controller1, m_physics_system->spawn_body(c_settings, JPH::Vec3(0.7f, -1.0f, 0.1f)));
 	reg.emplace<mesh_component>(controller1, controller);
 	reg.emplace<controller_component>(controller1, index);
-	reg.emplace<main_interacting_controller>(controller1);
+	reg.emplace<main_interacting_controller>(controller1, false);
 }

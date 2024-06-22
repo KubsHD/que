@@ -1,7 +1,7 @@
 {
     "objects": [
         {
-            "model": "models/env/beachball/beachball.model",
+            "model": "data/models/env/beachball/beachball.model",
             "position": {
                 "x": 0,
                 "y": 0,

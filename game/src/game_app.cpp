@@ -16,6 +16,7 @@
 #include <common/GraphicsAPI.h>
 #include <common/vk_initializers.h>
 #include <common/glm_helpers.h>
+#include <common/serialization.h>
 
 #include <game/tags.h>
 #include <game/components.h>
@@ -38,6 +39,7 @@ GameApp::~GameApp()
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <core/physics_util.h>
+#include <common/serialization.h>
 void GameApp::run2()
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -125,12 +127,27 @@ void GameApp::init_imgui()
 
 void GameApp::init_game_world()
 {
+	m_registry.on_construct<attach_component>().connect<&game::system::on_attach_component_created>();
+	m_registry.on_destroy<attach_component>().connect<&game::system::on_attach_component_destroyed>();
+
 	//m_registry.on_construct<physics_component>().connect();
 }
 
 void GameApp::load_saved_objects()
 {
 	auto so = Asset::Instance->read_json("data/saved_objects.json");
+
+	for (auto obj : so["objects"])
+	{
+		models.push_back(Asset::load_model_json(*m_graphicsAPI, obj["model"]));
+		auto b = game::tmpl::create_block(m_registry, *m_physics_system, ser::vec3_deserialize(obj["position"]), models.back());
+		m_registry.emplace<saveable>(b);
+	}
+
+}
+
+void GameApp::save_objects()
+{
 }
 
 void GameApp::update(float dt)
@@ -176,7 +193,6 @@ void GameApp::render(FrameRenderInfo& info)
 		auto modelsToRender = m_registry.view<transform_component, mesh_component>();
 		for (const auto&& [e, tc, mc] : modelsToRender.each())
 		{
-			
 			ImGui::Text("Entity: %d", e);
 			ImGui::Text("Position: %f %f %f", tc.position.x, tc.position.y, tc.position.z);
 			ImGui::Text("Scale: %f %f %f", tc.scale.x, tc.scale.y, tc.scale.z);
@@ -211,6 +227,8 @@ void GameApp::render(FrameRenderInfo& info)
 
 void GameApp::destroy()
 {
+	save_objects();
+
 	destroy_resources();
 }
 

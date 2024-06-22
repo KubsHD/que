@@ -420,7 +420,7 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 		}
 #endif
 
-		const aiScene* scene = imp.ReadFile(modelPath, aiProcess_Triangulate | aiProcess_CalcTangentSpace);
+		const aiScene* scene = imp.ReadFile(modelPath, aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
 		for (int m = 0; m < scene->mNumMeshes; m++)
 		{
 			std::vector<Vertex> vertices;

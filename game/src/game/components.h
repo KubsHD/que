@@ -33,6 +33,7 @@ struct controller_component {
 	int index = 0;
 	glm::vec3 last_pos;
 	glm::vec3 current_pos;
+	glm::vec3 vel;
 };
 
 enum CollisionState {
@@ -79,3 +80,5 @@ struct game_state_component {
 	float tower_height;
 	bool is_game_over;
 };
+
+struct saveable {};

@@ -179,7 +179,7 @@ public:
 #include <android/log.h>
 #include <sstream>
 
-#define XR_TUT_LOG_TAG "openxr_tutorial"
+#define XR_TUT_LOG_TAG "que"
 #define XR_TUT_LOG(...) {                                                           \
         std::ostringstream ostr;                                                    \
         ostr<<__VA_ARGS__;                                                          \

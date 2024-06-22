@@ -59,5 +59,9 @@ private:
 	GraphicsAPI::Pipeline sky_pipeline;
 	VkSampler sampler;
 	Model test_cube;
+
+	Vector<Model> models;
+
 	void load_saved_objects();
+	void save_objects();
 };

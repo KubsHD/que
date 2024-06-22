@@ -5,6 +5,7 @@
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <game/components.h>
+#include <common/DebugOutput.h>
 
 void game::system::update_controller_system(entt::registry& reg, Input& input, PhysicsSystem& psys, float viewHeight)
 {
@@ -19,7 +20,9 @@ void game::system::update_controller_system(entt::registry& reg, Input& input, P
 		glm::quat xr_source_rotation = glm::to_glm(pose.orientation);
 		glm::quat rot = glm::rotate(xr_source_rotation, glm::radians(180.0f), glm::vec3(0, 1, 0));
 
-		auto vel = cc.last_pos - target_pos;
+		cc.vel = cc.last_pos - target_pos;
+
+		//XR_TUT_LOG(cc.vel.x << " " << cc.vel.y << " " << cc.vel.z);
 
 		//psys.set_body_position(pc.id, target_pos);
 

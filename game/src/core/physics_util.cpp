@@ -6,6 +6,7 @@
 #include "physics.h"
 #include "asset.h"
 #include <lib/json.hpp>
+#include <common/serialization.h>
 
 JPH::RefConst<JPH::Shape> core::physics::create_mesh_shape(Mesh m)
 {
@@ -61,13 +62,6 @@ JPH::RefConst<JPH::Shape> core::physics::create_convex_shape(Mesh m)
 
 namespace nl = nlohmann;
 
-glm::vec3 vec3_deserialize(const nlohmann::json& j) {
-	return glm::vec3(j.at("x").get<float>(), j.at("y").get<float>(), j.at("z").get<float>());
-}
-
-nlohmann::json vec3_serialize(const glm::vec3& vec) {
-	return nlohmann::json{ {"x", vec.x}, {"y", vec.y}, {"z", vec.z} };
-}
 
 JPH::BodyCreationSettings core::physics::load_from_file(String path)
 {
@@ -89,7 +83,7 @@ JPH::BodyCreationSettings core::physics::load_from_file(String path)
 		std::cout << "File: " << fileName << "\nType: " << type << "\nRadius: " << radius << std::endl;
 	}
 	else if (type == "box") {
-		glm::vec3 size = vec3_deserialize(j.at("size"));
+		glm::vec3 size = ser::vec3_deserialize(j.at("size"));
 
 		return JPH::BodyCreationSettings(
 			new JPH::BoxShape(JPH::to_jph(size)),
