@@ -30,6 +30,8 @@ private:
 	void destroy_resources();
 	void init_imgui();
 
+	void init_game_world();
+
 	Renderer* m_renderer;
 
 	float m_viewHeightM = 1.5f;
@@ -57,4 +59,5 @@ private:
 	GraphicsAPI::Pipeline sky_pipeline;
 	VkSampler sampler;
 	Model test_cube;
+	void load_saved_objects();
 };

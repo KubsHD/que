@@ -21,7 +21,7 @@ layout(location = 4) out mat3 o_TBN;
 void main() {
     o_Pos = a_Positions;
 	o_TexCoord = a_TexCoord;
-	o_Normal = a_Normals;
+	o_Normal = transpose(inverse(mat3(model))) * a_Normals;
 	o_WorldPos = vec3(model * vec4(a_Positions, 1.0f));
 
     gl_Position = viewProj * vec4(o_WorldPos, 1.0f);

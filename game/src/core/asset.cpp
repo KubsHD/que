@@ -529,6 +529,12 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 	return model;
 }
 
+nlohmann::json Asset::read_json(String path)
+{
+	auto bytes = Asset::Instance->read_all_bytes(path);
+	return nlohmann::json::parse(bytes.begin(), bytes.end());
+}
+
 GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path)
 {
 	aiString path;

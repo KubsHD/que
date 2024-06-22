@@ -38,6 +38,8 @@ public:
 	
 	static Model load_model(GraphicsAPI_Vulkan& gapi, Path path);
 	static Model load_model_json(GraphicsAPI_Vulkan& gapi, Path path);
+
+	static nlohmann::json read_json(String path);
 private:
 
 	static GraphicsAPI::Image try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path);

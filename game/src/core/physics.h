@@ -100,10 +100,11 @@ public:
 #pragma endregion JOLT_BOILERPLATE
 
 namespace JPH {
-	static glm::vec3 to_glm(JPH::Vec3 vec);
-	static JPH::Vec3 to_jph(glm::vec3 vec);
-	static JPH::Quat to_jph(glm::quat q);
+	glm::vec3 to_glm(JPH::Vec3 vec);
+	JPH::Vec3 to_jph(glm::vec3 vec);
+	JPH::Quat to_jph(glm::quat q);
 }
+
 class PhysicsSystem {
 public:
 	PhysicsSystem();

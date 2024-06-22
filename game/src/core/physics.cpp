@@ -85,27 +85,27 @@ PhysicsSystem::PhysicsSystem()
 	// HasError() / GetError()
 
 
-	JPH::BodyCreationSettings floor_settings(
-		floor_shape,
-		JPH::RVec3(0.0, -1.0, 0.0),
-		JPH::Quat::sIdentity(),
-		JPH::EMotionType::Static,
-		Layers::NON_MOVING);
+	//JPH::BodyCreationSettings floor_settings(
+	//	floor_shape,
+	//	JPH::RVec3(0.0, -1.0, 0.0),
+	//	JPH::Quat::sIdentity(),
+	//	JPH::EMotionType::Static,
+	//	Layers::NON_MOVING);
 
-	// Create the actual rigid body
-	floor = body_interface.CreateBody(floor_settings);
+	//// Create the actual rigid body
+	//floor = body_interface.CreateBody(floor_settings);
 
-	body_interface.AddBody(floor->GetID(), JPH::EActivation::DontActivate);
+	//body_interface.AddBody(floor->GetID(), JPH::EActivation::DontActivate);
 
-	JPH::BodyCreationSettings obj_settings(
-		new JPH::SphereShape(0.01f),
-		JPH::RVec3(0, 10.8, 0),
-		JPH::Quat::sIdentity(),
-		JPH::EMotionType::Dynamic,
-		Layers::MOVING);
-	obj = body_interface.CreateAndAddBody(obj_settings, JPH::EActivation::Activate);
+	//JPH::BodyCreationSettings obj_settings(
+	//	new JPH::SphereShape(0.01f),
+	//	JPH::RVec3(0, 10.8, 0),
+	//	JPH::Quat::sIdentity(),
+	//	JPH::EMotionType::Dynamic,
+	//	Layers::MOVING);
+	//obj = body_interface.CreateAndAddBody(obj_settings, JPH::EActivation::Activate);
 
-	body_interface.SetAngularVelocity(obj, JPH::Vec3(0.7f, -1.0f, 0.1f));
+	//body_interface.SetAngularVelocity(obj, JPH::Vec3(0.7f, -1.0f, 0.1f));
 
 	//auto grav = m_system.GetGravity();
 	m_system.OptimizeBroadPhase();

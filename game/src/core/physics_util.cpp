@@ -3,6 +3,9 @@
 #include <Jolt/Core/StreamWrapper.h>
 
 #include "physics_util.h"
+#include "physics.h"
+#include "asset.h"
+#include <lib/json.hpp>
 
 JPH::RefConst<JPH::Shape> core::physics::create_mesh_shape(Mesh m)
 {
@@ -54,4 +57,48 @@ JPH::RefConst<JPH::Shape> core::physics::create_convex_shape(Mesh m)
 
 
 	return cook_result.Get();
+}
+
+namespace nl = nlohmann;
+
+glm::vec3 vec3_deserialize(const nlohmann::json& j) {
+	return glm::vec3(j.at("x").get<float>(), j.at("y").get<float>(), j.at("z").get<float>());
+}
+
+nlohmann::json vec3_serialize(const glm::vec3& vec) {
+	return nlohmann::json{ {"x", vec.x}, {"y", vec.y}, {"z", vec.z} };
+}
+
+JPH::BodyCreationSettings core::physics::load_from_file(String path)
+{
+	nl::json j = Asset::Instance->read_json(path);
+
+	std::string fileName = j.at("file").get<std::string>();
+	std::string type = j.at("type").get<std::string>();
+
+	if (type == "sphere") {
+		float radius = j.at("radius").get<float>();
+
+		return JPH::BodyCreationSettings(
+			new JPH::SphereShape(radius),
+			JPH::RVec3(0, 0, 0),
+			JPH::Quat::sIdentity(),
+			JPH::EMotionType::Dynamic,
+			Layers::MOVING);
+
+		std::cout << "File: " << fileName << "\nType: " << type << "\nRadius: " << radius << std::endl;
+	}
+	else if (type == "box") {
+		glm::vec3 size = vec3_deserialize(j.at("size"));
+
+		return JPH::BodyCreationSettings(
+			new JPH::BoxShape(JPH::to_jph(size)),
+			JPH::RVec3(0, 0, 0),
+			JPH::Quat::sIdentity(),
+			JPH::EMotionType::Dynamic,
+			Layers::MOVING);
+	}
+	else {
+		std::cerr << "Unknown type: " << type << std::endl;
+	}
 }

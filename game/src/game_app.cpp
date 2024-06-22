@@ -24,6 +24,8 @@
 #include <game/templates/block_template.h>
 #include <game/systems/engine/attach_system.h>
 
+#include <core/physics_util.h>
+
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
 }
@@ -35,6 +37,7 @@ GameApp::~GameApp()
 #if SDL
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
+#include <core/physics_util.h>
 void GameApp::run2()
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -69,9 +72,28 @@ void GameApp::init()
 
 	init_imgui();
 	create_resources();
+	init_game_world();
+
+	for (auto& mesh : level_model.meshes)
+	{
+		JPH::BodyCreationSettings obj_settings(
+			core::physics::create_mesh_shape(mesh),
+			JPH::RVec3(0, -1.0f, 0),
+			JPH::Quat::sIdentity(),
+			JPH::EMotionType::Static,
+			Layers::NON_MOVING);
+
+		obj_settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+		obj_settings.mMassPropertiesOverride.mMass = 100.0f;
+		obj_settings.mMassPropertiesOverride.mInertia = JPH::Mat44::sIdentity();
+
+		m_physics_system->spawn_body(obj_settings);
+	}
+
+
 
 	const auto entity = m_registry.create();
-	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{0.5f, 0.5f, 0.5f });
+	m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{1.0f, 1.0f, 1.0f });
 	m_registry.emplace<mesh_component>(entity, level_model);
 
 	// controllers
@@ -79,6 +101,10 @@ void GameApp::init()
 	game::tmpl::create_controller(m_registry, controller, 1); 
 
 	game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0, 2, 0), test_cube);
+
+
+	// load saved objects
+	load_saved_objects();
 }
 
 void GameApp::init_imgui()
@@ -95,6 +121,16 @@ void GameApp::init_imgui()
 
 	NetImgui::Startup();
 	NetImgui::ConnectFromApp("que");
+}
+
+void GameApp::init_game_world()
+{
+	//m_registry.on_construct<physics_component>().connect();
+}
+
+void GameApp::load_saved_objects()
+{
+	auto so = Asset::Instance->read_json("data/saved_objects.json");
 }
 
 void GameApp::update(float dt)
