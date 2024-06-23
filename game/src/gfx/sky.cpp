@@ -109,7 +109,7 @@ namespace gfx {
 		};
 
 		VkSampler sampler;
-		VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+		VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 		VULKAN_CHECK_NOMSG(vkCreateSampler(gapi.GetDevice(), &sinfo, nullptr, &sampler));
 
 		// prepare buffer 
@@ -321,7 +321,7 @@ namespace gfx {
 		};
 
 		VkSampler sampler;
-		VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+		VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 		VULKAN_CHECK_NOMSG(vkCreateSampler(gapi.GetDevice(), &sinfo, nullptr, &sampler));
 
 		// prepare buffer 

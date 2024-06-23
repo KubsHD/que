@@ -226,7 +226,9 @@ void Renderer::create_resources()
 	auto device = m_graphicsAPI->GetDevice();
 
 	// create sampler
-	VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	sinfo.anisotropyEnable = VK_TRUE;
+	sinfo.maxAnisotropy = m_graphicsAPI->GetProperties().limits.maxSamplerAnisotropy;
 	VULKAN_CHECK_NOMSG(vkCreateSampler(device, &sinfo, nullptr, &sampler));
 
 	m_graphicsAPI->MainDeletionQueue.push_function([&]() {

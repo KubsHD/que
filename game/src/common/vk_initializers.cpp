@@ -340,10 +340,15 @@ VkPipelineShaderStageCreateInfo vkinit::pipeline_shader_stage_create_info(VkShad
 
 VkSamplerCreateInfo vkinit::sampler_create_info(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode)
 {
+
     VkSamplerCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     info.pNext = nullptr;
 
+    info.unnormalizedCoordinates = VK_FALSE;
+    info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    info.compareEnable = VK_FALSE;
+    info.compareOp = VK_COMPARE_OP_ALWAYS;
     info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     info.maxLod = 10;
 	info.magFilter = minFilter;

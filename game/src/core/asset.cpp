@@ -312,7 +312,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 	info.imageType = VK_IMAGE_TYPE_2D;
 	info.format = format;
 	info.extent = imageExtent;
-	info.mipLevels = type == TT_HDRI ? 1 : static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;;
+	info.mipLevels = type == TT_HDRI ? 1 : static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 	info.arrayLayers = 1;
 	info.samples = VK_SAMPLE_COUNT_1_BIT;
 	info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -335,7 +335,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 	ivinfo.image = img.image;
 	ivinfo.format = format;
 	ivinfo.subresourceRange.baseMipLevel = 0;
-	ivinfo.subresourceRange.levelCount = 1;
+	ivinfo.subresourceRange.levelCount = type == TT_HDRI ? 1 : static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 	ivinfo.subresourceRange.baseArrayLayer = 0;
 	ivinfo.subresourceRange.layerCount = 1;
 	ivinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

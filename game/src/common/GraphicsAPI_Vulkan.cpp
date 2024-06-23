@@ -226,6 +226,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 
     VkPhysicalDeviceFeatures features;
     vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
     VkDeviceCreateInfo deviceCI;
     deviceCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -1559,6 +1560,11 @@ const std::vector<int64_t> GraphicsAPI_Vulkan::GetSupportedDepthSwapchainFormats
 VkDescriptorPool GraphicsAPI_Vulkan::GetDescriptorPool()
 {
     return descriptorPool;
+}
+
+VkPhysicalDeviceProperties GraphicsAPI_Vulkan::GetProperties()
+{
+	return properties;
 }
 
 // XR_DOCS_TAG_END_GraphicsAPI_Vulkan_GetSupportedSwapchainFormats

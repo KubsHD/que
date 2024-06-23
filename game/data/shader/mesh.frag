@@ -29,8 +29,8 @@ void main() {
 	ao = 1.0f;
 	metallic = 0.9f;
 
-	vec3 lightPos = vec3(-3.0f, 2.0f, 0.0f);
-	vec3 lightColor = vec3(10.0f);
+	vec3 lightPos = vec3( -0.2f, -1.0f, -0.3f);
+	vec3 lightColor = vec3(23.47, 21.31, 20.79);
 	
 	
 	vec3 norm = texture(tex_normal, i_TexCoord).xyz;
@@ -46,7 +46,7 @@ void main() {
 	F0 = mix(F0, albedo, metallic);
 
 	// start light calc
-	vec3 lightDir = normalize(lightPos); 
+	vec3 lightDir = normalize(-lightPos); 
 	vec3 h = normalize(viewDir + lightDir);
 
 	float distance = length(lightPos);

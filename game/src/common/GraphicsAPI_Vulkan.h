@@ -190,7 +190,11 @@ private:
     std::vector<std::tuple<uint32_t, VkWriteDescriptorSet, VkDescriptorBufferInfo, VkDescriptorImageInfo>> writeDescSets;
 
     VmaAllocator m_allocator;
+
+
+    VkPhysicalDeviceProperties properties{};
 public:
     VkDescriptorPool GetDescriptorPool();
+    VkPhysicalDeviceProperties GetProperties();
 };
 #endif
