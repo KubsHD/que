@@ -33,7 +33,6 @@ public:
 
 	std::vector<char> read_all_bytes(String path);
 
-	static void load_texture_from_file(GraphicsAPI_Vulkan& gapi, String path);
 	static GraphicsAPI::Image load_image(GraphicsAPI_Vulkan& gapi, String path, TextureType type);
 	
 	static Model load_model(GraphicsAPI_Vulkan& gapi, Path path);

@@ -18,7 +18,7 @@ void game::system::update_physics_system(entt::registry& reg, PhysicsSystem& sys
 		else
 		{
 			sys.set_body_position(pc.id, tc.position);
-			//sys.set_body_rotation(pc.id, tc.rotation);
+			sys.set_body_rotation(pc.id, tc.rotation);
 		}
 	};
 }

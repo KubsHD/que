@@ -63,7 +63,7 @@ JPH::RefConst<JPH::Shape> core::physics::create_convex_shape(Mesh m)
 namespace nl = nlohmann;
 
 
-JPH::BodyCreationSettings core::physics::load_from_file(String path)
+JPH::RefConst<JPH::Shape> core::physics::load_from_file(String path)
 {
 	nl::json j = Asset::Instance->read_json(path);
 
@@ -73,26 +73,18 @@ JPH::BodyCreationSettings core::physics::load_from_file(String path)
 	if (type == "sphere") {
 		float radius = j.at("radius").get<float>();
 
-		return JPH::BodyCreationSettings(
-			new JPH::SphereShape(radius),
-			JPH::RVec3(0, 0, 0),
-			JPH::Quat::sIdentity(),
-			JPH::EMotionType::Dynamic,
-			Layers::MOVING);
+		return new JPH::SphereShape(radius);
+
 
 		std::cout << "File: " << fileName << "\nType: " << type << "\nRadius: " << radius << std::endl;
 	}
 	else if (type == "box") {
 		glm::vec3 size = ser::vec3_deserialize(j.at("size"));
 
-		return JPH::BodyCreationSettings(
-			new JPH::BoxShape(JPH::to_jph(size)),
-			JPH::RVec3(0, 0, 0),
-			JPH::Quat::sIdentity(),
-			JPH::EMotionType::Dynamic,
-			Layers::MOVING);
+		return new JPH::BoxShape(JPH::to_jph(size));
 	}
 	else {
 		std::cerr << "Unknown type: " << type << std::endl;
+		return nullptr;
 	}
 }

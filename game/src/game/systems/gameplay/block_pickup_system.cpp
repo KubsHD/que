@@ -74,6 +74,11 @@ void game::system::update_block_pickup_system(entt::registry& reg, Input& inp, P
 					mic.busy = true;
 					reg.emplace<attach_component>(ent, e);
 
+					transform_component* picked_object_tc = reg.try_get<transform_component>(ent);
+
+					glm::quat offset = glm::inverse(tc.rotation) * picked_object_tc->rotation;
+					picked_object_tc->rotation2 = offset;
+
 					physics_component* pc = reg.try_get<physics_component>(ent);
 					if (pc)
 					{
@@ -86,12 +91,15 @@ void game::system::update_block_pickup_system(entt::registry& reg, Input& inp, P
 					mic.busy = false;
 					reg.remove<attach_component>(ent);
 
+					transform_component* picked_object_tc = reg.try_get<transform_component>(ent);
+
 					physics_component* pc = reg.try_get<physics_component>(ent);
 					if (pc)
 					{
+						psys.set_body_rotation(pc->id, picked_object_tc->rotation);
 						psys.add_velocity(pc->id, cc.vel * 10);
 						psys.set_motion_type(pc->id, JPH::EMotionType::Dynamic);
-						pc->enabled = true;
+						pc->enabled = false;
 					}
 				}
 			}

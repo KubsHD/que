@@ -188,7 +188,7 @@ void PhysicsSystem::add_velocity(JPH::BodyID bid, glm::vec3 vel)
 {
 	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
 
-	body_interface.AddLinearVelocity(bid, JPH::to_jph(vel));
+	body_interface.AddForce(bid, JPH::to_jph(vel));
 }
 
 std::vector<JPH::Body*> PhysicsSystem::overlap_sphere(glm::vec3 point, float radius)

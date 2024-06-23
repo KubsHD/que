@@ -22,6 +22,16 @@
 #include <chrono>
 #include <memory>
 #include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+#include <span>
+#include <array>
+#include <functional>
+#include <deque>
+#include <cmath>
+
 #include <math.h>
 
 
@@ -72,6 +82,7 @@
 #define XR_USE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 #include <Unknwn.h>
 #endif

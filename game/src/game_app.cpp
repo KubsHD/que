@@ -102,7 +102,7 @@ void GameApp::init()
 	game::tmpl::create_controller(m_registry, controller, 0);
 	game::tmpl::create_controller(m_registry, controller, 1); 
 
-	game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0, 2, 0), test_cube);
+	game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0, 2, 0), test_cube, nullptr);
 
 
 	// load saved objects
@@ -140,7 +140,13 @@ void GameApp::load_saved_objects()
 	for (auto obj : so["objects"])
 	{
 		models.push_back(Asset::load_model_json(*m_graphicsAPI, obj["model"]));
-		auto b = game::tmpl::create_block(m_registry, *m_physics_system, ser::vec3_deserialize(obj["position"]), models.back());
+
+		JPH::RefConst<JPH::Shape> shape = nullptr;
+
+		if (obj.contains("physics"))
+			shape = core::physics::load_from_file(obj["physics"]);
+
+		auto b = game::tmpl::create_block(m_registry, *m_physics_system, ser::vec3_deserialize(obj["position"]), models.back(), shape);
 		m_registry.emplace<saveable>(b);
 	}
 
@@ -180,7 +186,7 @@ void GameApp::render(FrameRenderInfo& info)
 
 		if (ImGui::Button("Spawn object at hmd's position"))
 		{
-			game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0.0f, 5.0f, 0.0f), test_cube);
+			game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0.0f, 5.0f, 0.0f), test_cube, nullptr);
 		}
 	}
 	ImGui::End();

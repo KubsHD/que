@@ -32,13 +32,13 @@ void main() {
 	vec3 lightPos = vec3(-3.0f, 2.0f, 0.0f);
 	vec3 lightColor = vec3(10.0f);
 	
-	/*
+	
 	vec3 norm = texture(tex_normal, i_TexCoord).xyz;
 	norm = (norm * 2.0 - 1.0);   
 	norm = normalize(i_TBN * norm);
-	*/
+	
 
-	vec3 norm = i_Normal;
+	//vec3 norm = i_Normal;
 
 	vec3 viewDir = normalize(camPos - i_WorldPos);
 

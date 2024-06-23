@@ -35,5 +35,7 @@ void game::system::update_attach_system(entt::registry& reg)
 	{
 		auto tc_parent = reg.get<transform_component>(ac.parent_entity);
 		tc.position = tc_parent.position;
+
+		tc.rotation = tc_parent.rotation * tc.rotation2;
 	}
 }

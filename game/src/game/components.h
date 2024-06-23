@@ -14,6 +14,17 @@ struct transform_component {
 	glm::vec3 position;
 	glm::quat rotation;
 	glm::vec3 scale;
+
+	glm::mat4 matrix;
+	glm::quat rotation2;
+
+	void calculate_matrix()
+	{
+		matrix = glm::mat4(1.0f);
+		matrix = glm::translate(matrix, position);
+		matrix *= glm::mat4(rotation);
+		matrix = glm::scale(matrix, scale);
+	}
 };
 
 struct physics_component {

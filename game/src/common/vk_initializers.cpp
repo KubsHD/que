@@ -344,6 +344,8 @@ VkSamplerCreateInfo vkinit::sampler_create_info(VkFilter minFilter, VkFilter mag
     info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     info.pNext = nullptr;
 
+    info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    info.maxLod = 10;
 	info.magFilter = minFilter;
 	info.minFilter = magFilter;
 	info.addressModeU = addressMode;

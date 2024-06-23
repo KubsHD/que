@@ -17,7 +17,7 @@ public:
 	~Renderer();
 
 	void render(App::FrameRenderInfo& info, entt::registry& reg);
-	void render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model);
+	void render_model(glm::mat4 model_matrix, const Model& model);
 private:
 
 	struct MeshRenderData {

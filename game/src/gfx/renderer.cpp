@@ -91,7 +91,9 @@ void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 	auto modelsToRender = reg.view<transform_component, mesh_component>();
 	for (const auto&& [e, tc, mc] : modelsToRender.each())
 	{
-		render_model(tc.position, tc.scale, tc.rotation, mc.model);
+		tc.calculate_matrix();
+		glm::mat4 model_matrix = tc.matrix;
+		render_model(model_matrix, mc.model);
 	};
 
 	draw_sky(info);
@@ -101,16 +103,13 @@ void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 
 
 
-void Renderer::render_model(glm::vec3 pos, glm::vec3 scale, glm::quat rot, const Model& model)
+void Renderer::render_model(glm::mat4 model_matrix, const Model& model)
 {
 	QUE_PROFILE;
 
 	gfx::InstanceData id;
 
-	id.model = glm::mat4(1.0f);
-	id.model = glm::translate(id.model, pos);
-	id.model *= glm::mat4(rot);
-	id.model = glm::scale(id.model, scale);
+	id.model = model_matrix;
 
 	size_t offsetCameraUB = sizeof(gfx::InstanceData) * currently_drawn_object;
 

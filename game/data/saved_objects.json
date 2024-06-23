@@ -7,6 +7,15 @@
                 "y": 0,
                 "z": 0
             }
+        },
+        {
+            "model": "data/models/env/glosnik/glosnik.model",
+            "physics": "data/models/env/glosnik/glosnik.physics",
+            "position": {
+                "x": 0,
+                "y": 5,
+                "z": 0
+            }
         }
     ]
 }
