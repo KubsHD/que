@@ -75,8 +75,8 @@ public:
         old_cerr_buffer = std::cerr.rdbuf(this);
     }
     virtual ~DebugOutput() {
-        std::cout.rdbuf(old_cout_buffer);
-        std::cerr.rdbuf(old_cerr_buffer);
+       // std::cout.rdbuf(old_cout_buffer);
+       // std::cerr.rdbuf(old_cerr_buffer);
     }
     virtual void writeString(const std::string &str) {
         OutputDebugStringA(str.c_str());

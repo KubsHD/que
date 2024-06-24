@@ -6,6 +6,7 @@
 
 #include <core/asset.h>
 #include <core/profiler.h>
+#include <core/audio.h>
 
 #include <gfx/renderer.h>
 #include <gfx/pipeline/sky_pipeline.h>
@@ -69,12 +70,22 @@ void GameApp::init()
 
 	PhysicsSystem::init_static();
 	m_physics_system = std::make_unique<PhysicsSystem>();
+	m_audio_system = std::make_unique<AudioSystem>();
+
+#if defined(__ANDROID__)
+	m_asset_manager = std::make_shared<Asset>(androidApp->activity->assetManager, m_audio_system.get());
+
+#else
+	m_asset_manager = std::make_shared<Asset>(m_audio_system.get());
+#endif
 
 	m_renderer = new Renderer(m_graphicsAPI, m_colorSwapchainInfos, m_depthSwapchainInfos);
 
 	init_imgui();
 	create_resources();
 	init_game_world();
+
+	m_audio_system->play_sound(bgm);
 
 	for (auto& mesh : level_model.meshes)
 	{
@@ -241,6 +252,8 @@ void GameApp::destroy()
 void GameApp::create_resources()
 {
 	QUE_PROFILE;
+
+	bgm = Asset::load_sound("data/audio/background_music_1.mp3");
 
 	level_model = Asset::load_model(*m_graphicsAPI, "data/level/testlevel.gltf");
 	skybox_cube = Asset::load_model(*m_graphicsAPI, "data/cube.gltf");

@@ -9,6 +9,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <core/audio.h>
 
 #include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>
@@ -19,36 +20,37 @@
 #if defined(__ANDROID__)
 #include <assimp/port/AndroidJNI/AndroidJNIIOSystem.h>
 #endif
+
 #include <app.h>
 
 #include <lib/json.hpp>
 #include "profiler.h"
 
+
 Asset* Asset::Instance;
+std::unordered_map<std::string, std::shared_ptr<Sound>> Asset::m_sound_cache;
 
 using json = nlohmann::json;
 
-Asset::Asset(void* android_ass)
+Asset::Asset(void* android_ass, AudioSystem* audio_sys)
 {
 	Instance = this;
-
-
+	m_audio_system_reference = audio_sys;
 
 #if defined(__ANDROID__)
 	m_android_asset_manager = (AAssetManager*)android_ass;
 #endif
 }
 
-Asset::Asset()
+Asset::Asset(AudioSystem* audio_sys)
 {
 	Instance = this;
-
+	m_audio_system_reference = audio_sys;
 }
 
 Asset::~Asset()
 {
 }
-
 
 std::vector<char> Asset::read_all_bytes(String path)
 {
@@ -372,6 +374,26 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 	gapi.SetDebugName("texture view: " + path, img.view);
 
 	return img;
+}
+
+std::shared_ptr<Sound> Asset::load_sound(String path)
+{
+	QUE_PROFILE;
+	QUE_PROFILE_TAG("Sound path", path.c_str());
+
+	Sound* snd;
+
+	for (auto [k, v] : m_sound_cache)
+	{
+		if (k == path)
+			return v;
+	}
+
+	snd = Asset::Instance->m_audio_system_reference->create_sound(path);
+	
+	m_sound_cache.emplace(path, std::shared_ptr<Sound>(snd));
+
+	return m_sound_cache[path];
 }
 
 Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)

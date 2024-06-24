@@ -9,6 +9,7 @@
 #include <gfx/sky.h>
 
 class Renderer;
+class AudioSystem;
 
 class GameApp : public App
 {
@@ -48,6 +49,7 @@ private:
 
 	entt::registry m_registry;
 	std::unique_ptr<PhysicsSystem> m_physics_system;
+	std::unique_ptr<AudioSystem> m_audio_system;
 
 	Model level_model;
 	Model controller;
@@ -61,6 +63,8 @@ private:
 	Model test_cube;
 
 	Vector<Model> models;
+
+	std::shared_ptr<Sound> bgm;
 
 	void load_saved_objects();
 	void save_objects();
