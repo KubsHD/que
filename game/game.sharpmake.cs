@@ -112,6 +112,7 @@ namespace Que
             conf.AddPublicDependency<Assimp>(target);
             conf.AddPublicDependency<Jolt>(target);
             conf.AddPublicDependency<SDL>(target);
+            conf.AddPublicDependency<Fmod>(target);
 
             //conf.AddPublicDependency<EASTLProject>(target);
 
