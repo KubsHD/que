@@ -73,6 +73,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #endif
 
+
+int main()
+{
+	App_Main(VULKAN);
+}
+
 #if defined(XR_OS_ANDROID)
 extern "C" {
 	void android_main(struct android_app* app) {

@@ -149,9 +149,11 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 
 	vkb::InstanceBuilder builder;
 	auto inst_ret = builder.set_app_name("Example Vulkan Application")
-		.request_validation_layers()
         .desire_api_version(1,1)
+#if DEBUG
+		.request_validation_layers()
 		.use_default_debug_messenger()
+#endif
 		.build();
 	if (!inst_ret) {
 		std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";

@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#if DEBUG
 #include <tracy/Tracy.hpp>
 
 #include <cstdlib>
@@ -17,3 +18,4 @@ void operator delete(void *ptr) noexcept
     TracyFree(ptr);
     free(ptr);
 }
+#endif
