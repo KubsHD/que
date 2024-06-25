@@ -1,17 +1,9 @@
 #include "pch.h"
 
-
 #include <game_app.h>
 #include <common/DebugOutput.h>
 
-
-void App_Main(GraphicsAPI_Type apiType) {
-	DebugOutput debugOutput;  // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
-	XR_TUT_LOG("Que MAIN");
-	GameApp app(apiType);
-	app.Run();
-}
-
+void App_Main(GraphicsAPI_Type apiType);
 
 #if defined(XR_OS_WINDOWS)
 
@@ -22,12 +14,44 @@ void App_Main(GraphicsAPI_Type apiType) {
 #include <Shlwapi.h>
 #include "../../projects/Game/config.generated.h"
 
+#include <client/crash_report_database.h>
+#include <client/settings.h>
+#include <client/crashpad_client.h>
+#include <client/crashpad_info.h>
+
 #if defined(LIVEPP_ENABLED)
 #include "LivePP/API/x64/LPP_API_x64_CPP.h"
 #endif
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+std::unique_ptr<crashpad::CrashReportDatabase> database;
 
+bool start_crash_handler()
+{
+	using namespace crashpad;
+
+	std::map<std::string, std::string> annotations;
+	std::vector<std::string> arguments;
+	bool rc;
+
+	annotations["format"] = "minidump";
+	arguments.push_back("--no-rate-limit");
+
+	base::FilePath db(L"crashdb");
+	base::FilePath handler(L"crashpad_handler.exe");
+
+	database = crashpad::CrashReportDatabase::Initialize(db);
+
+	/* Enable automated uploads. */
+	database->GetSettings()->SetUploadsEnabled(true);
+
+	std::string url = "";
+
+	return CrashpadClient{}.StartHandler(
+		handler, db, db, url, annotations, arguments, false, false, {});
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
 #if (_DEBUG && LIVEPP_ENABLED)
 	lpp::LppDefaultAgent lppAgent = lpp::LppCreateDefaultAgent(nullptr, LIVEPP_PATH);
 
@@ -49,7 +73,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		PROCESS_INFORMATION pi{};
 
 		OutputDebugString("Compiling shaders...");
-		if (!CreateProcess(NULL, ".\\shader\\shader_compile.bat", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+		if (!CreateProcess(NULL, ".\\shader\\shader_compile.bat", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+		{
 			OutputDebugString("ERROR COMPILING SHADERS");
 		}
 		WaitForSingleObject(pi.hProcess, INFINITE);
@@ -59,6 +84,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		OutputDebugString(" Done!\n");
 	}
+#endif
+
+#if defined(WIN32) && !defined(DEBUG)
+	auto crashpadok = start_crash_handler();
+	if (!crashpadok)
+		abort();
 #endif
 
 	App_Main(VULKAN);
@@ -73,35 +104,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #endif
 
-
-int main()
+void App_Main(GraphicsAPI_Type apiType)
 {
-	App_Main(VULKAN);
+
+	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
+	XR_TUT_LOG("Que MAIN");
+	GameApp app(apiType);
+	app.Run();
 }
 
 #if defined(XR_OS_ANDROID)
-extern "C" {
-	void android_main(struct android_app* app) {
+extern "C"
+{
+	void android_main(struct android_app *app)
+	{
 		// Allow interaction with JNI and the JVM on this thread.
 		// https://developer.android.com/training/articles/perf-jni#threads
-		JNIEnv* env;
+		JNIEnv *env;
 		app->activity->vm->AttachCurrentThread(&env, nullptr);
 
 		// https://registry.khronos.org/OpenXR/specs/1.0/html/xrspec.html#XR_KHR_loader_init
 		// Load xrInitializeLoaderKHR() function pointer. On Android, the loader must be initialized with variables from android_app *.
 		// Without this, there's is no loader and thus our function calls to OpenXR would fail.
-		XrInstance m_xrInstance = XR_NULL_HANDLE;  // Dummy XrInstance variable for OPENXR_CHECK macro.
+		XrInstance m_xrInstance = XR_NULL_HANDLE; // Dummy XrInstance variable for OPENXR_CHECK macro.
 		PFN_xrInitializeLoaderKHR xrInitializeLoaderKHR = nullptr;
-		OPENXR_CHECK(xrGetInstanceProcAddr(XR_NULL_HANDLE, "xrInitializeLoaderKHR", (PFN_xrVoidFunction*)&xrInitializeLoaderKHR), "Failed to get InstanceProcAddr for xrInitializeLoaderKHR.");
-		if (!xrInitializeLoaderKHR) {
+		OPENXR_CHECK(xrGetInstanceProcAddr(XR_NULL_HANDLE, "xrInitializeLoaderKHR", (PFN_xrVoidFunction *)&xrInitializeLoaderKHR), "Failed to get InstanceProcAddr for xrInitializeLoaderKHR.");
+		if (!xrInitializeLoaderKHR)
+		{
 			return;
 		}
 
 		// Fill out an XrLoaderInitInfoAndroidKHR structure and initialize the loader for Android.
-		XrLoaderInitInfoAndroidKHR loaderInitializeInfoAndroid{ XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR };
+		XrLoaderInitInfoAndroidKHR loaderInitializeInfoAndroid{XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR};
 		loaderInitializeInfoAndroid.applicationVM = app->activity->vm;
 		loaderInitializeInfoAndroid.applicationContext = app->activity->clazz;
-		OPENXR_CHECK(xrInitializeLoaderKHR((XrLoaderInitInfoBaseHeaderKHR*)&loaderInitializeInfoAndroid), "Failed to initialize Loader for Android.");
+		OPENXR_CHECK(xrInitializeLoaderKHR((XrLoaderInitInfoBaseHeaderKHR *)&loaderInitializeInfoAndroid), "Failed to initialize Loader for Android.");
 
 		app->userData = &App::androidAppState;
 		app->onAppCmd = &App::AndroidAppHandleCmd;

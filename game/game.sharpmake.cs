@@ -113,6 +113,7 @@ namespace Que
             conf.AddPublicDependency<Jolt>(target);
             conf.AddPublicDependency<SDL>(target);
             conf.AddPublicDependency<Fmod>(target);
+            conf.AddPublicDependency<Crashpad>(target);
 
             //conf.AddPublicDependency<EASTLProject>(target);
 

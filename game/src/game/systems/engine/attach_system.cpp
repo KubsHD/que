@@ -6,7 +6,6 @@
 #include <common/glm_helpers.h>
 #include <core/input.h>
 
-
 void game::system::on_attach_component_created(entt::registry& reg, entt::entity e)
 {
 	physics_component* pc = reg.try_get<physics_component>(e);
