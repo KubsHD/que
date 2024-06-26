@@ -29,10 +29,20 @@ public class Crashpad : CommonProject
         conf.IncludePaths.Add(@"[project.SourceRootPath]\include");
         conf.IncludePaths.Add(@"[project.SourceRootPath]\include\mini_chromium");
 
-        conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt\base.lib");
-        conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt\client.lib");
-        conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt\common.lib");
-        conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt\util.lib");
+        if (target.Optimization == Optimization.Debug)
+        {
+            conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt_debug\base.lib");
+            conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt_debug\client.lib");
+            conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt_debug\common.lib");
+            conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt_debug\util.lib");
+        }
+        else
+        {
+            conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt\base.lib");
+            conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt\client.lib");
+            conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt\common.lib");
+            conf.LibraryFiles.Add(@"[project.SourceRootPath]\lib_mt\util.lib");
+        }
         conf.TargetCopyFiles.Add(@"[project.SourceRootPath]\bin\crashpad_handler.exe");
 
         conf.Defines.Add("CRASHPAD_ENABLED");

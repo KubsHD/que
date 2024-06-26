@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#if DEBUG
+#if _DEBUG
 #include <tracy/Tracy.hpp>
 
 #include <cstdlib>

@@ -73,16 +73,23 @@ public:
         : vsBufferedStringStreamBuf((int)bufsize), old_cout_buffer(NULL), old_cerr_buffer(NULL) {
         old_cout_buffer = std::cout.rdbuf(this);
         old_cerr_buffer = std::cerr.rdbuf(this);
+
+        logfile = std::ofstream("game.log");
     }
     virtual ~DebugOutput() {
-       // std::cout.rdbuf(old_cout_buffer);
-       // std::cerr.rdbuf(old_cerr_buffer);
+        std::cout.rdbuf(old_cout_buffer);
+        std::cerr.rdbuf(old_cerr_buffer);
+
+        logfile.close();
     }
     virtual void writeString(const std::string &str) {
         OutputDebugStringA(str.c_str());
+        logfile << str;
     }
 
 protected:
+    std::ofstream logfile;
+
     std::streambuf *old_cout_buffer;
     std::streambuf *old_cerr_buffer;
 };

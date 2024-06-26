@@ -14,3 +14,8 @@ deps/assimp
 netImgui.cfg
 netImgui_2.cfg
 *.blend1
+deps/sdl
+deps/fmod
+!deps/fmod/fmod.sharpmake.cs
+*.blend
+game/data/raw

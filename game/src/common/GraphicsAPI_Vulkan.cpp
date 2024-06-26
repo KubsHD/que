@@ -148,13 +148,14 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 	OPENXR_CHECK(xrGetVulkanGraphicsRequirementsKHR(m_xrInstance, systemId, &graphicsRequirements), "Failed to get Graphics Requirements for Vulkan.");
 
 	vkb::InstanceBuilder builder;
-	auto inst_ret = builder.set_app_name("Example Vulkan Application")
+	auto inst_ret = builder.set_app_name("Que")
         .desire_api_version(1,1)
-#if DEBUG
+#if _DEBUG
 		.request_validation_layers()
-		.use_default_debug_messenger()
+        .set_debug_callback(debugCallback)
 #endif
 		.build();
+
 	if (!inst_ret) {
 		std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";
         abort();
@@ -294,18 +295,6 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
     allocatorCI.instance = instance;
 
     VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &m_allocator), "Failed to create VMA allocator.");
-
-#if defined(_DEBUG)
-    // add messenger
-    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = debugCallback;
-    createInfo.pUserData = nullptr; // Optional
-
-    VULKAN_CHECK(vkCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger), "Failed to create debug messenger");
-#endif
 
     // create upload fence
     VkFenceCreateInfo ufenceCI{};

@@ -13,7 +13,7 @@
 
 
 
-#if _WIN32 && DEBUG
+#if _WIN32 && _DEBUG
 #define TRACY_ENABLE
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyVulkan.hpp>
