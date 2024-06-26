@@ -85,6 +85,7 @@ public:
     virtual void writeString(const std::string &str) {
         OutputDebugStringA(str.c_str());
         logfile << str;
+        logfile.flush();
     }
 
 protected:

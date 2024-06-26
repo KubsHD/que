@@ -8,8 +8,10 @@
 
 
 // Debugbreak
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && defined(_DEBUG)
 #define DEBUG_BREAK __debugbreak()
+#elif !defined(_DEBUG)
+#define DEBUG_BREAK std::terminate();
 #else
 #include <signal.h>
 #define DEBUG_BREAK raise(SIGTRAP)

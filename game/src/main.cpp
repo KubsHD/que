@@ -86,10 +86,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 #endif
 
-#if defined(WIN32) && !defined(DEBUG)
+#if defined(WIN32) && !defined(_DEBUG)
 	auto crashpadok = start_crash_handler();
-	if (!crashpadok)
-		abort();
 #endif
 
 	App_Main(VULKAN);
