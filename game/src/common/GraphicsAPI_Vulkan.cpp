@@ -21,6 +21,7 @@
 
 #include <common/vk_initializers.h>
 #include <core/profiler.h>
+#include "DebugOutput.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -148,13 +149,22 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 	OPENXR_CHECK(xrGetVulkanGraphicsRequirementsKHR(m_xrInstance, systemId, &graphicsRequirements), "Failed to get Graphics Requirements for Vulkan.");
 
 	vkb::InstanceBuilder builder;
-	auto inst_ret = builder.set_app_name("Que")
-        .desire_api_version(1,1)
+    auto exts = GetInstanceExtensionsForOpenXR(m_xrInstance, systemId);
+
+    builder.set_app_name("Que")
 #if _DEBUG
-		.request_validation_layers()
+        .request_validation_layers()
         .set_debug_callback(debugCallback)
 #endif
-		.build();
+        .desire_api_version(1, 1);
+
+	for (const auto& ext : exts)
+	{
+        builder.enable_extension(ext.c_str());
+		XR_TUT_LOG(ext);
+	}
+
+    auto inst_ret = builder.build();
 
 	if (!inst_ret) {
 		std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";
