@@ -117,6 +117,11 @@ namespace Que
 
             //conf.AddPublicDependency<EASTLProject>(target);
 
+            conf.Options.Add(Options.Vc.Compiler.JumboBuild.Enable);
+            conf.MaxFilesPerJumboFile = 0;
+            conf.MinFilesPerJumboFile = 2;
+            conf.MinJumboFiles = 1;
+
             conf.Output = Configuration.OutputType.Exe;
 
         }

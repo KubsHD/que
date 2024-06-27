@@ -94,6 +94,8 @@ Index of this file:
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
 

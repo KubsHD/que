@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <filesystem>
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <lib/netimgui/NetImgui_Api.h>
 #include <lib/im3d/im3d.h>
 #include <lib/tiny_gltf.h>
