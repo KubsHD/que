@@ -8,6 +8,6 @@
 
 namespace game {
 	namespace system {
-		void update_controller_system(entt::registry& reg, Input& input, PhysicsSystem& psys, float viewHeight);
+		void update_controller_system(entt::registry& reg, Input& input, PhysicsSystem& psys, float viewHeight, glm::vec3 playerPos);
 	}
 }

@@ -5,6 +5,7 @@
 #include <string>
 #include <common/OpenXRHelper.h>
 #include <common/DebugOutput.h>
+#include <common/glm_helpers.h>
 #include "profiler.h"
 
 static XrPath CreateXrPath(XrInstance instance, const char* path_string) {
@@ -67,6 +68,8 @@ void Input::create_action_set()
 
 	CreateAction(m_grabCubeAction, "grab-cube", XR_ACTION_TYPE_FLOAT_INPUT, { "/user/hand/left", "/user/hand/right" });
 
+	CreateAction(m_movementAction, "stick", XR_ACTION_TYPE_VECTOR2F_INPUT, { "/user/hand/left", "/user/hand/right" });
+
 	// For later convenience we create the XrPaths for the subaction path names.
 	m_handPaths[0] = CreateXrPath(m_xrInstance, "/user/hand/left");
 	m_handPaths[1] = CreateXrPath(m_xrInstance, "/user/hand/right");
@@ -82,7 +85,7 @@ void Input::suggest_bindings()
 		interactionProfileSuggestedBinding.countSuggestedBindings = (uint32_t)bindings.size();
 		if (xrSuggestInteractionProfileBindings(m_xrInstance, &interactionProfileSuggestedBinding) == XrResult::XR_SUCCESS)
 			return true;
-		XR_TUT_LOG("Failed to suggest bindings with " << profile_path);
+		LOG_INFO("Failed to suggest bindings with " << profile_path);
 		return false;
 		};
 
@@ -93,6 +96,7 @@ void Input::suggest_bindings()
 																			  {m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/right/output/haptic")},
 																				{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/squeeze/value")},
 																				{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/squeeze/value")},
+																				{m_movementAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/thumbstick")}
 
 		});
 }
@@ -167,6 +171,11 @@ void Input::poll_actions(XrTime time, XrSpace local_space)
 		actionStateGetInfo.subactionPath = m_handPaths[i];
 		OPENXR_CHECK(xrGetActionStateFloat(*m_session, &actionStateGetInfo, &m_grabState[i]), "Failed to get Float State of Grab Cube action.");
 	}
+
+	actionStateGetInfo.action = m_movementAction;
+	actionStateGetInfo.subactionPath = m_handPaths[0];
+	OPENXR_CHECK(xrGetActionStateVector2f(*m_session, &actionStateGetInfo, &m_movementActionState), "Failed to get Vector2 State of Movement action.");
+
 }
 
 void Input::record_actions()
@@ -191,6 +200,7 @@ void Input::draw_imgui()
 	if (ImGui::Begin("Input debug"))
 	{
 		ImGui::LabelText("Grab state:", "%f %f", m_grabState[0].currentState, m_grabState[1].currentState);
+		ImGui::LabelText("Movement input", "X: %f, Y: %f", get_movement_input().x, get_movement_input().y);
 
 		ImGui::End();
 	}
@@ -204,4 +214,10 @@ std::vector<XrPosef> Input::get_controller_poses()
 std::vector<float> Input::get_grab_state()
 {
 	return { m_grabState[0].currentState, m_grabState[1].currentState };
+}
+
+glm::vec2 Input::get_movement_input()
+{
+	XrVector2f vel = m_movementActionState.currentState;
+	return glm::to_glm(vel);
 }

@@ -171,8 +171,10 @@ void GameApp::update(float dt)
 {
 	QUE_PROFILE;
 
+
+
 	game::system::update_physics_system(m_registry, *m_physics_system);
-	game::system::update_controller_system(m_registry, *input, *m_physics_system, m_viewHeightM);
+	game::system::update_controller_system(m_registry, *input, *m_physics_system, m_viewHeightM, player_pos);
 	game::system::update_block_pickup_system(m_registry, *input, *m_physics_system);
 	game::system::update_attach_system(m_registry);
 
@@ -183,7 +185,15 @@ void GameApp::render(FrameRenderInfo& info)
 {
 	QUE_PROFILE;
 
-	m_renderer->render(info, m_registry);
+	auto vel = input->get_movement_input();
+	m_forward = glm::normalize(glm::to_glm(info.view.pose.orientation)) * glm::vec3(0.0f, 0.0f, -1.0f);
+	auto right = glm::normalize(glm::to_glm(info.view.pose.orientation)) * glm::vec3(1.0f, 0.0f, 0.0f);;
+	auto forward = m_forward;
+
+
+	player_pos = player_pos + (vel.y * forward * m_speed) + vel.x * right * m_speed;
+
+	m_renderer->render(player_pos, info, m_registry);
 
 	#pragma region Imgui
 
@@ -193,6 +203,9 @@ void GameApp::render(FrameRenderInfo& info)
 	ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_Once);
 	if (ImGui::Begin("Phys Debug", nullptr))
 	{
+		ImGui::Text("playerpos: %f %f", player_pos.x, player_pos.z);
+		ImGui::Text("forward: %f %f %f", m_forward.x, m_forward.y, m_forward.z);
+
 		ImGui::LabelText("Deltatime: ", "%f", m_delta_time);
 
 		if (ImGui::Button("Spawn object at hmd's position"))

@@ -40,7 +40,7 @@ Renderer::~Renderer()
 	destroy_resources();
 }
 
-void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
+void Renderer::render(glm::vec3 position, App::FrameRenderInfo& info, entt::registry& reg)
 {
 	QUE_PROFILE;
 
@@ -65,11 +65,14 @@ void Renderer::render(App::FrameRenderInfo& info, entt::registry& reg)
 
 	// Compute the view-projection transform.
 	// All matrices (including OpenXR's) are column-major, right-handed.
+
+
+
 	XrMatrix4x4f proj;
 	XrMatrix4x4f_CreateProjectionFov(&proj, GraphicsAPI_Type::VULKAN, info.view.fov, nearZ, farZ);
 	XrMatrix4x4f toView;
 	XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
-	XrVector3f offset{ 0.0f, 1.5f, 0.0f };
+	XrVector3f offset{ position.x, 1.5f, position.z};
 	XrVector3f final_camera_pos;
 	XrVector3f_Add(&final_camera_pos, &info.view.pose.position, &offset);
 

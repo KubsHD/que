@@ -161,7 +161,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 	for (const auto& ext : exts)
 	{
         builder.enable_extension(ext.c_str());
-		XR_TUT_LOG(ext);
+		LOG_INFO(ext);
 	}
 
     auto inst_ret = builder.build();

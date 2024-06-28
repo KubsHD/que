@@ -36,6 +36,9 @@ private:
 	Renderer* m_renderer;
 
 	float m_viewHeightM = 1.5f;
+	glm::vec3 player_pos = glm::vec3(0.0f);
+	glm::vec3 m_forward;
+	float m_speed = 0.1f;
 
 	gfx::SceneData m_sceneDataCPU;
 	gfx::Sky m_sky;

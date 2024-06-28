@@ -188,7 +188,7 @@ public:
 #include <sstream>
 
 #define XR_TUT_LOG_TAG "que"
-#define XR_TUT_LOG(...) {                                                           \
+#define LOG_INFO(...) {                                                           \
         std::ostringstream ostr;                                                    \
         ostr<<__VA_ARGS__;                                                          \
         __android_log_write(ANDROID_LOG_DEBUG, XR_TUT_LOG_TAG, ostr.str().c_str()); \
@@ -201,6 +201,6 @@ public:
 #else
 #include <iostream>
 
-#define XR_TUT_LOG(...) std::cout << __VA_ARGS__ << "\n"
+#define LOG_INFO(...) std::cout << __VA_ARGS__ << "\n"
 #define XR_TUT_LOG_ERROR(...) std::cerr << __VA_ARGS__ << "\n"
 #endif

@@ -16,7 +16,7 @@ public:
 	Renderer(std::shared_ptr<GraphicsAPI_Vulkan> gapi, std::vector<App::SwapchainInfo> colorFormats, std::vector<App::SwapchainInfo> depthFormats);
 	~Renderer();
 
-	void render(App::FrameRenderInfo& info, entt::registry& reg);
+	void render(glm::vec3 position, App::FrameRenderInfo& info, entt::registry& reg);
 	void render_model(glm::mat4 model_matrix, const Model& model);
 private:
 

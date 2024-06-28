@@ -7,7 +7,7 @@
 #include <game/components.h>
 #include <common/DebugOutput.h>
 
-void game::system::update_controller_system(entt::registry& reg, Input& input, PhysicsSystem& psys, float viewHeight)
+void game::system::update_controller_system(entt::registry& reg, Input& input, PhysicsSystem& psys, float viewHeight, glm::vec3 playerPos)
 {
 	auto controllerObjects = reg.view<transform_component, mesh_component, controller_component>();
 	for (const auto&& [e, tc, mc, cc] : controllerObjects.each())
@@ -16,7 +16,7 @@ void game::system::update_controller_system(entt::registry& reg, Input& input, P
 		auto pose = poses[cc.index];
 
 		glm::vec3 target_pos = glm::to_glm(pose.position);
-		target_pos += glm::vec3{ 0, viewHeight, 0 };
+		target_pos += glm::vec3{ playerPos.x, viewHeight, playerPos.z };
 		glm::quat xr_source_rotation = glm::to_glm(pose.orientation);
 		glm::quat rot = glm::rotate(xr_source_rotation, glm::radians(180.0f), glm::vec3(0, 1, 0));
 

@@ -98,7 +98,7 @@ bool OpenXRPlatform::render_layer(RenderLayerInfo& info)
 	uint32_t viewCount = 0;
 	XrResult result = xrLocateViews(m_session, &viewLocateInfo, &viewState, static_cast<uint32_t>(views.size()), &viewCount, views.data());
 	if (result != XR_SUCCESS) {
-		XR_TUT_LOG("Failed to locate Views.");
+		LOG_INFO("Failed to locate Views.");
 		return false;
 	}
 
@@ -466,7 +466,7 @@ void OpenXRPlatform::get_properties()
 	XrInstanceProperties instanceProperties{ XR_TYPE_INSTANCE_PROPERTIES };
 	OPENXR_CHECK(xrGetInstanceProperties(m_xrInstance, &instanceProperties), "Failed to get InstanceProperties.");
 
-	XR_TUT_LOG("OpenXR Runtime: " << instanceProperties.runtimeName << " - "
+	LOG_INFO("OpenXR Runtime: " << instanceProperties.runtimeName << " - "
 		<< XR_VERSION_MAJOR(instanceProperties.runtimeVersion) << "."
 		<< XR_VERSION_MINOR(instanceProperties.runtimeVersion) << "."
 		<< XR_VERSION_PATCH(instanceProperties.runtimeVersion));
@@ -517,13 +517,13 @@ void OpenXRPlatform::poll_events()
 			// Log the number of lost events from the runtime.
 		case XR_TYPE_EVENT_DATA_EVENTS_LOST: {
 			XrEventDataEventsLost* eventsLost = reinterpret_cast<XrEventDataEventsLost*>(&eventData);
-			XR_TUT_LOG("OPENXR: Events Lost: " << eventsLost->lostEventCount);
+			LOG_INFO("OPENXR: Events Lost: " << eventsLost->lostEventCount);
 			break;
 		}
 										   // Log that an instance loss is pending and shutdown the application.
 		case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING: {
 			XrEventDataInstanceLossPending* instanceLossPending = reinterpret_cast<XrEventDataInstanceLossPending*>(&eventData);
-			XR_TUT_LOG("OPENXR: Instance Loss Pending at: " << instanceLossPending->lossTime);
+			LOG_INFO("OPENXR: Instance Loss Pending at: " << instanceLossPending->lossTime);
 			m_sessionRunning = false;
 			m_applicationRunning = false;
 			break;
@@ -531,9 +531,9 @@ void OpenXRPlatform::poll_events()
 													 // Log that the interaction profile has changed.
 		case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
 			XrEventDataInteractionProfileChanged* interactionProfileChanged = reinterpret_cast<XrEventDataInteractionProfileChanged*>(&eventData);
-			XR_TUT_LOG("OPENXR: Interaction Profile changed for Session: " << interactionProfileChanged->session);
+			LOG_INFO("OPENXR: Interaction Profile changed for Session: " << interactionProfileChanged->session);
 			if (interactionProfileChanged->session != m_session) {
-				XR_TUT_LOG("XrEventDataInteractionProfileChanged for unknown Session");
+				LOG_INFO("XrEventDataInteractionProfileChanged for unknown Session");
 				break;
 			}
 
@@ -544,9 +544,9 @@ void OpenXRPlatform::poll_events()
 														   // Log that there's a reference space change pending.
 		case XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING: {
 			XrEventDataReferenceSpaceChangePending* referenceSpaceChangePending = reinterpret_cast<XrEventDataReferenceSpaceChangePending*>(&eventData);
-			XR_TUT_LOG("OPENXR: Reference Space Change pending for Session: " << referenceSpaceChangePending->session);
+			LOG_INFO("OPENXR: Reference Space Change pending for Session: " << referenceSpaceChangePending->session);
 			if (referenceSpaceChangePending->session != m_session) {
-				XR_TUT_LOG("XrEventDataReferenceSpaceChangePending for unknown Session");
+				LOG_INFO("XrEventDataReferenceSpaceChangePending for unknown Session");
 				break;
 			}
 			break;
@@ -555,7 +555,7 @@ void OpenXRPlatform::poll_events()
 		case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED: {
 			XrEventDataSessionStateChanged* sessionStateChanged = reinterpret_cast<XrEventDataSessionStateChanged*>(&eventData);
 			if (sessionStateChanged->session != m_session) {
-				XR_TUT_LOG("XrEventDataSessionStateChanged for unknown Session");
+				LOG_INFO("XrEventDataSessionStateChanged for unknown Session");
 				break;
 			}
 

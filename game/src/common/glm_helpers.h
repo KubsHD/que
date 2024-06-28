@@ -7,6 +7,9 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <common/GraphicsAPI.h>
+#include <common/xr_linear_algebra.h>
+
 namespace glm {
 	inline glm::quat to_glm(const XrQuaternionf& q)
 	{
@@ -17,6 +20,12 @@ namespace glm {
 	{
 		return glm::vec3(v.x, v.y, v.z);
 	}
+
+	inline glm::vec2 to_glm(const XrVector2f& v)
+	{
+		return glm::vec2(v.x, v.y);
+	}
+
 
 	inline glm::mat4 to_glm(const XrPosef& p)
 	{

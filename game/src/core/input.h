@@ -22,6 +22,7 @@ public:
 
 	std::vector<XrPosef> get_controller_poses();
 	std::vector<float> get_grab_state();
+	glm::vec2 get_movement_input();
 
 private:
 	XrInstance m_xrInstance;
@@ -37,6 +38,10 @@ private:
 	XrActionStateBoolean m_spawnCubeState = { XR_TYPE_ACTION_STATE_BOOLEAN };
 	// The haptic output action for grabbing cubes.
 	XrAction m_buzzAction;
+
+	// thumbstick movement action
+	XrAction m_movementAction;
+	XrActionStateVector2f m_movementActionState = { XR_TYPE_ACTION_STATE_VECTOR2F };
 	// The current haptic output value for each controller.
 	float m_buzz[2] = { 0, 0 };
 	// The action for getting the hand or controller position and orientation.
