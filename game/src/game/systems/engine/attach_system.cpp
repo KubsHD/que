@@ -14,6 +14,14 @@ void game::system::on_attach_component_created(entt::registry& reg, entt::entity
 		//psys.set_motion_type(pc->id, JPH::EMotionType::Kinematic);
 		//pc->enabled = false;
 	}
+
+	// try to run interaction
+	interactable* ic = reg.try_get<interactable>(e);
+	if (ic)
+	{
+		if (!ic->single_use || (ic->single_use && !ic->triggered_once))
+			ic->on_interact(reg);
+	}
 }
 
 void game::system::on_attach_component_destroyed(entt::registry& reg, entt::entity e)
@@ -37,4 +45,10 @@ void game::system::update_attach_system(entt::registry& reg)
 
 		tc.rotation = tc_parent.rotation * tc.rotation2;
 	}
+}
+
+void game::system::on_speaker_interact(entt::registry& reg, entt::entity e)
+{
+	engine eng = reg.ctx().get<engine>();
+	eng.audio.play_sound("data/audio/speaker_1.mp3");
 }

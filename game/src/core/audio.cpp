@@ -38,7 +38,12 @@ Sound* AudioSystem::create_sound(String path)
 	return snd;
 }
 
-void AudioSystem::play_sound(std::shared_ptr<Sound> sound)
+void AudioSystem::play_sound(Sound& sound)
 {
-	fmod_call(m_system->playSound(sound->sound, nullptr, false, &sound->chnl));
+	fmod_call(m_system->playSound(sound.sound, nullptr, false, &sound.chnl));
+}
+
+void AudioSystem::play_sound(String path)
+{
+	play_sound(*create_sound(path));
 }

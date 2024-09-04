@@ -51,6 +51,7 @@ private:
 
 
 	entt::registry m_registry;
+
 	std::unique_ptr<PhysicsSystem> m_physics_system;
 	std::unique_ptr<AudioSystem> m_audio_system;
 

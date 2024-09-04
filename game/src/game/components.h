@@ -9,6 +9,10 @@
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include <core/audio.h>
+#include <core/asset.h>
+#include <core/physics.h>
+
 
 struct transform_component {
 	glm::vec3 position;
@@ -93,3 +97,15 @@ struct game_state_component {
 };
 
 struct saveable {};
+
+struct interactable {
+	bool single_use;
+	bool triggered_once;
+	virtual void on_interact(entt::registry& reg) = 0;
+};
+
+struct engine {
+	AudioSystem& audio;
+	Asset& asset;
+	PhysicsSystem& physics;
+};

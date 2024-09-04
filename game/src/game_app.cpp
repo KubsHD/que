@@ -25,6 +25,7 @@
 #include <game/templates/controller_template.h>
 #include <game/templates/block_template.h>
 #include <game/systems/engine/attach_system.h>
+#include <game/components/speaker_interactable.h>
 
 #include <core/physics_util.h>
 
@@ -41,6 +42,7 @@ GameApp::~GameApp()
 #include <SDL3/SDL_vulkan.h>
 #include <core/physics_util.h>
 #include <common/serialization.h>
+#include <game/components/speaker_interactable.h>
 void GameApp::run2()
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -85,7 +87,7 @@ void GameApp::init()
 	create_resources();
 	init_game_world();
 
-	m_audio_system->play_sound(bgm);
+	m_audio_system->play_sound(*bgm);
 
 	for (auto& mesh : level_model.meshes)
 	{
@@ -136,10 +138,15 @@ void GameApp::init_imgui()
 	NetImgui::ConnectFromApp("que");
 }
 
+
 void GameApp::init_game_world()
 {
+	m_registry.ctx().emplace<engine>(*m_audio_system, *m_asset_manager, *m_physics_system);
+
 	m_registry.on_construct<attach_component>().connect<&game::system::on_attach_component_created>();
 	m_registry.on_destroy<attach_component>().connect<&game::system::on_attach_component_destroyed>();
+
+	m_registry.on_construct<speaker_interactable>().connect<&game::system::on_speaker_interact>();
 
 	//m_registry.on_construct<physics_component>().connect();
 }
@@ -171,8 +178,7 @@ void GameApp::update(float dt)
 {
 	QUE_PROFILE;
 
-
-
+	// test
 	game::system::update_physics_system(m_registry, *m_physics_system);
 	game::system::update_controller_system(m_registry, *input, *m_physics_system, m_viewHeightM, player_pos);
 	game::system::update_block_pickup_system(m_registry, *input, *m_physics_system);

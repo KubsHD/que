@@ -34,7 +34,7 @@ bool start_crash_handler()
 	bool rc;
 
 	annotations["format"] = "minidump";
-	arguments.push_back("--no-rate-limit");
+	//arguments.push_back("--no-rate-limit");
 
 	base::FilePath db(L"crashdb");
 	base::FilePath handler(L"crashpad_handler.exe");
@@ -44,7 +44,7 @@ bool start_crash_handler()
 	/* Enable automated uploads. */
 	database->GetSettings()->SetUploadsEnabled(true);
 
-	std::string url = "";
+	std::string url = "https://submit.backtrace.io/kubs/2671612688bf66d376ef962cfea4bb86cee9d7c1c16c68ef6b4b532a042ec387/minidump";
 
 	return CrashpadClient{}.StartHandler(
 		handler, db, db, url, annotations, arguments, false, false, {});
