@@ -9,10 +9,10 @@ namespace pipeline
 {
 	GraphicsAPI::Pipeline create_unlit_mesh_pipeline(GraphicsAPI_Vulkan& gapi, VkFormat drawImageFormat, VkFormat depthImageFormat)
 	{
-		std::vector<char> vertexSource = Asset::Instance->read_all_bytes("shader/unlit.vert.spv");
+		std::vector<char> vertexSource = AssetSystem::Instance->read_all_bytes("shader/unlit.vert.spv");
 		auto vs = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
 
-		std::vector<char> fragmentSource = Asset::Instance->read_all_bytes("shader/unlit.frag.spv");
+		std::vector<char> fragmentSource = AssetSystem::Instance->read_all_bytes("shader/unlit.frag.spv");
 		auto ps = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
 
 		GraphicsAPI::PipelineCreateInfo pipelineCI{};

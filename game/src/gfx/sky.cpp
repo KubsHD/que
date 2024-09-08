@@ -21,7 +21,7 @@ namespace gfx {
 		VkImageView cubemapViews[6];
 		VkFramebuffer framebuffers[6];
 
-		s.skyImage = Asset::load_image(gapi, hdriPath, TT_HDRI);
+		s.skyImage = AssetSystem::load_image(hdriPath, TT_HDRI);
 
 		// 1. create skybox cubemap image
 		VkImageCreateInfo imageCreateInfo = vkinit::image_create_info(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, { 512,512,1 });

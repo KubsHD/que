@@ -20,7 +20,6 @@ App::App(GraphicsAPI_Type apiType) : m_apiType(apiType)
 void App::Run()
 {
 
-
 	{
 		QUE_PROFILE_SECTION("OpenXr Init");
 

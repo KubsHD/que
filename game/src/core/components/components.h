@@ -104,8 +104,3 @@ struct interactable {
 	virtual void on_interact(entt::registry& reg) = 0;
 };
 
-struct engine {
-	AudioSystem& audio;
-	Asset& asset;
-	PhysicsSystem& physics;
-};

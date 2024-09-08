@@ -10,6 +10,8 @@
 #include <core/types.h>
 #include <list>
 
+#include <core/engine_wrapper.h>
+
 class Entity;
 class Collider;
 enum class CollisionTag;
@@ -102,6 +104,9 @@ public:
 	/// <returns></returns>
 	Vector<Entity*> get_entities() { return m_entities; };
 
+	template<typename T>
+	Vector<T> get_all_components_of_type();
+
 	/// <summary>
 	/// Update all colliders
 	/// </summary>
@@ -149,7 +154,15 @@ public:
 	bool collision_query_sphere(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor);
 	std::list<Collider*> collision_query_sphere_list(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor);
 	bool collision_query_sphere_result(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor, Entity& hit);
+
+	engine_wrapper* engine;
 };
+
+template<typename T>
+Vector<T> Scene::get_all_components_of_type()
+{
+
+}
 
 /// <summary>
 /// Base class for all entities
@@ -189,7 +202,7 @@ public:
 	/// <summary>
 	/// Reference to the scene this entity is in
 	/// </summary>
-	Scene* world;
+	Scene* scene;
 
 	/// <summary>
 	/// Add a component to the entity
@@ -252,7 +265,7 @@ T* Entity::add(T&& comp /*= T()*/)
 	((Component*)instance)->init();
     
 	// hack
-	this->world->update_collider_list();
+	this->scene->update_collider_list();
 
 	m_components.push_back((Component*)instance);
 	return instance;

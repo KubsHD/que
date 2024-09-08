@@ -8,8 +8,10 @@
 #include <gfx/buffers.h>
 #include <gfx/sky.h>
 
+
 class Renderer;
 class AudioSystem;
+
 
 class GameApp : public App
 {
@@ -27,8 +29,6 @@ public:
 	void destroy() override;
 
 private:
-	void create_resources();
-	void destroy_resources();
 	void init_imgui();
 
 	void init_game_world();
@@ -49,27 +49,14 @@ private:
 	GraphicsAPI::Pipeline m_pipeline;
 	GraphicsAPI::Pipeline m_sky_render_pipeline;
 
-
 	entt::registry m_registry;
 
 	std::unique_ptr<PhysicsSystem> m_physics_system;
 	std::unique_ptr<AudioSystem> m_audio_system;
 
-	Model level_model;
-	Model controller;
+	std::unique_ptr<Scene> m_current_scene;
 
-	Model skybox_cube;
-	GraphicsAPI::Image skybox_image;
-	GraphicsAPI::Image blank_texture;
-
-	GraphicsAPI::Pipeline sky_pipeline;
 	VkSampler sampler;
-	Model test_cube;
 
-	Vector<Model> models;
-
-	std::shared_ptr<Sound> bgm;
-
-	void load_saved_objects();
-	void save_objects();
+	std::vector<System> m_systems;
 };

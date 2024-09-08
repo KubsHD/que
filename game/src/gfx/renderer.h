@@ -16,8 +16,15 @@ public:
 	Renderer(std::shared_ptr<GraphicsAPI_Vulkan> gapi, std::vector<App::SwapchainInfo> colorFormats, std::vector<App::SwapchainInfo> depthFormats);
 	~Renderer();
 
+	// old api
 	void render(glm::vec3 position, App::FrameRenderInfo& info, entt::registry& reg);
 	void render_model(glm::mat4 model_matrix, const Model& model);
+
+	// new api
+	void begin_frame();
+	void submit_model(glm::mat4 model_matrix, const Model& model);
+	void end_frame();
+
 private:
 
 	struct MeshRenderData {
@@ -28,7 +35,7 @@ private:
 
 	void draw_sky(App::FrameRenderInfo& info);
 
-	void create_resources();
+	void create_engine_resources();
 	void destroy_resources();
 
 	std::shared_ptr<GraphicsAPI_Vulkan> m_graphicsAPI;

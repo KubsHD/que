@@ -27,32 +27,36 @@
 #include "profiler.h"
 
 
-Asset* Asset::Instance;
-std::unordered_map<std::string, std::shared_ptr<Sound>> Asset::m_sound_cache;
+AssetSystem* AssetSystem::Instance;
+std::unordered_map<std::string, std::shared_ptr<Sound>> AssetSystem::m_sound_cache;
+GraphicsAPI_Vulkan* AssetSystem::m_api;
+
 
 using json = nlohmann::json;
 
-Asset::Asset(void* android_ass, AudioSystem* audio_sys)
+AssetSystem::AssetSystem(void* android_ass, AudioSystem* audio_sys, GraphicsAPI_Vulkan* api)
 {
 	Instance = this;
 	m_audio_system_reference = audio_sys;
+	m_api = api;
 
 #if defined(__ANDROID__)
 	m_android_asset_manager = (AAssetManager*)android_ass;
 #endif
 }
 
-Asset::Asset(AudioSystem* audio_sys)
+AssetSystem::AssetSystem(AudioSystem* audio_sys, GraphicsAPI_Vulkan* api)
 {
 	Instance = this;
+	m_api = api;
 	m_audio_system_reference = audio_sys;
 }
 
-Asset::~Asset()
+AssetSystem::~AssetSystem()
 {
 }
 
-std::vector<char> Asset::read_all_bytes(String path)
+std::vector<char> AssetSystem::read_all_bytes(String path)
 {
 
 #if defined(__ANDROID__)
@@ -80,7 +84,7 @@ std::vector<char> Asset::read_all_bytes(String path)
 
 }
 
-Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
+Model AssetSystem::load_model(Path path)
 {
 	QUE_PROFILE;
 
@@ -128,8 +132,8 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 			for (unsigned int j = 0; j < face.mNumIndices; j++)
 				indices.push_back(face.mIndices[j]);
 		}
-		internal_mesh.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
-		internal_mesh.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
+		internal_mesh.vertex_buffer = m_api->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
+		internal_mesh.index_buffer = m_api->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 		internal_mesh.index_count = indices.size();
 
 		internal_mesh.vertices = vertices;
@@ -150,18 +154,18 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 				Material mat;
 
 				// if diffuse texture is assigned it means we are using lit shader/pipeline
-				mat.diff = try_to_load_texture_type(gapi, scene, material, aiTextureType_DIFFUSE, model_directory.string());
+				mat.diff = try_to_load_texture_type(scene, material, aiTextureType_DIFFUSE, model_directory.string());
 
-				if (mat.diff.view != gapi.tex_placeholder.view)
+				if (mat.diff.view != m_api->tex_placeholder.view)
 				{
 					// success
 
 					mat.type = PipelineType::LIT;
 
 					mat.name = material->GetName().C_Str();
-					mat.norm = try_to_load_texture_type(gapi, scene, material, aiTextureType_NORMALS, model_directory.string());
-					mat.orm = try_to_load_texture_type(gapi, scene, material, aiTextureType_METALNESS, model_directory.string());
-					mat.emission = try_to_load_texture_type(gapi, scene, material, aiTextureType_EMISSIVE, model_directory.string());
+					mat.norm = try_to_load_texture_type(scene, material, aiTextureType_NORMALS, model_directory.string());
+					mat.orm = try_to_load_texture_type(scene, material, aiTextureType_METALNESS, model_directory.string());
+					mat.emission = try_to_load_texture_type(scene, material, aiTextureType_EMISSIVE, model_directory.string());
 				}
 				else {
 
@@ -204,7 +208,7 @@ Model Asset::load_model(GraphicsAPI_Vulkan& gapi, Path path)
 }
 
 
-GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, TextureType type)
+GraphicsAPI::Image AssetSystem::load_image(String path, TextureType type)
 {
 	QUE_PROFILE;
 
@@ -213,7 +217,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 	if (!std::filesystem::is_regular_file("./" + path))
 	{
 		std::cout << "[asset] texture doest exist: " << path << std::endl;
-		return gapi.tex_placeholder;
+		return m_api->tex_placeholder;
 	}
 
 	GraphicsAPI::Image img;
@@ -230,8 +234,8 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 
 	assert(format != VK_FORMAT_UNDEFINED);
 
-	auto device = gapi.GetDevice();
-	auto allocator = gapi.GetAllocator();
+	auto device = m_api->GetDevice();
+	auto allocator = m_api->GetAllocator();
 	int texWidth, texHeight, texChannels;
 
 	
@@ -288,7 +292,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 
 	auto result = vmaCreateBuffer(allocator, &stagingBufferInfo, &vmaallocInfo, &stagingBuffer.buffer, &stagingBuffer.allocation, nullptr);
 
-	gapi.SetDebugName("staging buffer img", stagingBuffer.buffer);
+	m_api->SetDebugName("staging buffer img", stagingBuffer.buffer);
 
 
 	void* data;
@@ -296,7 +300,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 	memcpy(data, pixel_ptr, static_cast<size_t>(imageSize));
 	vmaUnmapMemory(allocator, stagingBuffer.allocation);
 
-	gapi.MainDeletionQueue.push_function([&]() {
+	m_api->MainDeletionQueue.push_function([&]() {
 		//vmaDestroyBuffer(*allocator, stagingBuffer.buffer, stagingBuffer.allocation);
 	});
 
@@ -346,7 +350,7 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 	{
 		QUE_PROFILE_SECTION("Upload image to gpu");
 
-		gapi.immediate_submit([&](VkCommandBuffer cmd) {
+		m_api->immediate_submit([&](VkCommandBuffer cmd) {
 
 			vkinit::transition_image(cmd, img.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -370,13 +374,13 @@ GraphicsAPI::Image Asset::load_image(GraphicsAPI_Vulkan& gapi, String path, Text
 		});
 	}
 
-	gapi.SetDebugName("texture: " + path, img.image);
-	gapi.SetDebugName("texture view: " + path, img.view);
+	m_api->SetDebugName("texture: " + path, img.image);
+	m_api->SetDebugName("texture view: " + path, img.view);
 
 	return img;
 }
 
-std::shared_ptr<Sound> Asset::load_sound(String path)
+std::shared_ptr<Sound> AssetSystem::load_sound(String path)
 {
 	QUE_PROFILE;
 	QUE_PROFILE_TAG("Sound path", path.c_str());
@@ -389,14 +393,14 @@ std::shared_ptr<Sound> Asset::load_sound(String path)
 			return v;
 	}
 
-	snd = Asset::Instance->m_audio_system_reference->create_sound(path);
+	snd = AssetSystem::Instance->m_audio_system_reference->create_sound(path);
 	
 	m_sound_cache.emplace(path, std::shared_ptr<Sound>(snd));
 
 	return m_sound_cache[path];
 }
 
-Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
+Model AssetSystem::load_model_json(Path path)
 {
 	QUE_PROFILE;
 
@@ -443,8 +447,8 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 					indices.push_back(face.mIndices[j]);
 			}
 
-			internal_mesh.vertex_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
-			internal_mesh.index_buffer = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
+			internal_mesh.vertex_buffer = m_api->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
+			internal_mesh.index_buffer = m_api->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
 			internal_mesh.index_count = indices.size();
 
 			internal_mesh.vertices = vertices;
@@ -459,7 +463,7 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 		return meshes;
 	};
 		
-	auto file_bytes = Asset::Instance->read_all_bytes(path.string());
+	auto file_bytes = AssetSystem::Instance->read_all_bytes(path.string());
 	auto desc = json::parse(file_bytes);
 
 	auto desc_directory = path.parent_path().string();
@@ -482,10 +486,10 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 			{
 				m.type = PipelineType::LIT;
 
-				m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
-				m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"], TT_NORMAL);
-				m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
-				m.emission = gapi.tex_placeholder;
+				m.diff = load_image(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+				m.norm = load_image(desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+				m.orm = load_image(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+				m.emission = m_api->tex_placeholder;
 			}
 			else if (shader_type == "unlit")
 			{
@@ -497,10 +501,10 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 			m.type = PipelineType::LIT;
 
 			// legacy
-			m.diff = load_image(gapi, desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
-			m.norm = load_image(gapi, desc_directory + "/" + (String)material["normal"], TT_NORMAL);
-			m.orm = load_image(gapi, desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
-			m.emission = gapi.tex_placeholder;
+			m.diff = load_image(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+			m.norm = load_image(desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+			m.orm = load_image(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+			m.emission = m_api->tex_placeholder;
 		}
 
 		model.materials.emplace((int)material["id"], m);
@@ -529,13 +533,13 @@ Model Asset::load_model_json(GraphicsAPI_Vulkan& gapi, Path path)
 	return model;
 }
 
-nlohmann::json Asset::read_json(String path)
+nlohmann::json AssetSystem::read_json(String path)
 {
-	auto bytes = Asset::Instance->read_all_bytes(path);
+	auto bytes = AssetSystem::Instance->read_all_bytes(path);
 	return nlohmann::json::parse(bytes.begin(), bytes.end());
 }
 
-GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path)
+GraphicsAPI::Image AssetSystem::try_to_load_texture_type(const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path)
 {
 	aiString path;
 	material->GetTexture(type, 0, &path);
@@ -545,9 +549,9 @@ GraphicsAPI::Image Asset::try_to_load_texture_type(GraphicsAPI_Vulkan& gapi, con
 	//load texture with stb
 	if (!tex && path.length > 0)
 	{
-		return load_image(gapi, root_path + "/" + std::string(path.C_Str()), type == aiTextureType_NORMALS ? TT_NORMAL : TT_DIFFUSE);
+		return load_image(root_path + "/" + std::string(path.C_Str()), type == aiTextureType_NORMALS ? TT_NORMAL : TT_DIFFUSE);
 	}
 	// TODO: embedded texture support
 	
-	return gapi.tex_placeholder;
+	return m_api->tex_placeholder;
 } 

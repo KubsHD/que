@@ -7,7 +7,6 @@
 #include <core/physics.h>
 #include <core/physics_util.h>
 #include <game/tags.h>
-#include <game/components/speaker_interactable.h>
 
 entt::entity game::tmpl::create_block(entt::registry& reg, PhysicsSystem& psys, glm::vec3 pos, Model& mod, JPH::RefConst<JPH::Shape> customShape)
 {
@@ -38,7 +37,6 @@ entt::entity game::tmpl::create_block(entt::registry& reg, PhysicsSystem& psys, 
 	}
 	reg.emplace<physics_component>(ball, true, psys.spawn_body(obj_settings, JPH::Vec3(0, 0.0f, 0.0f)));
 	reg.emplace<pickupable_block>(ball);
-	reg.emplace<speaker_interactable>(ball);
 
 	return ball;
 }

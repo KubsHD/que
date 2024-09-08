@@ -15,7 +15,6 @@ public:
 	~App() = default;
 	void Run();
 
-	std::unique_ptr<Scene> m_current_scene;
 	std::shared_ptr<Input> input;
 
 	struct RenderLayerInfo;
@@ -87,7 +86,7 @@ private:
 	void calculate_frame_stats();
 protected:
 
-	std::shared_ptr<Asset> m_asset_manager;
+	std::shared_ptr<AssetSystem> m_asset_manager;
 
 	XrInstance m_xrInstance{};
 
