@@ -13,10 +13,11 @@
 class Renderer;
 class AudioSystem;
 
-
 class GameApp : public App
 {
 public:
+
+
 	GameApp(GraphicsAPI_Type type);
 	~GameApp();
 

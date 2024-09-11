@@ -98,11 +98,14 @@ void GameApp::init()
 	m_renderer = std::make_unique<Renderer>(m_graphicsAPI, m_colorSwapchainInfos, m_depthSwapchainInfos, m_registry);
 
 	init_imgui();
+
+	g_engine.asset = m_asset_manager.get();
+	g_engine.audio = m_audio_system.get();
+	g_engine.physics = m_physics_system.get();
+	g_engine.reg = &m_registry;
+	g_engine.render = m_renderer.get();
 	
 	change_scene<GameScene>();
-
-
-
 }
 
 void GameApp::init_imgui()

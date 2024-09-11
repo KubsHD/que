@@ -81,33 +81,9 @@ struct attach_component {
 	entt::entity parent_entity;
 };
 
-struct pickupable_block_component {};
-
-struct new_block_spawn_point_component {
-
-};
-
-struct native_script_component {
-	virtual void update() = 0;
-};
-
-
-struct rotating_ball_component : public native_script_component {
-	void update() override {
-	}
-};
-
 struct game_state_component {
 	float elapsed_time;
 	float tower_height;
 	bool is_game_over;
-};
-
-struct saveable {};
-
-struct interactable {
-	bool single_use;
-	bool triggered_once;
-	virtual void on_interact(entt::registry& reg) = 0;
 };
 

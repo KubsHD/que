@@ -6,6 +6,7 @@
 #include <core/physics.h>
 #include <core/physics_util.h>
 #include <game/components/mesh_component.h>
+#include <game/components/physics_component.h>
 
 Entity* game::tmpl::create_block(Scene& scn, glm::vec3 pos, Model* mod, JPH::RefConst<JPH::Shape> customShape)
 {
@@ -15,27 +16,31 @@ Entity* game::tmpl::create_block(Scene& scn, glm::vec3 pos, Model* mod, JPH::Ref
 	//reg.emplace<mesh_component>(ball, mod);
 
 	ball->add<MeshComponent>(MeshComponent(mod));
-
-	//
-	//auto shape = core::physics::create_convex_shape(mod.meshes[0]);
-	//shape->ScaleShape(JPH::Vec3(0.5f, 0.5f, 0.5f));
-	//
-	//if (customShape)
-	//	customShape->GetMassProperties();
-
-	//JPH::BodyCreationSettings obj_settings(
-	//	customShape != nullptr ? customShape : shape,
-	//	JPH::to_jph(pos),
-	//	JPH::Quat::sIdentity(),
-	//	JPH::EMotionType::Dynamic,
-	//	Layers::MOVING);
+	ball->position = pos;
 
 
-	//if (customShape == nullptr)
-	//{
-	//	obj_settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
-	//	obj_settings.mMassPropertiesOverride.SetMassAndInertiaOfSolidBox(2.0f * JPH::Vec3(2.0f, 2.0f, 2.0f), 1000.0f);
-	//}
+	auto shape = core::physics::create_convex_shape(mod->meshes[0]);
+	shape->ScaleShape(JPH::Vec3(0.5f, 0.5f, 0.5f));
+
+	if (customShape)
+		customShape->GetMassProperties();
+
+	JPH::BodyCreationSettings obj_settings(
+		customShape != nullptr ? customShape : shape,
+		JPH::to_jph(pos),
+		JPH::Quat::sIdentity(),
+		JPH::EMotionType::Dynamic,
+		Layers::MOVING);
+
+
+	if (customShape == nullptr)
+	{
+		obj_settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+		obj_settings.mMassPropertiesOverride.SetMassAndInertiaOfSolidBox(2.0f * JPH::Vec3(2.0f, 2.0f, 2.0f), 1000.0f);
+	}
+
+	ball->add<PhysicsComponent>(PhysicsComponent(obj_settings));
+
 	//reg.emplace<physics_component>(ball, true, psys.spawn_body(obj_settings, JPH::Vec3(0, 0.0f, 0.0f)));
 	//reg.emplace<pickupable_block>(ball);
 

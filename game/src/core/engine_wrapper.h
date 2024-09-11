@@ -13,3 +13,5 @@ struct engine_wrapper {
 	Renderer* render;
 	entt::registry* reg;
 };
+
+extern engine_wrapper g_engine;
