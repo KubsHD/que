@@ -2,7 +2,6 @@
 
 #include <entt/entt.hpp>
 #include <core/physics.h>
-#include <game/components.h>
 #include <common/glm_helpers.h>
 #include <core/input.h>
 

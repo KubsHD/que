@@ -9,8 +9,10 @@
 
 #include <core/types.h>
 #include <list>
-
 #include <core/engine_wrapper.h>
+#include <unordered_map>
+
+using EcsEntity = entt::entity;
 
 class Entity;
 class Collider;
@@ -57,12 +59,6 @@ public:
 	/// </summary>
 	virtual void update() = 0;
 
-	/// <summary>
-	/// Render the component
-	/// </summary>
-	/// <param name="ren">Renderer reference</param>
-	virtual void render();
-
 	virtual void destroy();
 };
 
@@ -107,11 +103,6 @@ public:
 	template<typename T>
 	Vector<T> get_all_components_of_type();
 
-	/// <summary>
-	/// Update all colliders
-	/// </summary>
-	void update_collider_list();
-	
 	void register_collider(Collider*);
 	void deregister_collider(Collider*);
 
@@ -140,6 +131,8 @@ private:
 	/// List of entities
 	/// </summary>
 	Vector<Entity*> m_entities; 
+
+	std::unordered_map<String, Entity*> m_uuid_entity_map;
 	
 	/// <summary>
 	/// List of entities marked for deletion
@@ -155,7 +148,7 @@ public:
 	std::list<Collider*> collision_query_sphere_list(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor);
 	bool collision_query_sphere_result(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor, Entity& hit);
 
-	engine_wrapper* engine;
+	engine_wrapper engine;
 };
 
 template<typename T>
@@ -172,7 +165,7 @@ class Entity final {
 	friend class Scene;
 	
 public:
-	Entity() : position(640,320) {};
+	Entity() : position(0,0,0), rotation(glm::quat()), scale(1,1,1) {};
 
 	/// <summary>
 	/// Entity name
@@ -185,19 +178,11 @@ public:
 	String name;
 
 	/// <summary>
-	/// Is the entity flipped
-	/// </summary>
-	bool flip;
-
-	/// <summary>
 	/// Entity position
 	/// </summary>
-	Vec2 position;
-
-	/// <summary>
-	/// Entity rotation
-	/// </summary>
-	float facing_angle;
+	Vec3 position;
+	Quat rotation;
+	Vec3 scale;
 
 	/// <summary>
 	/// Reference to the scene this entity is in
@@ -243,11 +228,13 @@ public:
 	void add_children(Entity* ent);
 	void destroy();
 	void update();
-	void render();
-	void destroy_child(Entity* ent);
 	void remove_child(Entity* ent);
 	Entity* parent;
+
+	EcsEntity internal_entity;
+
 private:
+
 	Vector<Component*> m_components;
 	Vector<Entity*> m_children;
 };
@@ -264,9 +251,6 @@ T* Entity::add(T&& comp /*= T()*/)
 
 	((Component*)instance)->init();
     
-	// hack
-	this->scene->update_collider_list();
-
 	m_components.push_back((Component*)instance);
 	return instance;
 }

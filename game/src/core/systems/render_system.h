@@ -1,12 +1,10 @@
 #pragma once
 
 #include <entt/entt.hpp>
-#include <core/physics.h>
-#include <core/components/components.h>
-#include <common/glm_helpers.h>
-#include <core/input.h>
+
 #include <core/systems/base_system.h>
 
+class MeshComponent;
 
 class RenderSystem : public System {
 
@@ -23,6 +21,13 @@ public:
 
 	void destroy() override
 	{
+	}
+
+	void register_model(const MeshComponent* comp);
+
+	void remove_model()
+	{
+
 	}
 
 	RenderSystem() = default;

@@ -23,7 +23,27 @@
 #include <core/systems/render_system.h>
 #include <core/physics_util.h>
 
-//#include <game/scenes/game_scene.h>
+#include <game/scenes/game_scene.h>
+
+template<typename T>
+void GameApp::change_scene()
+{
+	if (m_current_scene != NULL)
+	{
+		m_current_scene->destroy();
+		delete m_current_scene;
+	}
+
+	m_current_scene = new T();
+
+	m_current_scene->engine.asset = m_asset_manager.get();
+	m_current_scene->engine.audio = m_audio_system.get();
+	m_current_scene->engine.physics = m_physics_system.get();
+	m_current_scene->engine.reg = &m_registry;
+	m_current_scene->engine.render = m_renderer.get();
+
+	m_current_scene->init();
+}
 
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
 {
@@ -39,6 +59,7 @@ GameApp::~GameApp()
 #include <core/physics_util.h>
 #include <common/serialization.h>
 #include <game/components/speaker_interactable.h>
+#include <game/scenes/game_scene.h>
 void GameApp::run2()
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -77,11 +98,14 @@ void GameApp::init()
 	m_asset_manager = std::make_shared<AssetSystem>(m_audio_system.get(), m_graphicsAPI.get());
 #endif
 
-	m_renderer = new Renderer(m_graphicsAPI, m_colorSwapchainInfos, m_depthSwapchainInfos);
+	m_renderer = std::make_unique<Renderer>(m_graphicsAPI, m_colorSwapchainInfos, m_depthSwapchainInfos, m_registry);
 
 	init_imgui();
 	
-	//m_current_scene = new game_scene();
+	change_scene<GameScene>();
+
+
+
 }
 
 void GameApp::init_imgui()
@@ -122,7 +146,7 @@ void GameApp::render(FrameRenderInfo& info)
 
 	player_pos = player_pos + (vel.y * forward * m_speed) + vel.x * right * m_speed;
 
-	m_renderer->render(player_pos, info, m_registry);
+	m_renderer->render(player_pos, info);
 
 	#pragma region Imgui
 
@@ -149,7 +173,7 @@ void GameApp::render(FrameRenderInfo& info)
 	{
 		ImGui::Text("Models to render");
 		// get all mesh components
-		auto modelsToRender = m_registry.view<transform_component, mesh_component>();
+		auto modelsToRender = m_registry.view<core_transform_component, core_mesh_component>();
 		for (const auto&& [e, tc, mc] : modelsToRender.each())
 		{
 			ImGui::Text("Entity: %d", e);

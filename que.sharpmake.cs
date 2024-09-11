@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Sharpmake;
 using Sharpmake.Generators.FastBuild;
 
-
 [module: Sharpmake.DebugProjectName("Sharpmake.Que")]
 [module: Sharpmake.Include("game/*.sharpmake.cs")]
 [module: Sharpmake.Include("tools/*.sharpmake.cs")]
@@ -102,7 +101,7 @@ namespace Que
 
         [ConfigurePriority(ConfigurePriorities.Platform)]
         [Configure(Platform.agde)]
-        public  void ConfigureAgde(Configuration conf, CommonTarget target)
+        public void ConfigureAgde(Configuration conf, CommonTarget target)
         {
 
             if (!_hasCopiedResources)

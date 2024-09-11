@@ -29,7 +29,10 @@
 #include <app.h>
 #include "pipeline/unlit_mesh_pipeline.h"
 
-Renderer::Renderer(std::shared_ptr<GraphicsAPI_Vulkan> gapi, std::vector<App::SwapchainInfo> colorFormats, std::vector<App::SwapchainInfo> depthFormats) : m_colorSwapchainInfos(colorFormats), m_depthSwapchainInfos(depthFormats), m_graphicsAPI(gapi)
+#include <game/components/mesh_component.h>
+
+Renderer::Renderer(std::shared_ptr<GraphicsAPI_Vulkan> gapi, std::vector<App::SwapchainInfo> colorFormats, std::vector<App::SwapchainInfo> depthFormats, entt::registry& reg) 
+	: m_colorSwapchainInfos(colorFormats), m_depthSwapchainInfos(depthFormats), m_graphicsAPI(gapi), m_reg(reg)
 {
 	create_engine_resources();
 }
@@ -39,7 +42,7 @@ Renderer::~Renderer()
 	destroy_resources();
 }
 
-void Renderer::render(glm::vec3 position, App::FrameRenderInfo& info, entt::registry& reg)
+void Renderer::render(glm::vec3 position, App::FrameRenderInfo& info)
 {
 	QUE_PROFILE;
 
@@ -90,12 +93,12 @@ void Renderer::render(glm::vec3 position, App::FrameRenderInfo& info, entt::regi
 	m_graphicsAPI->SetBufferData(m_sceneData, 0, sizeof(gfx::SceneData), &m_sceneDataCPU);
 
 
-	auto modelsToRender = reg.view<transform_component, mesh_component>();
+	auto modelsToRender = m_reg.view<core_transform_component, core_mesh_component>();
 	for (const auto&& [e, tc, mc] : modelsToRender.each())
 	{
 		tc.calculate_matrix();
 		glm::mat4 model_matrix = tc.matrix;
-		render_model(model_matrix, mc.model);
+		render_model(model_matrix, *mc.model);
 	};
 
 	draw_sky(info);
@@ -174,6 +177,11 @@ void Renderer::render_model(glm::mat4 model_matrix, const Model& model)
 	}
 
 	currently_drawn_object++;
+}
+
+void Renderer::register_mesh(const MeshComponent* mc)
+{
+	m_reg.emplace<core_mesh_component>(mc->entity->internal_entity, mc->get_model());
 }
 
 void Renderer::draw_sky(App::FrameRenderInfo& info)

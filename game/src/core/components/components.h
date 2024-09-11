@@ -1,6 +1,8 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
 
+#include <core/types.h>
+
 #include <asset/mesh.h>
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Body/Body.h>
@@ -14,7 +16,12 @@
 #include <core/physics.h>
 
 
-struct transform_component {
+struct core_uuid_component
+{
+	String uuid;
+};
+
+struct core_transform_component {
 	glm::vec3 position;
 	glm::quat rotation;
 	glm::vec3 scale;
@@ -36,8 +43,8 @@ struct physics_component {
 	JPH::BodyID id;
 };
 
-struct mesh_component {
-	Model model;
+struct core_mesh_component {
+	Model* model;
 };
 
 struct scriptable_component {

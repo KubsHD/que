@@ -4,9 +4,7 @@
 #include <asset/mesh.h>
 #include <core/audio.h>
 
-class game_scene : public Scene {
-
-
+class GameScene : public Scene {
 public:
 	void init() override;
 

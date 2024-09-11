@@ -3,11 +3,13 @@
 #include <core/asset.h>
 #include <core/audio.h>
 #include <core/physics.h>
-#include <core/systems/render_system.h>
+
+class Renderer;
 
 struct engine_wrapper {
-	AudioSystem& audio;
-	AssetSystem& asset;
-	PhysicsSystem& physics;
-	RenderSystem& render;
+	AudioSystem* audio;
+	AssetSystem* asset;
+	PhysicsSystem* physics;
+	Renderer* render;
+	entt::registry* reg;
 };

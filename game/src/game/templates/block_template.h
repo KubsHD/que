@@ -1,10 +1,10 @@
 #include "pch.h"
-#include <game/components.h>
+#include <core/ecs.h>
 
 class PhysicsSystem;
 
 namespace game {
 	namespace tmpl {
-		entt::entity create_block(entt::registry& reg, PhysicsSystem& psys, glm::vec3 pos, Model& mod, JPH::RefConst<JPH::Shape> customShape);
+		Entity* create_block(Scene& scn, glm::vec3 pos, Model& mod, JPH::RefConst<JPH::Shape> customShape);
 	}
 }

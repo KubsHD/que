@@ -11,19 +11,17 @@
 #include <asset/mesh.h>
 #include <app.h>
 
+class MeshComponent;
+
 class Renderer {
 public:
-	Renderer(std::shared_ptr<GraphicsAPI_Vulkan> gapi, std::vector<App::SwapchainInfo> colorFormats, std::vector<App::SwapchainInfo> depthFormats);
+	Renderer(std::shared_ptr<GraphicsAPI_Vulkan> gapi, std::vector<App::SwapchainInfo> colorFormats, std::vector<App::SwapchainInfo> depthFormats, entt::registry& reg);
 	~Renderer();
 
-	// old api
-	void render(glm::vec3 position, App::FrameRenderInfo& info, entt::registry& reg);
+	void render(glm::vec3 position, App::FrameRenderInfo& info);
 	void render_model(glm::mat4 model_matrix, const Model& model);
 
-	// new api
-	void begin_frame();
-	void submit_model(glm::mat4 model_matrix, const Model& model);
-	void end_frame();
+	void register_mesh(const MeshComponent* mc);
 
 private:
 
@@ -62,4 +60,6 @@ private:
 
 	std::vector<App::SwapchainInfo> m_colorSwapchainInfos = {};
 	std::vector<App::SwapchainInfo> m_depthSwapchainInfos = {};
+
+	entt::registry& m_reg;
 };

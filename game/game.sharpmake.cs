@@ -138,7 +138,10 @@ namespace Que
             base.ConfigureWin64(conf, target);
 
             conf.LibraryPaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Lib");
+
             conf.LibraryFiles.Add("vulkan-1.lib");
+            conf.LibraryFiles.Add("Rpcrt4.lib");
+
             conf.SourceFilesBuildExclude.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android\native_app_glue\android_native_app_glue.c"));
 
             var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
