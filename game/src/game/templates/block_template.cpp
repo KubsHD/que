@@ -5,13 +5,16 @@
 #include <core/physics_util.h>
 #include <core/physics.h>
 #include <core/physics_util.h>
+#include <game/components/mesh_component.h>
 
-Entity* game::tmpl::create_block(Scene& scn, glm::vec3 pos, Model& mod, JPH::RefConst<JPH::Shape> customShape)
+Entity* game::tmpl::create_block(Scene& scn, glm::vec3 pos, Model* mod, JPH::RefConst<JPH::Shape> customShape)
 {
-	const auto ball = scn.create("block");
+	auto ball = scn.create("block");
 
 	////reg.emplace<transform_component>(ball, glm::vec3{ 0.0f,5.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 1,1,1 });
 	//reg.emplace<mesh_component>(ball, mod);
+
+	ball->add<MeshComponent>(MeshComponent(mod));
 
 	//
 	//auto shape = core::physics::create_convex_shape(mod.meshes[0]);

@@ -5,6 +5,8 @@
 #include "game_app.h"
 #include <core/physics_util.h>
 #include <game/components/mesh_component.h>
+#include <common/serialization.h>
+#include <game/templates/block_template.h>
 
 void GameScene::init()
 {
@@ -15,9 +17,6 @@ void GameScene::init()
 	controller =  engine.asset->load_model_json("data/models/meta/model_controller_left.model");
 	skybox_image =engine.asset->load_image("data/apartment.hdr", TT_HDRI);
 	test_cube =   engine.asset->load_model_json("data/models/blocks/brick/Cube.model");
-
-
-
 
 	engine.audio->play_sound(*bgm);
 
@@ -40,10 +39,6 @@ void GameScene::init()
 
 	const auto entity = create("test");
 	entity->add<MeshComponent>(MeshComponent(&level_model));
-
-	//const auto entity = m_registry.create();
-	//m_registry.emplace<transform_component>(entity, glm::vec3{ 0.0f,-1.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 1.0f, 1.0f, 1.0f });
-	//m_registry.emplace<mesh_component>(entity, level_model);
 
 	//// controllers
 	//game::tmpl::create_controller(m_registry, controller, 0);
@@ -70,17 +65,23 @@ void GameScene::load_saved_objects()
 {
 	auto so = engine.asset->read_json("data/saved_objects.json");
 
+	models.reserve(so["objects"].size());
+
 	for (auto obj : so["objects"])
 	{
+		auto pVector = &models;
+
 		models.push_back(AssetSystem::load_model_json(obj["model"]));
 
-		//JPH::RefConst<JPH::Shape> shape = nullptr;
 
-		//if (obj.contains("physics"))
-		//	shape = core::physics::load_from_file(obj["physics"]);
 
-		//auto b = game::tmpl::create_block(m_registry, *m_physics_system, ser::vec3_deserialize(obj["position"]), models.back(), shape);
-		//m_registry.emplace<saveable>(b);
+
+		JPH::RefConst<JPH::Shape> shape = nullptr;
+
+		if (obj.contains("physics"))
+			shape = core::physics::load_from_file(obj["physics"]);
+
+		game::tmpl::create_block(*this, ser::vec3_deserialize(obj["position"]), &models[models.size() - 1], shape);
 	}
 }
 

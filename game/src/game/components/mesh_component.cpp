@@ -6,9 +6,8 @@
 #include <gfx/renderer.h>
 
 
-MeshComponent::MeshComponent(Model* model)
+MeshComponent::MeshComponent(Model* model) : m_model(model)
 {
-	m_model = model;
 }
 
 void MeshComponent::init()
