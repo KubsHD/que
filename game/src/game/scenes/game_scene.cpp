@@ -41,12 +41,13 @@ void GameScene::init()
 	auto pc = player->add<PlayerComponent>();
 
 	const auto entity = create("test");
+	entity->position = glm::vec3(0, -1, 0);
 	entity->add<MeshComponent>(MeshComponent(&level_model));
 
 	//// controllers
 	game::tmpl::create_controller(*this, controller, 0, pc);
 	game::tmpl::create_controller(*this, controller, 1, pc);
-	//game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0, 2, 0), test_cube, nullptr);
+	game::tmpl::create_block(*this, glm::vec3(0, 2, 0), &test_cube, nullptr);
 
 	// load saved objects
 	load_saved_objects();

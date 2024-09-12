@@ -113,23 +113,28 @@ bool App::render_layer(RenderLayerInfo& info)
 	for (uint32_t i = 0; i < viewCount; i++) {
 		QUE_PROFILE_SECTION("Render eye");
 
+
 		SwapchainInfo& colorSwapchainInfo = m_colorSwapchainInfos[i];
 		SwapchainInfo& depthSwapchainInfo = m_depthSwapchainInfos[i];
-
+		
 		// Acquire and wait for an image from the swapchains.
 		// Get the image index of an image in the swapchains.
 		// The timeout is infinite.
 		uint32_t colorImageIndex = 0;
 		uint32_t depthImageIndex = 0;
-		XrSwapchainImageAcquireInfo acquireInfo{ XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
-		OPENXR_CHECK(xrAcquireSwapchainImage(colorSwapchainInfo.swapchain, &acquireInfo, &colorImageIndex), "Failed to acquire Image from the Color Swapchian");
-		OPENXR_CHECK(xrAcquireSwapchainImage(depthSwapchainInfo.swapchain, &acquireInfo, &depthImageIndex), "Failed to acquire Image from the Depth Swapchian");
 
-		XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
-		waitInfo.timeout = XR_INFINITE_DURATION;
-		OPENXR_CHECK(xrWaitSwapchainImage(colorSwapchainInfo.swapchain, &waitInfo), "Failed to wait for Image from the Color Swapchain");
-		OPENXR_CHECK(xrWaitSwapchainImage(depthSwapchainInfo.swapchain, &waitInfo), "Failed to wait for Image from the Depth Swapchain");
+		{
+			QUE_PROFILE_SECTION("Acquire and wait for swapchain image");
 
+			XrSwapchainImageAcquireInfo acquireInfo{ XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
+			OPENXR_CHECK(xrAcquireSwapchainImage(colorSwapchainInfo.swapchain, &acquireInfo, &colorImageIndex), "Failed to acquire Image from the Color Swapchian");
+			OPENXR_CHECK(xrAcquireSwapchainImage(depthSwapchainInfo.swapchain, &acquireInfo, &depthImageIndex), "Failed to acquire Image from the Depth Swapchian");
+
+			XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
+			waitInfo.timeout = XR_INFINITE_DURATION;
+			OPENXR_CHECK(xrWaitSwapchainImage(colorSwapchainInfo.swapchain, &waitInfo), "Failed to wait for Image from the Color Swapchain");
+			OPENXR_CHECK(xrWaitSwapchainImage(depthSwapchainInfo.swapchain, &waitInfo), "Failed to wait for Image from the Depth Swapchain");
+		}
 		// Get the width and height and construct the viewport and scissors.
 		const uint32_t& width = m_viewConfigurationViews[i].recommendedImageRectWidth;
 		const uint32_t& height = m_viewConfigurationViews[i].recommendedImageRectHeight;
@@ -160,10 +165,14 @@ bool App::render_layer(RenderLayerInfo& info)
 		render(frameRenderInfo);
 
 
-		// Give the swapchain image back to OpenXR, allowing the compositor to use the image.
-		XrSwapchainImageReleaseInfo releaseInfo{ XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-		OPENXR_CHECK(xrReleaseSwapchainImage(colorSwapchainInfo.swapchain, &releaseInfo), "Failed to release Image back to the Color Swapchain");
-		OPENXR_CHECK(xrReleaseSwapchainImage(depthSwapchainInfo.swapchain, &releaseInfo), "Failed to release Image back to the Depth Swapchain");
+
+		{
+			// Give the swapchain image back to OpenXR, allowing the compositor to use the image.
+			QUE_PROFILE_SECTION("Release swapchain image");
+			XrSwapchainImageReleaseInfo releaseInfo{ XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
+			OPENXR_CHECK(xrReleaseSwapchainImage(colorSwapchainInfo.swapchain, &releaseInfo), "Failed to release Image back to the Color Swapchain");
+			OPENXR_CHECK(xrReleaseSwapchainImage(depthSwapchainInfo.swapchain, &releaseInfo), "Failed to release Image back to the Depth Swapchain");
+		}
 	}
 
 	// Fill out the XrCompositionLayerProjection structure for usage with xrEndFrame().

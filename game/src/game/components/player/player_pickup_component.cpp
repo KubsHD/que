@@ -101,7 +101,6 @@ void PlayerPickupComponent::try_pickup()
 
 	m_pickuped_object = ent;
 
-	
 	ent->set_parent(this->entity);
 
 	PhysicsComponent* pc = ent->get<PhysicsComponent>();

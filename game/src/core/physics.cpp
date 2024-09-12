@@ -362,5 +362,5 @@ JPH::Vec3 JPH::to_jph(glm::vec3 vec)
 
 JPH::Quat JPH::to_jph(glm::quat q)
 {
-	return JPH::Quat(q.w, q.x, q.y, q.z);
+	return JPH::Quat(q.x, q.y, q.z, q.w);
 }

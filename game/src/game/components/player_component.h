@@ -10,8 +10,8 @@ DEFINE_COMPONENT(PlayerComponent)
 
 	XrPosef pose;
 
-	float viewHeightM = 1.5f;
+	float viewHeightM = 1.0f;
 private:
-	glm::vec3 m_forward;
+	glm::vec3 m_forward = glm::vec3(0,0,1);
 	float m_speed = 0.1f;
 };

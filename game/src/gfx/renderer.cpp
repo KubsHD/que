@@ -48,23 +48,28 @@ void Renderer::render(glm::vec3 position, App::FrameRenderInfo& info)
 
 	currently_drawn_object = 0;
 
+	
+
 	GraphicsAPI::Viewport viewport = { 0.0f, 0.0f, (float)info.width, (float)info.height, 0.0f, 1.0f };
 	GraphicsAPI::Rect2D scissor = { {(int32_t)0, (int32_t)0}, {(uint32_t)info.width,(uint32_t)info.height} };
 	float nearZ = 0.05f;
 	float farZ = 100.0f;
 
-	// Rendering code to clear the color and depth image views.
-	m_graphicsAPI->BeginRendering();
+	{
+		QUE_PROFILE_SECTION("Prepare rendering");
 
-	m_graphicsAPI->ClearColor(info.colorSwapchainInfo->imageViews[info.colorImageIndex], 0.17f, 0.17f, 0.17f, 1.00f);
+		// Rendering code to clear the color and depth image views.
+		m_graphicsAPI->BeginRendering();
 
-	m_graphicsAPI->ClearDepth(info.depthSwapchainInfo->imageViews[info.depthImageIndex], 1.0f);
+		m_graphicsAPI->ClearColor(info.colorSwapchainInfo->imageViews[info.colorImageIndex], 0.17f, 0.17f, 0.17f, 1.00f);
 
-	m_graphicsAPI->SetRenderAttachments(info.colorSwapchainInfo->imageViews[info.colorImageIndex], 1, 
-		info.depthSwapchainInfo->imageViews[info.depthImageIndex], info.width, info.height, m_sky_pipeline);
-	m_graphicsAPI->SetViewports(&viewport, 1);
-	m_graphicsAPI->SetScissors(&scissor, 1);
+		m_graphicsAPI->ClearDepth(info.depthSwapchainInfo->imageViews[info.depthImageIndex], 1.0f);
 
+		m_graphicsAPI->SetRenderAttachments(info.colorSwapchainInfo->imageViews[info.colorImageIndex], 1,
+			info.depthSwapchainInfo->imageViews[info.depthImageIndex], info.width, info.height, m_sky_pipeline);
+		m_graphicsAPI->SetViewports(&viewport, 1);
+		m_graphicsAPI->SetScissors(&scissor, 1);
+	}
 	// Compute the view-projection transform.
 	// All matrices (including OpenXR's) are column-major, right-handed.
 
@@ -74,7 +79,7 @@ void Renderer::render(glm::vec3 position, App::FrameRenderInfo& info)
 	XrMatrix4x4f_CreateProjectionFov(&proj, GraphicsAPI_Type::VULKAN, info.view.fov, nearZ, farZ);
 	XrMatrix4x4f toView;
 	XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
-	XrVector3f offset{ position.x, 1.5f, position.z};
+	XrVector3f offset{ position.x, 1.0f, position.z};
 	XrVector3f final_camera_pos;
 	XrVector3f_Add(&final_camera_pos, &info.view.pose.position, &offset);
 

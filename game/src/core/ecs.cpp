@@ -187,35 +187,6 @@ void Scene::draw_imgui()
 	}
 }
 
-bool Scene::collision_query_sphere_result(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor, Entity& hit)
-{
-	return false;
-}
-
-
-std::list<Collider*> Scene::collision_query_sphere_list(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor)
-{
-	std::list<Collider*> result;
-	for (auto col : _colliders)
-	{
-
-	}
-
-	return result;
-}
-
-
-
-bool Scene::collision_query_sphere(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor)
-{
-	for (auto col : _colliders)
-	{
-	
-	}
-
-	return false;
-}
-
 Scene::Scene()
 {
 
@@ -282,10 +253,16 @@ void Entity::remove_child(Entity* ent)
 
 void Entity::set_parent(Entity* new_parent)
 {
+	// cleanup old parent
 	if (parent != nullptr)
 		parent->remove_child(this);
 
 	parent = new_parent;
+
+	if (new_parent != nullptr)
+	{
+		this->rotation = glm::inverse(new_parent->rotation) * this->rotation;
+	}
 
 	if (new_parent != nullptr)
 		new_parent->add_children(this);

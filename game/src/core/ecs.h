@@ -152,10 +152,6 @@ private:
 	/// </summary>
 	Vector<Collider*> _colliders;
 public:
-	bool collision_query_sphere(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor);
-	std::list<Collider*> collision_query_sphere_list(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor);
-	bool collision_query_sphere_result(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor, Entity& hit);
-
 	engine_wrapper engine;
 
 	template<typename T>
