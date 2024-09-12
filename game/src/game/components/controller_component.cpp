@@ -5,7 +5,7 @@
 
 #include <game/components/player_component.h>
 
-ControllerComponent::ControllerComponent(int index, PlayerComponent* pc) : m_index(index), m_pc(pc)
+ControllerComponent::ControllerComponent(int index, PlayerComponent* pc) : index(index), m_pc(pc)
 {
 
 }
@@ -18,7 +18,7 @@ void ControllerComponent::init()
 void ControllerComponent::update()
 {
 	const auto& poses = g_engine.input->get_controller_poses();
-	auto pose = poses[m_index];
+	auto pose = poses[index];
 
 	glm::vec3 target_pos = glm::to_glm(pose.position);
 	target_pos += glm::vec3{ m_pc->entity->position.x, m_pc->viewHeightM, m_pc->entity->position.z };

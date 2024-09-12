@@ -108,7 +108,7 @@ public:
 	Vector<Entity*> get_entities() { return m_entities; };
 
 	template<typename T>
-	Vector<T> get_all_components_of_type();
+	Vector<T*> get_all_components_of_type();
 
 	void register_collider(Collider*);
 	void deregister_collider(Collider*);
@@ -169,6 +169,21 @@ public:
 		return nullptr;
 	}
 };
+
+template<typename T>
+Vector<T*> Scene::get_all_components_of_type()
+{
+	Vector<T*> components;
+
+	for (auto& entity : m_entities)
+	{
+		auto comp = entity->get<T>();
+		if (comp)
+			components.push_back(comp);
+	}
+
+	return components;
+}
 
 /// <summary>
 /// Base class for all entities
@@ -242,6 +257,7 @@ public:
 	void destroy();
 	void update();
 	void remove_child(Entity* ent);
+	void set_parent(Entity* new_parent);
 	Entity* parent;
 
 	EcsEntity internal_entity;

@@ -15,6 +15,8 @@ public:
 
 	bool kinematic = false;
 
+	JPH::BodyID get_body_id() const;
+
 private:
 	JPH::BodyID m_body;
 };

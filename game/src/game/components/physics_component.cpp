@@ -19,3 +19,8 @@ void PhysicsComponent::update()
 		this->entity->rotation = this->entity->scene->engine.physics->get_body_rotation(m_body);
 	}
 }
+
+JPH::BodyID PhysicsComponent::get_body_id() const
+{
+	return m_body;
+}

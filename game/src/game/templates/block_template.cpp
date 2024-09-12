@@ -5,8 +5,12 @@
 #include <core/physics_util.h>
 #include <core/physics.h>
 #include <core/physics_util.h>
+
 #include <game/components/mesh_component.h>
 #include <game/components/physics_component.h>
+#include <game/components/player/player_pickup_component.h>
+#include <game/components/pickupable_component.h>
+
 
 Entity* game::tmpl::create_block(Scene& scn, glm::vec3 pos, Model* mod, JPH::RefConst<JPH::Shape> customShape)
 {
@@ -40,6 +44,7 @@ Entity* game::tmpl::create_block(Scene& scn, glm::vec3 pos, Model* mod, JPH::Ref
 	}
 
 	ball->add<PhysicsComponent>(PhysicsComponent(obj_settings));
+	ball->add<PickupableComponent>();
 
 	//reg.emplace<physics_component>(ball, true, psys.spawn_body(obj_settings, JPH::Vec3(0, 0.0f, 0.0f)));
 	//reg.emplace<pickupable_block>(ball);

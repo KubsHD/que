@@ -15,8 +15,9 @@ public:
 
 	void init() override;
 	void update() override;
+
+	int index;
 private:
-	int m_index;
 
 	PlayerComponent* m_pc;
 };

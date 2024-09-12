@@ -78,9 +78,18 @@ void Scene::update()
 	{
 		Entity* found_entity = m_uuid_entity_map[uc.uuid];
 
-		tc.position = found_entity->position;
-		tc.rotation = found_entity->rotation;
-		tc.scale = found_entity->scale;
+		if (found_entity->parent != nullptr)
+		{
+			tc.position = found_entity->position + found_entity->parent->position;
+			tc.rotation = found_entity->rotation + found_entity->parent->rotation;
+			tc.scale = found_entity->scale + found_entity->parent->scale;
+		}
+		else
+		{
+			tc.position = found_entity->position;
+			tc.rotation = found_entity->rotation;
+			tc.scale = found_entity->scale;
+		}
 	}
 
 	for (int i = 0; i < m_entities.size(); i++)
@@ -268,4 +277,12 @@ void Entity::update()
 void Entity::remove_child(Entity* ent)
 {
 	m_children.erase(std::remove(m_children.begin(), m_children.end(), ent), m_children.end());
+}
+
+void Entity::set_parent(Entity* new_parent)
+{
+	if (parent != nullptr)
+		parent->remove_child(this);
+	parent = new_parent;
+	new_parent->add_children(this);
 }
