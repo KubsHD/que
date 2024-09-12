@@ -13,6 +13,9 @@ void PhysicsComponent::init()
 
 void PhysicsComponent::update()
 {
-	this->entity->position = this->entity->scene->engine.physics->get_body_position(m_body);
-	this->entity->rotation = this->entity->scene->engine.physics->get_body_rotation(m_body);
+	if (!kinematic)
+	{
+		this->entity->position = this->entity->scene->engine.physics->get_body_position(m_body);
+		this->entity->rotation = this->entity->scene->engine.physics->get_body_rotation(m_body);
+	}
 }

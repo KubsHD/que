@@ -40,16 +40,9 @@ String ID::get_uuid()
 
 #elif __ANDROID__
 
-#include <lib/uuid/uuid_v4.h>
-
 String ID::get_uuid()
 {
-	UUIDv4::UUIDGenerator<std::mt19937_64> uuidGenerator;
-	UUIDv4::UUID uuid = uuidGenerator.getUUID();
-
-	std::string bytes = uuid.bytes();
-
-	return bytes;
+	return "bytes";
 }
 
 #endif

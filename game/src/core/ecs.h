@@ -24,6 +24,13 @@ const char* get_class_name() override { \
 	return #NAME; \
 } \
 
+#define DEFINE_COMPONENT(NAME) \
+class NAME : public Component { \
+public: \
+	RTTI_COMPONENT_NAME(NAME) \
+	NAME() = default; \
+
+
 /// <summary>
 /// Base class for all components
 /// </summary>
@@ -149,13 +156,19 @@ public:
 	bool collision_query_sphere_result(Collider* requestor, Vec2 point, float radius, CollisionTag tagToQueryFor, Entity& hit);
 
 	engine_wrapper engine;
+
+	template<typename T>
+	T* get_first_component_of_type()
+	{
+		for (auto& entity : m_entities)
+		{
+			auto comp = entity->get<T>();
+			if (comp)
+				return comp;
+		}
+		return nullptr;
+	}
 };
-
-template<typename T>
-Vector<T> Scene::get_all_components_of_type()
-{
-
-}
 
 /// <summary>
 /// Base class for all entities

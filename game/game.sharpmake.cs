@@ -142,6 +142,8 @@ namespace Que
             conf.LibraryFiles.Add("vulkan-1.lib");
             conf.LibraryFiles.Add("Rpcrt4.lib");
 
+            conf.Options.Add(Options.Vc.Compiler.RTTI.Enable);
+
             conf.SourceFilesBuildExclude.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android\native_app_glue\android_native_app_glue.c"));
 
             var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
@@ -150,6 +152,8 @@ namespace Que
 
             var dataPath = Path.Combine(realProjectPath, "data");
             var targetPath = Path.Combine(ResolveString(conf.TargetPath, conf, target), "data");
+
+
 
             if (target.Optimization == Optimization.Release)
                 conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
@@ -185,6 +189,8 @@ namespace Que
         {
             base.ConfigureAgde(conf, target);
 
+
+            conf.Options.Add(Options.Vc.Compiler.RTTI.Enable);
 
             conf.IncludePaths.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android")); // For android_native_app_glue.h
             conf.AdditionalLinkerOptions.Add("-llog", "-landroid", "-lvulkan");

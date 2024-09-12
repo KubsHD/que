@@ -13,6 +13,8 @@ public:
 	void init() override;
 	void update() override;
 
+	bool kinematic = false;
+
 private:
 	JPH::BodyID m_body;
 };

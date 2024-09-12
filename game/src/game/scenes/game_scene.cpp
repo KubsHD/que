@@ -7,6 +7,7 @@
 #include <game/components/mesh_component.h>
 #include <common/serialization.h>
 #include <game/templates/block_template.h>
+#include <game/templates/controller_template.h>
 
 void GameScene::init()
 {
@@ -36,13 +37,15 @@ void GameScene::init()
 		engine.physics->spawn_body(obj_settings);
 	}
 
+	const auto player = create("player");
+	auto pc = player->add<PlayerComponent>();
 
 	const auto entity = create("test");
 	entity->add<MeshComponent>(MeshComponent(&level_model));
 
 	//// controllers
-	//game::tmpl::create_controller(m_registry, controller, 0);
-	//game::tmpl::create_controller(m_registry, controller, 1);
+	game::tmpl::create_controller(*this, controller, 0, pc);
+	game::tmpl::create_controller(*this, controller, 1, pc);
 	//game::tmpl::create_block(m_registry, *m_physics_system, glm::vec3(0, 2, 0), test_cube, nullptr);
 
 	// load saved objects
@@ -73,9 +76,6 @@ void GameScene::load_saved_objects()
 		auto pVector = &models;
 
 		models.push_back(AssetSystem::load_model_json(obj["model"]));
-
-
-
 
 		JPH::RefConst<JPH::Shape> shape = nullptr;
 

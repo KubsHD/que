@@ -43,13 +43,13 @@ Entity* Scene::get(String name)
 #endif
 }
 
-
-
 void Scene::remove(Entity* name)
 {
 	if (std::find(m_entites_marked_for_deletion.begin(), m_entites_marked_for_deletion.end(), name) == m_entites_marked_for_deletion.end())
 		m_entites_marked_for_deletion.push_back(name);
 }
+
+
 
 bool check_rect_sphere_collision(float rectX, float rectY, float rectWidth, float rectHeight,
 	float sphereX, float sphereY, float sphereRadius)

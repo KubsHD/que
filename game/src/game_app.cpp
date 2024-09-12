@@ -24,6 +24,7 @@
 #include <core/physics_util.h>
 
 #include <game/scenes/game_scene.h>
+#include <game/components/player_component.h>
 
 template<typename T>
 void GameApp::change_scene()
@@ -41,8 +42,11 @@ void GameApp::change_scene()
 	m_current_scene->engine.physics = m_physics_system.get();
 	m_current_scene->engine.reg = &m_registry;
 	m_current_scene->engine.render = m_renderer.get();
+	m_current_scene->engine.input = input.get();
 
 	m_current_scene->init();
+
+	m_current_player_component = m_current_scene->get_first_component_of_type<PlayerComponent>();
 }
 
 GameApp::GameApp(GraphicsAPI_Type type) : App(type)
@@ -90,7 +94,6 @@ void GameApp::init()
 
 #if defined(__ANDROID__)
 	m_asset_manager = std::make_shared<AssetSystem>(androidApp->activity->assetManager, m_audio_system.get(), m_graphicsAPI.get());
-
 #else
 	m_asset_manager = std::make_shared<AssetSystem>(m_audio_system.get(), m_graphicsAPI.get());
 #endif
@@ -104,6 +107,7 @@ void GameApp::init()
 	g_engine.physics = m_physics_system.get();
 	g_engine.reg = &m_registry;
 	g_engine.render = m_renderer.get();
+	g_engine.input = input.get();
 	
 	change_scene<GameScene>();
 }
@@ -138,15 +142,10 @@ void GameApp::render(FrameRenderInfo& info)
 {
 	QUE_PROFILE;
 
-	auto vel = input->get_movement_input();
-	m_forward = glm::normalize(glm::to_glm(info.view.pose.orientation)) * glm::vec3(0.0f, 0.0f, -1.0f);
-	auto right = glm::normalize(glm::to_glm(info.view.pose.orientation)) * glm::vec3(1.0f, 0.0f, 0.0f);;
-	auto forward = m_forward;
+	m_current_player_component->pose = info.view.pose;
 
-
-	player_pos = player_pos + (vel.y * forward * m_speed) + vel.x * right * m_speed;
-
-	m_renderer->render(player_pos, info);
+	if (m_current_player_component)
+		m_renderer->render(m_current_player_component->entity->position, info);
 
 	#pragma region Imgui
 
@@ -156,8 +155,8 @@ void GameApp::render(FrameRenderInfo& info)
 	ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_Once);
 	if (ImGui::Begin("Phys Debug", nullptr))
 	{
-		ImGui::Text("playerpos: %f %f", player_pos.x, player_pos.z);
-		ImGui::Text("forward: %f %f %f", m_forward.x, m_forward.y, m_forward.z);
+		/*ImGui::Text("playerpos: %f %f", m_current_player_component->entity->position.x, m_current_player_component->entity->position.z);
+		ImGui::Text("forward: %f %f %f", m_forward.x, m_forward.y, m_forward.z);*/
 
 		ImGui::LabelText("Deltatime: ", "%f", m_delta_time);
 
