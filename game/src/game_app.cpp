@@ -182,6 +182,16 @@ void GameApp::render(FrameRenderInfo& info)
 	}
 	ImGui::End();
 
+	// game world ec debug
+
+	if (ImGui::Begin("ECS Debug", nullptr))
+	{
+		if (m_current_scene)
+			m_current_scene->draw_imgui();
+
+	}
+	ImGui::End();
+
 	// draw imgui debug
 	if (ImGui::Begin("Phys debug"))
 	{

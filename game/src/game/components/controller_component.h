@@ -5,12 +5,7 @@
 class Component;
 class PlayerComponent;
 
-class ControllerComponent : public Component {
-
-public:
-
-	ControllerComponent() = default;
-
+DEFINE_COMPONENT(ControllerComponent)
 	ControllerComponent(int index, PlayerComponent* pc);
 
 	void init() override;

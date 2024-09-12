@@ -4,10 +4,7 @@
 
 class Component;
 
-class PhysicsComponent : public Component {
-public:
-	PhysicsComponent() = default;
-
+DEFINE_COMPONENT(PhysicsComponent)
 	PhysicsComponent(JPH::BodyCreationSettings bodySettings);
 
 	void init() override;

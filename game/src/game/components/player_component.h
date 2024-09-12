@@ -4,12 +4,7 @@
 
 #include <openxr/openxr.h>
 
-class PlayerComponent : public Component {
-
-public:
-
-	PlayerComponent() = default;
-
+DEFINE_COMPONENT(PlayerComponent)
 	void init() override;
 	void update() override;
 

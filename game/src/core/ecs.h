@@ -132,6 +132,7 @@ public:
 	/// Destroy the scene
 	/// </summary>
 	virtual void destroy();
+	void draw_imgui();
 private:
 
 	/// <summary>
@@ -209,8 +210,13 @@ public:
 	/// Entity position
 	/// </summary>
 	Vec3 position;
+	Vec3 local_position;
+
 	Quat rotation;
+	Quat local_rotation;
+
 	Vec3 scale;
+	Vec3 local_scale;
 
 	/// <summary>
 	/// Reference to the scene this entity is in

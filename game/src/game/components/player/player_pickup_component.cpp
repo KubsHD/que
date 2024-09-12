@@ -62,19 +62,18 @@ void PlayerPickupComponent::init()
 
 void PlayerPickupComponent::try_release()
 {
-	//mic.busy = false;
-	//reg.remove<attach_component>(ent);
+	m_pickuped_object->set_parent(nullptr);
 
-	//transform_component* picked_object_tc = reg.try_get<transform_component>(ent);
+	PhysicsComponent* pc = m_pickuped_object->get<PhysicsComponent>();
+	if (pc)
+	{
+		g_engine.physics->set_body_rotation(pc->get_body_id(), m_pickuped_object->rotation);
+		//g_engine.physics->add_velocity(pc->get_body_id(), cc.vel * 10);
+		g_engine.physics->set_motion_type(pc->get_body_id(), JPH::EMotionType::Dynamic);
+		pc->kinematic = false;
+	}
 
-	//physics_component* pc = reg.try_get<physics_component>(ent);
-	//if (pc)
-	//{
-	//	psys.set_body_rotation(pc->id, picked_object_tc->rotation);
-	//	psys.add_velocity(pc->id, cc.vel * 10);
-	//	psys.set_motion_type(pc->id, JPH::EMotionType::Dynamic);
-	//	pc->enabled = false;
-	//}
+	m_pickuped_object = nullptr;
 }
 
 void PlayerPickupComponent::try_pickup()
@@ -102,8 +101,6 @@ void PlayerPickupComponent::try_pickup()
 
 	m_pickuped_object = ent;
 
-	/*glm::quat offset = glm::inverse(tc.rotation) * picked_object_tc->rotation;
-	picked_object_tc->rotation2 = offset;*/
 	
 	ent->set_parent(this->entity);
 

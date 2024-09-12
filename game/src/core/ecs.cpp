@@ -49,21 +49,6 @@ void Scene::remove(Entity* name)
 		m_entites_marked_for_deletion.push_back(name);
 }
 
-
-
-bool check_rect_sphere_collision(float rectX, float rectY, float rectWidth, float rectHeight,
-	float sphereX, float sphereY, float sphereRadius)
-{
-	float clampedX = std::clamp(sphereX, rectX, rectX + rectWidth);
-	float clampedY = std::clamp(sphereY, rectY, rectY + rectHeight);
-
-	float distanceX = sphereX - clampedX;
-	float distanceY = sphereY - clampedY;
-	float distanceSquared = distanceX * distanceX + distanceY * distanceY;
-
-	return distanceSquared <= sphereRadius * sphereRadius;
-}
-
 void Scene::init()
 {
 	m_entities.reserve(1000);
@@ -78,23 +63,20 @@ void Scene::update()
 	{
 		Entity* found_entity = m_uuid_entity_map[uc.uuid];
 
-		if (found_entity->parent != nullptr)
-		{
-			tc.position = found_entity->position + found_entity->parent->position;
-			tc.rotation = found_entity->rotation + found_entity->parent->rotation;
-			tc.scale = found_entity->scale + found_entity->parent->scale;
-		}
-		else
-		{
-			tc.position = found_entity->position;
-			tc.rotation = found_entity->rotation;
-			tc.scale = found_entity->scale;
-		}
+		tc.position = found_entity->position;
+		tc.rotation = found_entity->rotation;
+		tc.scale = found_entity->scale;
 	}
 
 	for (int i = 0; i < m_entities.size(); i++)
 	{
 		auto ent = m_entities[i];
+
+		if (ent->parent != nullptr)
+		{
+			ent->position = ent->parent->position;
+			ent->rotation = ent->parent->rotation;
+		}
 
 		if (ent == nullptr)
 			continue;
@@ -141,6 +123,11 @@ static void draw_entity(Entity* ent)
 {
 	if (ImGui::TreeNode(ent->id.c_str(), "%s : %s", ent->name.c_str(), ent->id.c_str()))
 	{
+		// draw position and rotation
+		ImGui::Text("Position: %f %f %f", ent->position.x, ent->position.y, ent->position.z);
+		ImGui::Text("Rotation: %f %f %f %f", ent->rotation.x, ent->rotation.y, ent->rotation.z, ent->rotation.w);
+		ImGui::Text("Scale: %f %f %f", ent->scale.x, ent->scale.y, ent->scale.z);
+
 		for (auto compo : ent->get_components())
 		{
 			ImGui::Text("%s", compo->get_class_name());
@@ -185,6 +172,18 @@ void Scene::destroy()
 		ent->destroy();
 
 		delete ent;
+	}
+}
+
+void Scene::draw_imgui()
+{
+	if (ImGui::Begin("Hierarchy"))
+	{
+		for (auto ent : m_entities)
+		{
+			draw_entity(ent);
+		}
+		ImGui::End();
 	}
 }
 
@@ -277,12 +276,17 @@ void Entity::update()
 void Entity::remove_child(Entity* ent)
 {
 	m_children.erase(std::remove(m_children.begin(), m_children.end(), ent), m_children.end());
+
+	ent->position = this->position;
 }
 
 void Entity::set_parent(Entity* new_parent)
 {
 	if (parent != nullptr)
 		parent->remove_child(this);
+
 	parent = new_parent;
-	new_parent->add_children(this);
+
+	if (new_parent != nullptr)
+		new_parent->add_children(this);
 }

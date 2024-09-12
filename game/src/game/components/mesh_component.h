@@ -4,12 +4,7 @@
 
 class Component;
 
-class MeshComponent : public Component {
-
-public:
-
-	MeshComponent() = default;
-
+DEFINE_COMPONENT(MeshComponent)
 	MeshComponent(Model* model);
 
 	void init() override;

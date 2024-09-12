@@ -18,6 +18,11 @@ void PhysicsComponent::update()
 		this->entity->position = this->entity->scene->engine.physics->get_body_position(m_body);
 		this->entity->rotation = this->entity->scene->engine.physics->get_body_rotation(m_body);
 	}
+	else 
+	{
+		g_engine.physics->set_body_position(m_body, this->entity->position);
+		g_engine.physics->set_body_rotation(m_body, this->entity->rotation);
+	}
 }
 
 JPH::BodyID PhysicsComponent::get_body_id() const
