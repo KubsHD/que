@@ -155,32 +155,11 @@ public:
 	engine_wrapper engine;
 
 	template<typename T>
-	T* get_first_component_of_type()
-	{
-		for (auto& entity : m_entities)
-		{
-			auto comp = entity->get<T>();
-			if (comp)
-				return comp;
-		}
-		return nullptr;
-	}
+	T* get_first_component_of_type();
+
 };
 
-template<typename T>
-Vector<T*> Scene::get_all_components_of_type()
-{
-	Vector<T*> components;
 
-	for (auto& entity : m_entities)
-	{
-		auto comp = entity->get<T>();
-		if (comp)
-			components.push_back(comp);
-	}
-
-	return components;
-}
 
 /// <summary>
 /// Base class for all entities
@@ -234,19 +213,7 @@ public:
 	/// <typeparam name="T">Component type to return</typeparam>
 	/// <returns>Component reference</returns>
 	template<typename T>
-	T* get()
-	{
-		T* m = nullptr;
-
-		for (auto& comp : m_components)
-		{
-			if (m = dynamic_cast<T*>(comp))
-				return m;
-		}
-
-		//throw std::runtime_error("Component not found!");
-		return nullptr;
-	};
+	T* get();;
 
 	/// <summary>
 	/// How many components are attached to the entity
@@ -284,4 +251,46 @@ T* Entity::add(T&& comp /*= T()*/)
     
 	m_components.push_back((Component*)instance);
 	return instance;
+}
+
+template<typename T>
+T* Entity::get()
+{
+	T* m = nullptr;
+
+	for (auto& comp : m_components)
+	{
+		if (m = dynamic_cast<T*>(comp))
+			return m;
+	}
+
+	//throw std::runtime_error("Component not found!");
+	return nullptr;
+}
+
+template<typename T>
+Vector<T*> Scene::get_all_components_of_type()
+{
+	Vector<T*> components;
+
+	for (auto& entity : m_entities)
+	{
+		auto comp = entity->get<T>();
+		if (comp)
+			components.push_back(comp);
+	}
+
+	return components;
+}
+
+template<typename T>
+T* Scene::get_first_component_of_type()
+{
+	for (auto& entity : m_entities)
+	{
+		auto comp = entity->get<T>();
+		if (comp)
+			return comp;
+	}
+	return nullptr;
 }

@@ -42,7 +42,7 @@ Renderer::~Renderer()
 	destroy_resources();
 }
 
-void Renderer::render(glm::vec3 position, App::FrameRenderInfo& info)
+void Renderer::render(glm::vec3 camera_position, App::FrameRenderInfo& info)
 {
 	QUE_PROFILE;
 
@@ -79,7 +79,7 @@ void Renderer::render(glm::vec3 position, App::FrameRenderInfo& info)
 	XrMatrix4x4f_CreateProjectionFov(&proj, GraphicsAPI_Type::VULKAN, info.view.fov, nearZ, farZ);
 	XrMatrix4x4f toView;
 	XrVector3f scale1m{ 1.0f, 1.0f, 1.0f };
-	XrVector3f offset{ position.x, 1.0f, position.z};
+	XrVector3f offset{ camera_position.x, 1.0f, camera_position.z};
 	XrVector3f final_camera_pos;
 	XrVector3f_Add(&final_camera_pos, &info.view.pose.position, &offset);
 
