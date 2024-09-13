@@ -97,7 +97,6 @@ namespace Que
             if (target.Optimization == Optimization.Debug)
                 conf.Defines.Add("JPH_DEBUG_RENDERER");
 
-            conf.Defines.Add("JPH_OBJECT_STREAM");
             conf.Defines.Add("JPH_PROFILE_ENABLED");
 
             // if not set, no precompile option will be used.
@@ -197,6 +196,7 @@ namespace Que
 
 
             conf.LibraryFiles.Add(Path.Combine(Globals.RootDirectory, @"deps\vulkan_android_validation_layer\libVkLayer_khronos_validation.so"));
+            conf.TargetCopyFiles.Add(Path.Combine(Globals.RootDirectory, @"deps\vulkan_android_validation_layer\libVkLayer_khronos_validation.so"));
             conf.LibraryPaths.Add(Path.Combine(Globals.RootDirectory, @"deps\vulkan_android_validation_layer"));
 
             conf.TargetPath = Path.Combine(conf.TargetPath, GetABI(target));

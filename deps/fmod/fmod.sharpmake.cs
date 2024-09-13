@@ -35,8 +35,9 @@ public class Fmod : CommonProject
 
             conf.IncludePaths.Add(@"[project.SourceRootPath]\android\core\inc");
             conf.LibraryPaths.Add(@"[project.SourceRootPath]\android\core\lib\arm64-v8a");
-            conf.LibraryFiles.Add("libfmod.so");
-            conf.TargetCopyFiles.Add(@"[project.SourceRootPath]\android\core\lib\arm64-v8a\libfmod.so");
+            conf.LibraryFiles.Add("libfmodL.so");
+            conf.TargetCopyFiles.Add(@"[project.SourceRootPath]\android\core\lib\arm64-v8a\libfmodL.so");
+
         }
     }
 

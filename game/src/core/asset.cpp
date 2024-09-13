@@ -94,7 +94,6 @@ Model AssetSystem::load_model(Path path)
 
 	Assimp::Importer imp;
 
-
 #if defined(__ANDROID__)
 	Assimp::AndroidJNIIOSystem* ioSystem = new Assimp::AndroidJNIIOSystem(App::androidApp->activity);
 	if (nullptr != ioSystem) {

@@ -72,11 +72,16 @@ void Scene::update()
 	{
 		auto ent = m_entities[i];
 
-		if (ent->parent != nullptr)
+	/*	if (ent->parent != nullptr)
 		{
-			ent->position = ent->parent->position;
-			ent->rotation = ent->parent->rotation;
+			ent->position = ent->parent->position + ent->local_position;
+			ent->rotation = ent->parent->rotation * ent->local_rotation;
 		}
+		else
+		{
+			ent->local_position = ent->position;
+			ent->local_rotation = ent->rotation;
+		}*/
 
 		if (ent == nullptr)
 			continue;
@@ -247,8 +252,6 @@ void Entity::update()
 void Entity::remove_child(Entity* ent)
 {
 	m_children.erase(std::remove(m_children.begin(), m_children.end(), ent), m_children.end());
-
-	ent->position = this->position;
 }
 
 void Entity::set_parent(Entity* new_parent)
@@ -257,12 +260,19 @@ void Entity::set_parent(Entity* new_parent)
 	if (parent != nullptr)
 		parent->remove_child(this);
 
-	parent = new_parent;
 
-	if (new_parent != nullptr)
-	{
-		this->rotation = glm::inverse(new_parent->rotation) * this->rotation;
-	}
+	//if (new_parent != nullptr)
+	//{
+	//	this->local_position = Vec3(0);
+	//	this->local_rotation = Quat();
+	//}
+	//else if (this->parent != nullptr)
+	//{
+	//	this->position = this->parent->position;
+	//	this->rotation = this->parent->rotation;
+	//}
+
+	parent = new_parent;
 
 	if (new_parent != nullptr)
 		new_parent->add_children(this);

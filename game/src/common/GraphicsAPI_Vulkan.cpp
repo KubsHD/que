@@ -148,7 +148,22 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 	XrGraphicsRequirementsVulkanKHR graphicsRequirements{ XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR };
 	OPENXR_CHECK(xrGetVulkanGraphicsRequirementsKHR(m_xrInstance, systemId, &graphicsRequirements), "Failed to get Graphics Requirements for Vulkan.");
 
+
+	auto system_info_ret = vkb::SystemInfo::get_system_info();
+	if (!system_info_ret) {
+		printf("%s\n", system_info_ret.error().message().c_str());
+	}
+
+	auto system_info = system_info_ret.value();
+
+	LOG_INFO("Available Vulkan extensions:");
+
+	for (auto ext : system_info.available_extensions) {
+		LOG_INFO(ext.extensionName);
+	}
+
 	vkb::InstanceBuilder builder;
+
     auto exts = GetInstanceExtensionsForOpenXR(m_xrInstance, systemId);
 
     builder.set_app_name("Que")

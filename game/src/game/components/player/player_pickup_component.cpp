@@ -53,6 +53,12 @@ void PlayerPickupComponent::update()
 	{
 		try_release();
 	}
+
+	if (m_pickuped_object)
+	{
+		m_pickuped_object->position = entity->position;
+		m_pickuped_object->rotation = entity->rotation * m_pickuped_object_original_rotation;
+	}
 }
 
 void PlayerPickupComponent::init()
@@ -68,8 +74,8 @@ void PlayerPickupComponent::try_release()
 	if (pc)
 	{
 		g_engine.physics->set_body_rotation(pc->get_body_id(), m_pickuped_object->rotation);
-		//g_engine.physics->add_velocity(pc->get_body_id(), cc.vel * 10);
 		g_engine.physics->set_motion_type(pc->get_body_id(), JPH::EMotionType::Dynamic);
+		g_engine.physics->add_velocity(pc->get_body_id(), m_controller->get_velocity() * 100);
 		pc->kinematic = false;
 	}
 
@@ -100,6 +106,8 @@ void PlayerPickupComponent::try_pickup()
 		return;
 
 	m_pickuped_object = ent;
+
+	m_pickuped_object_original_rotation = glm::inverse(entity->rotation) * m_pickuped_object->rotation;
 
 	ent->set_parent(this->entity);
 

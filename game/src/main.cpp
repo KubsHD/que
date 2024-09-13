@@ -111,6 +111,8 @@ void App_Main(GraphicsAPI_Type apiType)
 	app.Run();
 }
 
+#include <fmod_android.h>
+
 #if defined(XR_OS_ANDROID)
 extern "C"
 {
@@ -120,6 +122,8 @@ extern "C"
 		// https://developer.android.com/training/articles/perf-jni#threads
 		JNIEnv *env;
 		app->activity->vm->AttachCurrentThread(&env, nullptr);
+
+		FMOD_Android_JNI_Init(app->activity->vm, app->activity->clazz);
 
 		// https://registry.khronos.org/OpenXR/specs/1.0/html/xrspec.html#XR_KHR_loader_init
 		// Load xrInitializeLoaderKHR() function pointer. On Android, the loader must be initialized with variables from android_app *.
@@ -144,6 +148,8 @@ extern "C"
 		App::androidApp = app;
 
 		App_Main(VULKAN);
+
+		FMOD_Android_JNI_Close();
 	}
 }
 #endif
