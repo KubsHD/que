@@ -1,11 +1,12 @@
 #pragma once
 
-#include "../components.h"
+#include <core/ecs.h>
 #include <core/audio.h>
 
-struct speaker_interactable : public interactable {
-	void on_interact(entt::registry& reg) override
-	{
+DEFINE_COMPONENT(InteractableComponent)
+public:
+	virtual void on_interact() = 0;
 
-	}
+private:
+	INSPECT(bool, m_can_interact);
 };

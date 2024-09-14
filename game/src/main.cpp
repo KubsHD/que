@@ -111,9 +111,9 @@ void App_Main(GraphicsAPI_Type apiType)
 	app.Run();
 }
 
-#include <fmod_android.h>
 
 #if defined(XR_OS_ANDROID)
+#include <fmod_android.h>
 extern "C"
 {
 	void android_main(struct android_app *app)

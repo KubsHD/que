@@ -12,12 +12,15 @@
 
 #include <gfx/buffers.h>
 #include "pipeline/sky_irradiance_generate.h"
+#include <core/profiler.h>
 
 
 namespace gfx {
 
     void load_sky_texture_and_create_cubemap(GraphicsAPI_Vulkan& gapi, String hdriPath, Sky& s, Model cube, GraphicsAPI::Pipeline sky_pipeline)
     {
+		QUE_PROFILE;
+
 		VkImageView cubemapViews[6];
 		VkFramebuffer framebuffers[6];
 
@@ -232,6 +235,8 @@ namespace gfx {
 
 	void generate_irradiance_map(GraphicsAPI_Vulkan& gapi, Sky& s, Model cube, GraphicsAPI::Pipeline sky_render_pipeline)
 	{
+		QUE_PROFILE;
+
 		VkImageView cubemapViews[6];
 		VkFramebuffer framebuffers[6];
 
@@ -444,6 +449,8 @@ namespace gfx {
 
 	Sky gfx::sky::create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, GraphicsAPI::Pipeline sky_render_pipeline)
 	{
+		QUE_PROFILE;
+
         Sky s{};
 
 		GraphicsAPI::Pipeline sky_irradiance_pipeline = pipeline::create_sky_irradiance_pipeline(gapi);

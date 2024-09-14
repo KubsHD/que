@@ -9,6 +9,8 @@
 #include <game/templates/block_template.h>
 #include <game/templates/controller_template.h>
 
+#include <game/components/interactable/speaker_interactable.h>
+
 void GameScene::init()
 {
 	bgm = engine.asset->load_sound("data/audio/background_music_1.mp3");
@@ -76,14 +78,22 @@ void GameScene::load_saved_objects()
 	{
 		auto pVector = &models;
 
-		models.push_back(AssetSystem::load_model_json(obj["model"]));
+		String modelPath = obj["model"];
+
+		models.push_back(AssetSystem::load_model_json(modelPath));
 
 		JPH::RefConst<JPH::Shape> shape = nullptr;
 
 		if (obj.contains("physics"))
 			shape = core::physics::load_from_file(obj["physics"]);
 
-		game::tmpl::create_block(*this, ser::vec3_deserialize(obj["position"]), &models[models.size() - 1], shape);
+		auto ent = game::tmpl::create_block(*this, ser::vec3_deserialize(obj["position"]), &models[models.size() - 1], shape);
+
+
+
+		if (modelPath.find("glosnik") != std::string::npos)
+			ent->add<SpeakerInteractableComponent>();
+
 	}
 }
 

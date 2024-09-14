@@ -4,6 +4,18 @@
 
 #include <core/types.h>
 
+enum class ControllerButton {
+	A,
+	B,
+	X,
+	Y,
+	THUMBSTICK_L,
+	THUMBSTICK_R,
+	OPTIONS,
+
+	MAX
+};
+
 class Input {
 public:
 	Input(XrInstance instance, XrSession* session);
@@ -24,6 +36,7 @@ public:
 	std::vector<float> get_grab_state();
 	glm::vec2 get_movement_input();
 
+	bool get_interaction_button_down();
 private:
 	XrInstance m_xrInstance;
 	XrSession* m_session;
@@ -31,11 +44,16 @@ private:
 	// input stuff
 	XrActionSet m_actionSet;
 	// An action for grabbing blocks, and an action to change the color of a block.
-	XrAction m_grabCubeAction, m_spawnCubeAction, m_changeColorAction;
+	XrAction m_grabCubeAction, m_spawnCubeAction, m_changeColorAction, m_interactionAction;
 	// The realtime states of these actions.
 	XrActionStateFloat m_grabState[2] = { {XR_TYPE_ACTION_STATE_FLOAT}, {XR_TYPE_ACTION_STATE_FLOAT} };
 	XrActionStateBoolean m_changeColorState[2] = { {XR_TYPE_ACTION_STATE_BOOLEAN}, {XR_TYPE_ACTION_STATE_BOOLEAN} };
 	XrActionStateBoolean m_spawnCubeState = { XR_TYPE_ACTION_STATE_BOOLEAN };
+
+	XrActionStateBoolean m_interactionState = { XR_TYPE_ACTION_STATE_BOOLEAN };
+	XrActionStateBoolean m_lastInteractionState = { XR_TYPE_ACTION_STATE_BOOLEAN };
+
+
 	// The haptic output action for grabbing cubes.
 	XrAction m_buzzAction;
 

@@ -4,11 +4,14 @@
 
 #include <asset/mesh.h>
 #include <core/asset.h>
+#include <core/profiler.h>
 
 namespace pipeline
 {
 	GraphicsAPI::Pipeline create_sky_pipeline(GraphicsAPI_Vulkan& gapi, VkFormat drawImageFormat, VkFormat depthImageFormat)
 	{
+		QUE_PROFILE;
+
 		std::vector<char> vertexSource = AssetSystem::Instance->read_all_bytes("shader/sky.vert.spv");
 		auto vs = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
 

@@ -12,6 +12,8 @@
 #include <core/engine_wrapper.h>
 #include <unordered_map>
 
+#include <core/rtti.h>
+
 using EcsEntity = entt::entity;
 
 class Entity;
@@ -19,16 +21,24 @@ class Collider;
 enum class CollisionTag;
 class GraphicsAPI;
 
-#define RTTI_COMPONENT_NAME(NAME) \
-const char* get_class_name() override { \
-	return #NAME; \
-} \
+
 
 #define DEFINE_COMPONENT(NAME) \
 class NAME : public Component { \
 public: \
 	RTTI_COMPONENT_NAME(NAME) \
 	NAME() = default; \
+
+
+#define DEFINE_COMPONENT_DERIVED(NAME, BASE) \
+class NAME : public BASE { \
+public: \
+	RTTI_COMPONENT_NAME(NAME) \
+	NAME() = default; \
+
+#define INSPECT(TYPE, NAME) \
+TYPE NAME; \
+
 
 
 /// <summary>

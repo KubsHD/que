@@ -63,12 +63,10 @@ void Input::create_action_set()
 
 	// An Action for the position of the palm of the user's hand - appropriate for the location of a grabbing Actions.
 	CreateAction(m_palmPoseAction, "palm-pose", XR_ACTION_TYPE_POSE_INPUT, { "/user/hand/left", "/user/hand/right" });
-	// An Action for a vibration output on one or other hand.
 	CreateAction(m_buzzAction, "buzz", XR_ACTION_TYPE_VIBRATION_OUTPUT, { "/user/hand/left", "/user/hand/right" });
-
 	CreateAction(m_grabCubeAction, "grab-cube", XR_ACTION_TYPE_FLOAT_INPUT, { "/user/hand/left", "/user/hand/right" });
-
 	CreateAction(m_movementAction, "stick", XR_ACTION_TYPE_VECTOR2F_INPUT, { "/user/hand/left", "/user/hand/right" });
+	CreateAction(m_interactionAction, "interaction", XR_ACTION_TYPE_BOOLEAN_INPUT, { "/user/hand/left", "/user/hand/right" });
 
 	// For later convenience we create the XrPaths for the subaction path names.
 	m_handPaths[0] = CreateXrPath(m_xrInstance, "/user/hand/left");
@@ -96,7 +94,8 @@ void Input::suggest_bindings()
 																			  {m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/right/output/haptic")},
 																				{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/squeeze/value")},
 																				{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/squeeze/value")},
-																				{m_movementAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/thumbstick")}
+																				{m_movementAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/thumbstick")},
+																				{m_interactionAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/a/click")},
 
 		});
 }
@@ -176,6 +175,9 @@ void Input::poll_actions(XrTime time, XrSpace local_space)
 	actionStateGetInfo.subactionPath = m_handPaths[0];
 	OPENXR_CHECK(xrGetActionStateVector2f(*m_session, &actionStateGetInfo, &m_movementActionState), "Failed to get Vector2 State of Movement action.");
 
+	actionStateGetInfo.action = m_interactionAction;
+	actionStateGetInfo.subactionPath = m_handPaths[1];
+	OPENXR_CHECK(xrGetActionStateBoolean(*m_session, &actionStateGetInfo, &m_interactionState), "Failed to get Boolean State of Interaction action.");
 }
 
 void Input::record_actions()
@@ -220,4 +222,9 @@ glm::vec2 Input::get_movement_input()
 {
 	XrVector2f vel = m_movementActionState.currentState;
 	return glm::to_glm(vel);
+}
+
+bool Input::get_interaction_button_down()
+{
+	return m_interactionState.changedSinceLastSync && m_interactionState.currentState;
 }

@@ -136,6 +136,11 @@ void GameApp::update(float dt)
 
 	if (m_current_scene)
 		m_current_scene->update();
+
+	if (m_current_player_component)
+		m_audio_system->update(m_current_player_component->entity->position);
+	else
+		m_audio_system->update(glm::vec3(0, 0, 0));
 }
 
 void GameApp::render(FrameRenderInfo& info)

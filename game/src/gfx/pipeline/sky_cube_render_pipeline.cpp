@@ -4,10 +4,13 @@
 
 #include <asset/mesh.h>
 #include <core/asset.h>
+#include <core/profiler.h>
 namespace pipeline {
 
 	GraphicsAPI::Pipeline create_sky_cube_render_pipeline(GraphicsAPI_Vulkan& gapi)
 	{
+		QUE_PROFILE;
+
 		std::vector<char> vertexSource = AssetSystem::Instance->read_all_bytes("shader/equi2cube.vert.spv");
 		auto vs = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
 
