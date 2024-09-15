@@ -58,7 +58,7 @@ private:
 	std::unique_ptr<AudioSystem> m_audio_system;
 
 	PlayerComponent* m_current_player_component;
-	Scene* m_current_scene;
+	Scene* m_current_scene = nullptr;
 
 	VkSampler sampler;
 

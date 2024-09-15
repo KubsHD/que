@@ -133,27 +133,31 @@ static void draw_entity(Entity* ent)
 		ImGui::Text("Rotation: %f %f %f %f", ent->rotation.x, ent->rotation.y, ent->rotation.z, ent->rotation.w);
 		ImGui::Text("Scale: %f %f %f", ent->scale.x, ent->scale.y, ent->scale.z);
 
-		for (auto compo : ent->get_components())
+		if (ImGui::TreeNode("Components"))
 		{
-			ImGui::Text("%s", compo->get_class_name());
+			for (auto compo : ent->get_components())
+			{
+				ImGui::Text("%s", compo->get_class_name());
 
-		//	////draw_component(compo);
-		//	//auto cls = compo->get_class();
-		//	//if (ImGui::TreeNode(cls->name.c_str()))
-		//	//{
-		//	//	for (auto field : cls->fields)
-		//	//	{
-		//	//		if (field.type == nullptr) break;
+				//	////draw_component(compo);
+				//	//auto cls = compo->get_class();
+				//	//if (ImGui::TreeNode(cls->name.c_str()))
+				//	//{
+				//	//	for (auto field : cls->fields)
+				//	//	{
+				//	//		if (field.type == nullptr) break;
 
-		//	//		if (field.type->hash == Hash("int"))
-		//	//		{
-		//	//			int* value = reinterpret_cast<int*>(&compo) + field.offset;
-		//	//			ImGui::InputInt(field.name.c_str(), value);
-		//	//		}
-		//	//	}
-		//	//	ImGui::TreePop();
+				//	//		if (field.type->hash == Hash("int"))
+				//	//		{
+				//	//			int* value = reinterpret_cast<int*>(&compo) + field.offset;
+				//	//			ImGui::InputInt(field.name.c_str(), value);
+				//	//		}
+				//	//	}
+				//	//	ImGui::TreePop();
+			}
+
+			ImGui::TreePop();
 		}
-
 		for (auto child_ent : ent->get_children())
 		{
 			draw_entity(child_ent);

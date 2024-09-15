@@ -11,7 +11,7 @@
 
 void game::tmpl::create_controller(Scene& scn, Model& controller, int index, PlayerComponent* pc)
 {
-	const auto controller1 = scn.create("controller_" + index);
+	const auto controller1 = scn.create(std::string("controller_") + std::to_string(index));
 	JPH::BodyCreationSettings c_settings(
 		new JPH::SphereShape(0.5f),
 		JPH::RVec3(0, 10.8, 0),
