@@ -22,6 +22,7 @@
 #include <common/vk_initializers.h>
 #include <core/profiler.h>
 #include "DebugOutput.h"
+#include "vk_image.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -171,7 +172,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
         .request_validation_layers()
         .set_debug_callback(debugCallback)
 #endif
-        .desire_api_version(1, 1);
+        .desire_api_version(1, 2);
 
 	for (const auto& ext : exts)
 	{
@@ -377,9 +378,10 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 
     tex_placeholder.view = CreateImageView(ivci);
 
-
-
-
+    
+    immediate_submit([&](VkCommandBuffer buf) {
+        vkinit::transition_image(buf, tex_placeholder.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    });
 }
 
 GraphicsAPI_Vulkan::~GraphicsAPI_Vulkan() {
@@ -571,7 +573,7 @@ VkImage GraphicsAPI_Vulkan::CreateImage(const ImageCreateInfo &imageCI) {
     vkImageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     vkImageCI.queueFamilyIndexCount = 0;
     vkImageCI.pQueueFamilyIndices = nullptr;
-    vkImageCI.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    vkImageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     VULKAN_CHECK(vkCreateImage(device, &vkImageCI, nullptr, &image), "Failed to create Image");
 
     VkMemoryRequirements memoryRequirements{};
