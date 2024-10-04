@@ -246,7 +246,7 @@ void TraceImpl(const char* inFMT, ...)
 	va_end(list);
 
 	// Print to the TTY
-#if defined(WIN32)
+#if defined(XR_OS_WINDOWS)
 	OutputDebugString(buffer);
 #endif
 	std::cout << buffer << std::endl;

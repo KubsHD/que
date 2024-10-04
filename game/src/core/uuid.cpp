@@ -3,7 +3,7 @@
 #include "uuid.h"
 
 
-#if _WIN32
+#if XR_OS_WINDOWS
 
 #include <Windows.h>
 

@@ -36,5 +36,5 @@ void ControllerComponent::update()
 	m_velocity = this->entity->position - last_pos;
 	last_pos = entity->position;
 	// print vel
-	LOG_INFO("vel: " + std::to_string(m_velocity.x) + " " + std::to_string(m_velocity.y) + " " + std::to_string(m_velocity.z));
+	//LOG_INFO("vel: " + std::to_string(m_velocity.x) + " " + std::to_string(m_velocity.y) + " " + std::to_string(m_velocity.z));
 }

@@ -95,7 +95,7 @@
 #endif
 
 // OpenXR Helper
-#include "OpenXRHelper.h"
+#include "openxr_helper.h"
 
 enum GraphicsAPI_Type : uint8_t {
     UNKNOWN,

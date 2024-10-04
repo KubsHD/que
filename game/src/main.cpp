@@ -62,7 +62,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #endif
 
-#if defined(_WIN32) && defined(_DEBUG)
+#if defined(XR_OS_WINDOWS) && defined(_DEBUG)
 
 	std::wstring commandLineStr(GetCommandLineW());
 
@@ -86,7 +86,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 #endif
 
-#if defined(WIN32) && !defined(_DEBUG)
+#if defined(XR_OS_WINDOWS) && !defined(_DEBUG)
 	auto crashpadok = start_crash_handler();
 #endif
 

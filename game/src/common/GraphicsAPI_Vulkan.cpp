@@ -6,7 +6,7 @@
 
 #include "pch.h"
 
-#if defined(_WIN32)
+#if defined(XR_OS_WINDOWS)
 #endif
 #include "GraphicsAPI_Vulkan.h"
 #include "deletion_queue.h"

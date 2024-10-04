@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <string>
-#include <common/OpenXRHelper.h>
+#include <common/openxr_helper.h>
 #include <common/DebugOutput.h>
 #include <common/glm_helpers.h>
 #include "profiler.h"

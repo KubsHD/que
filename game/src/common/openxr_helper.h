@@ -1,25 +1,13 @@
-// Copyright 2023, The Khronos Group Inc.
-//
-// SPDX-License-Identifier: Apache-2.0
-
-// OpenXR Tutorial for Khronos Group
-
 #pragma once
-
-// Define any XR_USE_PLATFORM_... / XR_USE_GRAPHICS_API_... before this header file.
-
 
 #if defined(XR_OS_ANDROID)
 #include "jni.h"
 #endif
 
-
-
 // For DEBUG_BREAK
 #include "HelperFunctions.h"
 
 inline void OpenXRDebugBreak() {
-    std::cerr << "Breakpoint here to debug." << std::endl;
     DEBUG_BREAK;
 }
 
