@@ -31,7 +31,7 @@ void App::Run()
 		get_view_configuration_views();
 		get_enviroment_blend_modes();
 
-		input = std::make_shared<Input>(m_xrInstance, &m_session);
+		input = std::make_shared<XrInput>(m_xrInstance, &m_session);
 		input->create_action_set();
 		input->suggest_bindings();
 

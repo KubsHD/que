@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "input.h"
+#include "xr_input.h"
 
 #include <vector>
 #include <string>
@@ -28,11 +28,11 @@ static std::string FromXrPath(XrInstance instance, XrPath path) {
 	return str;
 }
 
-Input::Input(XrInstance instance, XrSession* session) : m_xrInstance(instance), m_session(session)
+XrInput::XrInput(XrInstance instance, XrSession* session) : m_xrInstance(instance), m_session(session)
 {
 }
 
-void Input::create_action_set()
+void XrInput::create_action_set()
 {
 	XrActionSetCreateInfo actionSetCI{ XR_TYPE_ACTION_SET_CREATE_INFO };
 	// The internal name the runtime uses for this Action Set.
@@ -73,7 +73,7 @@ void Input::create_action_set()
 	m_handPaths[1] = CreateXrPath(m_xrInstance, "/user/hand/right");
 }
 
-void Input::suggest_bindings()
+void XrInput::suggest_bindings()
 {
 	auto SuggestBindings = [this](const char* profile_path, std::vector<XrActionSuggestedBinding> bindings) -> bool {
 		// The application can call xrSuggestInteractionProfileBindings once per interaction profile that it supports.
@@ -100,7 +100,7 @@ void Input::suggest_bindings()
 		});
 }
 
-void Input::create_action_poses()
+void XrInput::create_action_poses()
 {
 	// Create an xrSpace for a pose action.
 	auto CreateActionPoseSpace = [this](XrSession session, XrAction xrAction, const char* subaction_path = nullptr) -> XrSpace {
@@ -120,7 +120,7 @@ void Input::create_action_poses()
 	m_handPoseSpace[1] = CreateActionPoseSpace(*m_session, m_palmPoseAction, "/user/hand/right");
 }
 
-void Input::attach_action_set()
+void XrInput::attach_action_set()
 {
 	// Attach the action set we just made to the session. We could attach multiple action sets!
 	XrSessionActionSetsAttachInfo actionSetAttachInfo{ XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO };
@@ -129,7 +129,7 @@ void Input::attach_action_set()
 	OPENXR_CHECK(xrAttachSessionActionSets(*m_session, &actionSetAttachInfo), "Failed to attach ActionSet to Session.");
 }
 
-void Input::poll_actions(XrTime time, XrSpace local_space)
+void XrInput::poll_actions(XrTime time, XrSpace local_space)
 {
 	QUE_PROFILE;
 
@@ -180,7 +180,7 @@ void Input::poll_actions(XrTime time, XrSpace local_space)
 	OPENXR_CHECK(xrGetActionStateBoolean(*m_session, &actionStateGetInfo, &m_interactionState), "Failed to get Boolean State of Interaction action.");
 }
 
-void Input::record_actions()
+void XrInput::record_actions()
 {
 	if (m_session) {
 		// now we are ready to:
@@ -197,7 +197,7 @@ void Input::record_actions()
 	}
 }
 
-void Input::draw_imgui()
+void XrInput::draw_imgui()
 {
 	if (ImGui::Begin("Input debug"))
 	{
@@ -208,23 +208,23 @@ void Input::draw_imgui()
 	}
 }
 
-std::vector<XrPosef> Input::get_controller_poses()
+std::vector<XrPosef> XrInput::get_controller_poses()
 {
 	return { m_handPose[0], m_handPose[1] };
 }
 
-std::vector<float> Input::get_grab_state()
+std::vector<float> XrInput::get_grab_state()
 {
 	return { m_grabState[0].currentState, m_grabState[1].currentState };
 }
 
-glm::vec2 Input::get_movement_input()
+glm::vec2 XrInput::get_movement_input()
 {
 	XrVector2f vel = m_movementActionState.currentState;
 	return glm::to_glm(vel);
 }
 
-bool Input::get_interaction_button_down()
+bool XrInput::get_interaction_button_down()
 {
 	return m_interactionState.changedSinceLastSync && m_interactionState.currentState;
 }

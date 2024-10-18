@@ -3,7 +3,7 @@
 
 #include <common/GraphicsAPI_Vulkan.h>
 
-#include <core/input.h>
+#include <core/xr_input.h>
 #include <core/physics.h>
 #include <gfx/buffers.h>
 #include <gfx/sky.h>

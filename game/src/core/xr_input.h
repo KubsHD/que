@@ -16,9 +16,9 @@ enum class ControllerButton {
 	MAX
 };
 
-class Input {
+class XrInput {
 public:
-	Input(XrInstance instance, XrSession* session);
+	XrInput(XrInstance instance, XrSession* session);
 
 	void create_action_set();
 	void suggest_bindings();

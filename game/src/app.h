@@ -6,7 +6,7 @@
 
 #include <core/asset.h>
 #include <core/ecs.h>
-#include <core/input.h>
+#include <core/xr_input.h>
 
 
 class App {
@@ -15,7 +15,7 @@ public:
 	~App() = default;
 	void Run();
 
-	std::shared_ptr<Input> input;
+	std::shared_ptr<XrInput> input;
 
 	struct RenderLayerInfo;
 	struct FrameRenderInfo;

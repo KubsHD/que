@@ -3,7 +3,7 @@
 #include <core/asset.h>
 #include <core/audio.h>
 #include <core/physics.h>
-#include <core/input.h>
+#include <core/xr_input.h>
 
 class Renderer;
 
@@ -11,7 +11,7 @@ struct engine_wrapper {
 	AudioSystem* audio;
 	AssetSystem* asset;
 	PhysicsSystem* physics;
-	Input* input;
+	XrInput* input;
 	Renderer* render;
 	entt::registry* reg;
 };
