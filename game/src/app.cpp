@@ -405,7 +405,7 @@ void App::create_instance()
 #if defined(_DEBUG)
 	m_instanceExtensions.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
-	m_instanceExtensions.push_back(GetGraphicsAPIInstanceExtensionString(m_apiType));
+	m_instanceExtensions.push_back(XR_KHR_VULKAN_ENABLE_EXTENSION_NAME);
 
 
 	// Get all the API Layers from the OpenXR runtime.

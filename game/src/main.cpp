@@ -102,13 +102,42 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #endif
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+#include <gfx/rhi/gfx_device.h>
+#include <gfx/rhi/gfx_swapchain.h>
+
+
 void App_Main(GraphicsAPI_Type apiType)
 {
 
 	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
 	LOG_INFO("Que MAIN");
-	GameApp app(apiType);
-	app.Run();
+	//GameApp app(apiType);
+	//app.Run();
+
+
+	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Vulkan_LoadLibrary(nullptr);
+	SDL_Window* window = SDL_CreateWindow("test", 640, 360, SDL_WINDOW_VULKAN);
+
+	GfxDevice::Init();
+
+	GfxSwapchain* swapchain = new GfxSwapchain(window);
+
+	bool running = true;
+	while (running) {
+		SDL_Event windowEvent;
+		while (SDL_PollEvent(&windowEvent))
+			if (windowEvent.type == SDL_EVENT_QUIT) {
+				running = false;
+				break;
+			}
+	}
+
+	SDL_DestroyWindow(window);
+	SDL_Vulkan_UnloadLibrary();
+	SDL_Quit();
 }
 
 

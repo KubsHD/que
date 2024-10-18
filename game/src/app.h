@@ -161,9 +161,7 @@ public:
 	// Processes the next command from the Android OS. It updates AndroidAppState.
 	static void AndroidAppHandleCmd(struct android_app* app, int32_t cmd);
 
+#endif
 private:
 	void poll_system_events();
-#else
-	void poll_system_events();
-#endif
 };

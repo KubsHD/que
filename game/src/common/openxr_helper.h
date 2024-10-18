@@ -17,6 +17,7 @@ inline const char* GetXRErrorString(XrInstance xrInstance, XrResult result) {
     return string;
 }
 
+
 #define OPENXR_CHECK(x, y)                                                                                                                                  \
     {                                                                                                                                                       \
         XrResult result = (x);                                                                                                                              \
@@ -34,3 +35,16 @@ inline const char* GetXRErrorString(XrInstance xrInstance, XrResult result) {
             OpenXRDebugBreak();                                                                                                                             \
         }                                                                                                                                                   \
     }
+
+
+inline std::vector<std::string> GetInstanceExtensionsForOpenXR(XrInstance xrInstance, XrSystemId systemId) {
+	uint32_t extensionCount;
+	OPENXR_CHECK_PORTABLE(xrInstance, xrEnumerateInstanceExtensionProperties(nullptr, 0, &extensionCount, nullptr), "Failed to enumerate instance extension properties.");
+	std::vector<XrExtensionProperties> extensionProperties(extensionCount, { XR_TYPE_EXTENSION_PROPERTIES });
+    OPENXR_CHECK_PORTABLE(xrInstance, xrEnumerateInstanceExtensionProperties(nullptr, extensionCount, &extensionCount, extensionProperties.data()), "Failed to enumerate instance extension properties.");
+	std::vector<std::string> extensions;
+	for (const auto& extension : extensionProperties) {
+		extensions.push_back(extension.extensionName);
+	}
+	return extensions;
+}

@@ -1,6 +1,9 @@
 #pragma once
 
-#include "pch.h"
+#include <string>
+#include <vector>
+#include <filesystem>
+#include <glm/glm.hpp>
 
 using String = std::string;
 
@@ -14,3 +17,9 @@ using Vec3 = glm::vec3;
 using Path = std::filesystem::path;
 
 using Quat = glm::quat;
+
+// filesystem
+
+namespace fs = std::filesystem;
+
+using Path = fs::path;
