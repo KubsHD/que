@@ -144,4 +144,8 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 	allocatorCI.instance = instance;
 
 	VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &gpu::allocator), "Failed to create VMA allocator.");
+
+
+	
+	
 }
