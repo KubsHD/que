@@ -15,6 +15,11 @@ PFN_xrGetVulkanGraphicsRequirementsKHR Xr::xrGetVulkanGraphicsRequirementsKHR;
 PFN_xrGetVulkanInstanceExtensionsKHR Xr::xrGetVulkanInstanceExtensionsKHR;
 PFN_xrGetVulkanDeviceExtensionsKHR Xr::xrGetVulkanDeviceExtensionsKHR;
 
+void Xr::Destroy()
+{
+	xrDestroyInstance(instance);
+}
+
 static const std::vector<char*> layerNames;
 static const char* const extensionNames[] = {
 	"XR_KHR_vulkan_enable",

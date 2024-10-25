@@ -27,6 +27,14 @@ PFN_vkSetDebugUtilsObjectNameEXT GfxDevice::vkSetDebugUtilsObjectNameEXT;
 PFN_vkCreateDebugUtilsMessengerEXT GfxDevice::vkCreateDebugUtilsMessengerEXT;
 
 
+void GfxDevice::Destroy()
+{
+	vkb::destroy_device(vkb_internal::device);
+	vkb::destroy_instance(vkb_internal::instance);
+
+	vmaDestroyAllocator(gpu::allocator);
+}
+
 #define VULKAN_CHECK(x, y)                                                                         \
     {                                                                                              \
         VkResult result = (x);                                                                     \

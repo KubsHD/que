@@ -21,19 +21,5 @@ void Game::run()
 
 //	m_start_time = std::chrono::high_resolution_clock::now();
 
-	platform = new OpenXRPlatform();
-	platform->init();
 
-	platform->set_render_callback(render);
-
-	bool running = true;
-	while (running) {
-		platform->poll();
-
-		platform->render();
-
-		QUE_PROFILE_FRAME();
-	}
-
-	platform->destroy();
 }

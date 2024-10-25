@@ -52,6 +52,7 @@ public:
 	void set_render_callback(std::function<void(FrameRenderInfo)> callback) {
 		m_render_callback = callback;
 	}
+	void run();
 private:
 	void create_reference_space();
 	void destroy_reference_space();

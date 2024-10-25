@@ -28,4 +28,6 @@ private:
 	static PFN_xrGetVulkanInstanceExtensionsKHR xrGetVulkanInstanceExtensionsKHR;
 	static PFN_xrGetVulkanDeviceExtensionsKHR xrGetVulkanDeviceExtensionsKHR;
 
+public:
+	static void Destroy();
 };

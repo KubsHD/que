@@ -50,7 +50,9 @@ void OpenXRPlatform::destroy()
 	destroy_swapchains();
 	destroy_session();
 	destroy_debug();
-	destroy_instance();
+
+	GfxDevice::Destroy();
+	Xr::Destroy();
 }
 
 void OpenXRPlatform::poll()
@@ -301,6 +303,9 @@ void OpenXRPlatform::destroy_swapchains()
 
 void OpenXRPlatform::render()
 {
+	if (!m_sessionRunning)
+		return;
+
 	QUE_PROFILE;
 
 	XrFrameState frameState{ XR_TYPE_FRAME_STATE };
@@ -311,29 +316,24 @@ void OpenXRPlatform::render()
 	XrFrameBeginInfo frameBeginInfo{ XR_TYPE_FRAME_BEGIN_INFO };
 	OPENXR_CHECK_PORTABLE(Xr::instance, xrBeginFrame(m_session, &frameBeginInfo), "Failed to begin the XR Frame.");
 
-	// Variables for rendering and layer composition.
-	bool rendered = false;
-	renderLayerInfo.predictedDisplayTime = frameState.predictedDisplayTime;
-
 	input->poll_actions(frameState.predictedDisplayTime, m_localSpace);
 
-	// Check that the session is active and that we should render.
-	bool sessionActive = (m_sessionState == XR_SESSION_STATE_SYNCHRONIZED || m_sessionState == XR_SESSION_STATE_VISIBLE || m_sessionState == XR_SESSION_STATE_FOCUSED);
-	if (sessionActive && frameState.shouldRender) {
-		// Render the stereo image and associate one of swapchain images with the XrCompositionLayerProjection structure.
-		rendered = render_layer(renderLayerInfo);
-		if (rendered) {
-			renderLayerInfo.layers.push_back(reinterpret_cast<XrCompositionLayerBaseHeader*>(&renderLayerInfo.layerProjection));
-		}
-	}
 
 	// Tell OpenXR that we are finished with this frame; specifying its display time, environment blending and layers.
 	XrFrameEndInfo frameEndInfo{ XR_TYPE_FRAME_END_INFO };
 	frameEndInfo.displayTime = frameState.predictedDisplayTime;
 	frameEndInfo.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
-	frameEndInfo.layerCount = static_cast<uint32_t>(renderLayerInfo.layers.size());
-	frameEndInfo.layers = renderLayerInfo.layers.data();
+	frameEndInfo.layerCount = 0;
+	frameEndInfo.layers = nullptr;
 	OPENXR_CHECK_PORTABLE(Xr::instance, xrEndFrame(m_session, &frameEndInfo), "Failed to end the XR Frame.");
+}
+
+void OpenXRPlatform::run()
+{
+	while (m_applicationRunning) {
+		poll();
+		render();
+	}
 }
 
 void OpenXRPlatform::create_instance()
