@@ -106,6 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #include <SDL3/SDL_vulkan.h>
 #include <gfx/rhi/gfx_device.h>
 #include <gfx/rhi/gfx_swapchain.h>
+#include <game.h>
 
 
 void App_Main(GraphicsAPI_Type apiType)
@@ -113,8 +114,14 @@ void App_Main(GraphicsAPI_Type apiType)
 
 	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
 	LOG_INFO("Que MAIN");
+
+	Game game;
+	game.run();
+
 	//GameApp app(apiType);
 	//app.Run();
+
+	return;
 
 
 	SDL_Init(SDL_INIT_VIDEO);

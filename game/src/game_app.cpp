@@ -49,7 +49,7 @@ void GameApp::change_scene()
 	m_current_player_component = m_current_scene->get_first_component_of_type<PlayerComponent>();
 }
 
-GameApp::GameApp(GraphicsAPI_Type type) : App(type)
+GameApp::GameApp(GraphicsAPI_Type type)
 {
 }
 

@@ -3,7 +3,7 @@
 
 #include <common/GraphicsAPI_Vulkan.h>
 
-#include <core/xr_input.h>
+#include <core/xr/xr_input.h>
 #include <core/physics.h>
 #include <gfx/buffers.h>
 #include <gfx/sky.h>
@@ -53,6 +53,7 @@ private:
 
 	entt::registry m_registry;
 
+	std::shared_ptr<AssetSystem> m_asset_manager;
 	std::unique_ptr<Renderer> m_renderer;
 	std::unique_ptr<PhysicsSystem> m_physics_system;
 	std::unique_ptr<AudioSystem> m_audio_system;

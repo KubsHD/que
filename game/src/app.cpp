@@ -12,10 +12,7 @@ App::AndroidAppState App::androidAppState = {};
 #endif
 
 
-App::App(GraphicsAPI_Type apiType) : m_apiType(apiType)
-{
-
-}
+App::App() {}
 
 void App::Run()
 {
@@ -100,6 +97,7 @@ bool App::render_layer(RenderLayerInfo& info)
 	viewLocateInfo.displayTime = info.predictedDisplayTime;
 	viewLocateInfo.space = m_localSpace;
 	uint32_t viewCount = 0;
+
 	XrResult result = xrLocateViews(m_session, &viewLocateInfo, &viewState, static_cast<uint32_t>(views.size()), &viewCount, views.data());
 	if (result != XR_SUCCESS) {
 		LOG_INFO("Failed to locate Views.");

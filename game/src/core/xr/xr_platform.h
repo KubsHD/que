@@ -8,15 +8,21 @@
 
 #include <core/asset.h>
 #include <core/ecs.h>
-#include <core/xr_input.h>
+#include <core/xr/xr_input.h>
+
 
 
 class OpenXRPlatform {
 public:
-	OpenXRPlatform(GraphicsAPI_Type apiType);
+	OpenXRPlatform();
 	~OpenXRPlatform() = default;
 
 	void init();
+	void destroy();
+
+	void poll();
+
+	void render();
 
 	std::shared_ptr<XrInput> input;
 
@@ -41,13 +47,16 @@ public:
 
 		XrView view;
 	};
+
+
+	void set_render_callback(std::function<void(FrameRenderInfo)> callback) {
+		m_render_callback = callback;
+	}
 private:
 	void create_reference_space();
 	void destroy_reference_space();
 
 	void get_properties();
-	void get_system();
-	void get_enviroment_blend_modes();
 	void get_view_configuration_views();
 
 	void create_swapchains();
@@ -62,19 +71,15 @@ private:
 	void create_session();
 	void destroy_session();
 
-	void render_frame();
 	bool render_layer(RenderLayerInfo& info);
 
 	void poll_events();
 	void calculate_frame_stats();
+	void get_requirements();
+	void init_gfx_device_for_xr();
 protected:
-	XrInstance m_xrInstance{};
 
 	XrDebugUtilsMessengerEXT m_debugMessenger = XR_NULL_HANDLE;
-
-	XrFormFactor m_xrFormFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
-	XrSystemId m_xrSystemId = XR_NULL_SYSTEM_ID;
-	XrSystemProperties m_xrSystemProperties = { XR_TYPE_SYSTEM_PROPERTIES };
 
 	GraphicsAPI_Type m_apiType = VULKAN;
 
@@ -84,7 +89,6 @@ protected:
 	std::vector<std::string> m_instanceExtensions = {};
 
 	// session stuff
-	std::shared_ptr<GraphicsAPI_Vulkan> m_graphicsAPI = nullptr;
 	XrSession m_session = XR_NULL_HANDLE;
 
 	XrSessionState m_sessionState = XR_SESSION_STATE_UNKNOWN;
@@ -101,11 +105,12 @@ protected:
 	std::vector<SwapchainInfo> m_colorSwapchainInfos = {};
 	std::vector<SwapchainInfo> m_depthSwapchainInfos = {};
 
-	std::vector<XrEnvironmentBlendMode> m_applicationEnvironmentBlendModes = { XR_ENVIRONMENT_BLEND_MODE_OPAQUE, XR_ENVIRONMENT_BLEND_MODE_ADDITIVE };
-	std::vector<XrEnvironmentBlendMode> m_environmentBlendModes = {};
-	XrEnvironmentBlendMode m_environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_MAX_ENUM;
-
 	XrSpace m_localSpace = XR_NULL_HANDLE;
+
+	std::function<void(FrameRenderInfo)> m_render_callback;
+
+	XrGraphicsBindingVulkanKHR m_binding;
+
 public:
 	struct RenderLayerInfo {
 		XrTime predictedDisplayTime;
@@ -114,12 +119,7 @@ public:
 		std::vector<XrCompositionLayerProjectionView> layerProjectionViews;
 	};
 
-	// time stuff
-
-	std::chrono::steady_clock::time_point m_start_time;
-	std::chrono::steady_clock::time_point m_last_time;
-	float m_time;
-	float m_delta_time;
+	RenderLayerInfo renderLayerInfo;
 #if defined(__ANDROID__)
 public:
 	// Stored pointer to the android_app structure from android_main().

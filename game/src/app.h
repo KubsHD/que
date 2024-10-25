@@ -6,12 +6,12 @@
 
 #include <core/asset.h>
 #include <core/ecs.h>
-#include <core/xr_input.h>
+#include <core/xr/xr_input.h>
 
 
 class App {
 public:
-	App(GraphicsAPI_Type apiType);
+	App();
 	~App() = default;
 	void Run();
 
@@ -24,6 +24,7 @@ public:
 	virtual void update(float dt) = 0;
 	virtual void render(FrameRenderInfo& info) = 0;
 	virtual void destroy() = 0;
+
 	struct SwapchainInfo {
 		XrSwapchain swapchain = XR_NULL_HANDLE;
 		int64_t swapchainFormat = 0;
@@ -85,9 +86,6 @@ private:
 	void poll_events();
 	void calculate_frame_stats();
 protected:
-
-	std::shared_ptr<AssetSystem> m_asset_manager;
-
 	XrInstance m_xrInstance{};
 
 	XrDebugUtilsMessengerEXT m_debugMessenger = XR_NULL_HANDLE;
@@ -95,8 +93,6 @@ protected:
 	XrFormFactor m_xrFormFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
 	XrSystemId m_xrSystemId = XR_NULL_SYSTEM_ID;
 	XrSystemProperties m_xrSystemProperties = { XR_TYPE_SYSTEM_PROPERTIES };
-
-	GraphicsAPI_Type m_apiType = VULKAN;
 
 	std::vector<const char*> m_activeAPILayers = {};
 	std::vector<const char*> m_activeInstanceExtensions = {};

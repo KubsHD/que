@@ -6,7 +6,17 @@
 
 #include <common/DebugOutput.h>
 #include <common/openxr_helper.h>
+#include <core/xr/xr_wrapper.h>
 
+namespace vkb_internal {
+	vkb::Instance instance;
+	vkb::Device device;
+	vkb::PhysicalDevice physical_device;
+}
+
+namespace gpu {
+	VmaAllocator allocator;
+}
 
 VkInstance GfxDevice::instance;
 VkDevice GfxDevice::device;
@@ -54,14 +64,69 @@ void GfxDevice::LoadPFN_VkFunctions(VkInstance instance)
 
 }
 
-namespace vkb_internal {
-	vkb::Instance instance;
-	vkb::Device device;
-	vkb::PhysicalDevice physical_device;
+const std::vector<int64_t> supported_color_formats{
+		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_FORMAT_B8G8R8A8_UNORM,
+		VK_FORMAT_R8G8B8A8_UNORM
+};
+
+const std::vector<int64_t> supported_depth_formats
+	{
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_D16_UNORM 
+};
+
+
+
+VkQueue GfxDevice::get_queue(vkb::QueueType type)
+{
+	return vkb_internal::device.get_queue(type).value();
 }
 
-namespace gpu {
-	VmaAllocator allocator;
+uint32_t GfxDevice::get_queue_family(vkb::QueueType type)
+{
+	return vkb_internal::device.get_queue_index(type).value();
+}
+
+uint32_t GfxDevice::select_supported_color_format(const std::vector<int64_t>& formats)
+{
+	const std::vector<int64_t>::const_iterator& swapchainFormatIt = std::find_first_of(formats.begin(), formats.end(),
+		std::begin(supported_color_formats), std::end(supported_color_formats));
+
+	if (swapchainFormatIt == formats.end()) {
+		std::cout << "ERROR: Unable to find supported Color Swapchain Format" << std::endl;
+		DEBUG_BREAK;
+		return 0;
+	}
+
+	return *swapchainFormatIt;
+}
+
+uint32_t GfxDevice::select_supported_depth_format(const std::vector<int64_t>& formats)
+{
+	const std::vector<int64_t>::const_iterator& swapchainFormatIt = std::find_first_of(formats.begin(), formats.end(),
+		std::begin(supported_depth_formats), std::end(supported_depth_formats));
+	if (swapchainFormatIt == formats.end()) {
+		std::cout << "ERROR: Unable to find supported Depth Swapchain Format" << std::endl;
+		DEBUG_BREAK;
+		return 0;
+	}
+	return *swapchainFormatIt;
+}
+
+XrGraphicsBindingVulkanKHR GfxDevice::create_xr_graphics_binding()
+{
+	XrGraphicsBindingVulkanKHR binding{};
+
+	binding.type = XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR;
+	binding.instance = instance;
+	binding.physicalDevice = physical_device;
+	binding.device = device;
+	binding.queueFamilyIndex = get_queue_family(vkb::QueueType::graphics);
+	binding.queueIndex = vkb_internal::device.get_queue_index(vkb::QueueType::graphics).value();
+
+	return binding;
 }
 
 void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
@@ -87,7 +152,7 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 		.request_validation_layers()
 		.set_debug_callback(debugCallback)
 #endif
-		.desire_api_version(1, 2);
+		.desire_api_version(1, 3);
 
 	for (const auto& ext : requested_extensions)
 	{
@@ -120,6 +185,7 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 
 	// device
 	vkb::DeviceBuilder device_builder{ phys_ret.value() };
+
 	auto dev_ret = device_builder.build();
 	if (!dev_ret) {
 		std::cerr << "Failed to create Vulkan device. Error: " << dev_ret.error().message() << "\n";
@@ -127,7 +193,81 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 	}
 	vkb_internal::device = dev_ret.value();
 	device = dev_ret.value().device;
+}
 
+void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
+{
+	auto system_info_ret = vkb::SystemInfo::get_system_info();
+	if (!system_info_ret) {
+		printf("%s\n", system_info_ret.error().message().c_str());
+	}
+
+	auto system_info = system_info_ret.value();
+
+	LOG_INFO("Available Vulkan extensions:");
+
+	for (auto ext : system_info.available_extensions) {
+		LOG_INFO(ext.extensionName);
+	}
+
+
+	// instance
+	vkb::InstanceBuilder builder;
+	builder.set_app_name("Que")
+#if _DEBUG
+		.request_validation_layers()
+		.set_debug_callback(debugCallback)
+#endif
+		.desire_api_version(1, 3);
+
+	auto exts = Xr::GetVulkanInstanceExtensions();
+
+	for (const auto& ext : exts)
+	{
+		builder.enable_extension(ext.c_str());
+		LOG_INFO(ext);
+	}
+
+	auto inst_ret = builder.build();
+
+	if (!inst_ret) {
+		std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";
+		abort();
+	}
+
+	vkb_internal::instance = inst_ret.value();
+	instance = inst_ret.value().instance;
+
+	// physical device
+	vkb::PhysicalDeviceSelector selector{ vkb_internal::instance };
+	auto phys_ret = selector/*.set_surface(surface)*/
+		.defer_surface_initialization()
+		.set_minimum_version(1, 1) // require a vulkan 1.1 capable device
+		.select();
+	if (!phys_ret) {
+		std::cerr << "Failed to select Vulkan Physical Device. Error: " << phys_ret.error().message() << "\n";
+		assert("Failed to select Vulkan Physical Device");
+	}
+	physical_device = phys_ret.value().physical_device;
+
+	VkPhysicalDevice pd = Xr::GetVulkanGraphicsDevice(instance);
+
+	assert(pd == physical_device);
+
+	// device
+	vkb::DeviceBuilder device_builder{ phys_ret.value() };
+
+	auto dev_ret = device_builder.build();
+	if (!dev_ret) {
+		std::cerr << "Failed to create Vulkan device. Error: " << dev_ret.error().message() << "\n";
+		assert("Failed to create Vulkan device");
+	}
+	vkb_internal::device = dev_ret.value();
+	device = dev_ret.value().device;
+}
+
+void GfxDevice::InitCommon()
+{
 	// queue
 	auto graphics_queue_ret = vkb_internal::device.get_queue(vkb::QueueType::graphics);
 	if (!graphics_queue_ret) {
@@ -139,13 +279,11 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 
 	// memory allocator 
 	VmaAllocatorCreateInfo allocatorCI{};
-	allocatorCI.physicalDevice = phys_ret.value();
+	allocatorCI.physicalDevice = physical_device;
 	allocatorCI.device = device;
 	allocatorCI.instance = instance;
 
 	VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &gpu::allocator), "Failed to create VMA allocator.");
-
-
-	
-	
 }
+
+

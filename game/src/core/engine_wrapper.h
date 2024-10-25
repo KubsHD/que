@@ -3,7 +3,7 @@
 #include <core/asset.h>
 #include <core/audio.h>
 #include <core/physics.h>
-#include <core/xr_input.h>
+#include <core/xr/xr_input.h>
 
 class Renderer;
 

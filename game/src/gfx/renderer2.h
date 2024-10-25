@@ -6,17 +6,26 @@
 #define NUM_FRAMES 3
 
 struct FrameData {
+	VkCommandPool command_pool;
+	VkCommandBuffer main_command_buffer;
+
 	VkSemaphore swapchain_semaphore;
 	VkSemaphore render_semaphore;
 	VkFence main_fence;
-}
+};
+
+
 
 class Renderer2 {
 public:
-    Renderer2(GfxSwapchain* colorSc, GfxSwapchain* depthSc);
+    Renderer2();
 
     void draw();
 
 private:
-    FrameData m_frames[NUM_FRAMES];
+
+	VkQueue m_queue;
+	uint32_t m_queue_family;
+
+    FrameData frame;
 };
