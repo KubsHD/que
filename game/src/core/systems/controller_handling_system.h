@@ -3,7 +3,7 @@
 #include <entt/entt.hpp>
 #include <core/physics.h>
 #include <common/glm_helpers.h>
-#include <core/xr_input.h>
+#include <core/xr/xr_input.h>
 
 namespace game {
 	namespace system {

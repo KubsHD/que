@@ -22,7 +22,7 @@ inline const char* GetXRErrorString(XrInstance xrInstance, XrResult result) {
     {                                                                                                                                                       \
         XrResult result = (x);                                                                                                                              \
         if (!XR_SUCCEEDED(result)) {                                                                                                                        \
-            std::cerr << "ERROR: OPENXR: " << int(result) << "(" << (m_xrInstance ? GetXRErrorString(m_xrInstance, result) : "") << ") " << y << std::endl; \
+            std::cerr << "ERROR: OPENXR: " << int(result) << "(" << (Xr::instance ? GetXRErrorString(Xr::instance, result) : "") << ") " << y << std::endl; \
             OpenXRDebugBreak();                                                                                                                             \
         }                                                                                                                                                   \
     }

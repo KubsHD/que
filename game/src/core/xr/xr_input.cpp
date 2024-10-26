@@ -6,7 +6,9 @@
 #include <common/openxr_helper.h>
 #include <common/DebugOutput.h>
 #include <common/glm_helpers.h>
-#include "profiler.h"
+#include <core/profiler.h>
+
+#include <core/xr/xr_wrapper.h>
 
 static XrPath CreateXrPath(XrInstance instance, const char* path_string) {
 	XrPath xrPath;

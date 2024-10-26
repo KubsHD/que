@@ -6,6 +6,8 @@
 #include <common/DebugOutput.h>
 #include <gfx/rhi/gfx_device.h>
 #include "xr_wrapper.h"
+#include <common/vk_initializers.h>
+#include <base/numerics/safe_conversions.h>
 
 #if defined(__ANDROID__)
 android_app* OpenXRPlatform::androidApp = nullptr;
@@ -26,13 +28,15 @@ void OpenXRPlatform::init()
 		GfxDevice::InitXr(Xr::instance, Xr::systemId);
 		Xr::GetVulkanGraphicsRequirements();
 
-		create_debug();
 		get_properties();
-
 		get_view_configuration_views();
 
 		create_session();
 		create_swapchains();
+
+		// init renderer
+		m_renderer = new Renderer2();
+
 		create_reference_space();
 
 		input = std::make_shared<XrInput>(Xr::instance, &m_session);
@@ -49,7 +53,8 @@ void OpenXRPlatform::destroy()
 	destroy_reference_space();
 	destroy_swapchains();
 	destroy_session();
-	destroy_debug();
+
+	delete m_renderer;
 
 	GfxDevice::Destroy();
 	Xr::Destroy();
@@ -63,7 +68,6 @@ void OpenXRPlatform::poll()
 
 void OpenXRPlatform::create_reference_space()
 {
-	// Fill out an XrReferenceSpaceCreateInfo structure and create a reference XrSpace, specifying a Local space with an identity pose as the origin.
 	XrReferenceSpaceCreateInfo referenceSpaceCI{ XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
 	referenceSpaceCI.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
 	referenceSpaceCI.poseInReferenceSpace = { {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f} };
@@ -79,28 +83,14 @@ bool OpenXRPlatform::render_layer(RenderLayerInfo& info)
 {
 	QUE_PROFILE;
 
-	// Locate the views from the view configuration within the (reference) space at the display time.
-	std::vector<XrView> views(m_viewConfigurationViews.size(), { XR_TYPE_VIEW });
-
-	XrViewState viewState{ XR_TYPE_VIEW_STATE };  // Will contain information on whether the position and/or orientation is valid and/or tracked.
-	XrViewLocateInfo viewLocateInfo{ XR_TYPE_VIEW_LOCATE_INFO };
-	viewLocateInfo.viewConfigurationType = m_viewConfiguration;
-	viewLocateInfo.displayTime = info.predictedDisplayTime;
-	viewLocateInfo.space = m_localSpace;
-	uint32_t viewCount = 0;
-	XrResult result = xrLocateViews(m_session, &viewLocateInfo, &viewState, static_cast<uint32_t>(views.size()), &viewCount, views.data());
-	if (result != XR_SUCCESS) {
-		LOG_INFO("Failed to locate Views.");
-		return false;
-	}
 
 	// Resize the layer projection views to match the view count. The layer projection views are used in the layer projection.
-	info.layerProjectionViews.resize(viewCount, { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW });
+	//info.layerProjectionViews.resize(viewCount, { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW });
 
 	// Per view in the view configuration:
-	for (uint32_t i = 0; i < viewCount; i++) {
-		SwapchainInfo& colorSwapchainInfo = m_colorSwapchainInfos[i];
-		SwapchainInfo& depthSwapchainInfo = m_depthSwapchainInfos[i];
+	for (uint32_t i = 0; i < 1; i++) {
+		Swapchain& colorSwapchainInfo = m_colorSwapchainInfos[i];
+		Swapchain& depthSwapchainInfo = m_depthSwapchainInfos[i];
 
 		// Acquire and wait for an image from the swapchains.
 		// Get the image index of an image in the swapchains.
@@ -124,8 +114,8 @@ bool OpenXRPlatform::render_layer(RenderLayerInfo& info)
 		// Fill out the XrCompositionLayerProjectionView structure specifying the pose and fov from the view.
 		// This also associates the swapchain image with this layer projection view.
 		info.layerProjectionViews[i] = { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW };
-		info.layerProjectionViews[i].pose = views[i].pose;
-		info.layerProjectionViews[i].fov = views[i].fov;
+		//info.layerProjectionViews[i].pose = views[i].pose;
+		//info.layerProjectionViews[i].fov = views[i].fov;
 		info.layerProjectionViews[i].subImage.swapchain = colorSwapchainInfo.swapchain;
 		info.layerProjectionViews[i].subImage.imageRect.offset.x = 0;
 		info.layerProjectionViews[i].subImage.imageRect.offset.y = 0;
@@ -141,7 +131,7 @@ bool OpenXRPlatform::render_layer(RenderLayerInfo& info)
 		frameRenderInfo.height = height;
 		frameRenderInfo.colorImageIndex = colorImageIndex;
 		frameRenderInfo.depthImageIndex = depthImageIndex;
-		frameRenderInfo.view = views[i];
+		//frameRenderInfo.view = views[i];
 
 
 
@@ -162,31 +152,11 @@ bool OpenXRPlatform::render_layer(RenderLayerInfo& info)
 
 void OpenXRPlatform::get_view_configuration_views()
 {
-	// Gets the View Configuration Types. The first call gets the count of the array that will be returned. The next call fills out the array.
-	uint32_t viewConfigurationCount = 0;
-	OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateViewConfigurations(Xr::instance, Xr::systemId, 0, &viewConfigurationCount, nullptr), "Failed to enumerate View Configurations.");
-	m_viewConfigurations.resize(viewConfigurationCount);
-	OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateViewConfigurations(Xr::instance, Xr::systemId, viewConfigurationCount, &viewConfigurationCount, m_viewConfigurations.data()), "Failed to enumerate View Configurations.");
-
-	for (const XrViewConfigurationType& viewConfig : m_applicationViewConfigurations)
-	{
-		if (std::find(m_viewConfigurations.begin(), m_viewConfigurations.end(), viewConfig) != m_viewConfigurations.end())
-		{
-			m_viewConfiguration = viewConfig;
-			break;
-		}
-	}
-
-	if (m_viewConfiguration == XR_VIEW_CONFIGURATION_TYPE_MAX_ENUM) {
-		std::cerr << "Failed to find a view configuration type. Defaulting to XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO." << std::endl;
-		m_viewConfiguration = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-	}
-
 	// Gets the View Configuration Views. The first call gets the count of the array that will be returned. The next call fills out the array.
 	uint32_t viewConfigurationViewCount = 0;
-	OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateViewConfigurationViews(Xr::instance, Xr::systemId, m_viewConfiguration, 0, &viewConfigurationViewCount, nullptr), "Failed to enumerate ViewConfiguration Views.");
+	OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateViewConfigurationViews(Xr::instance, Xr::systemId, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 0, &viewConfigurationViewCount, nullptr), "Failed to enumerate ViewConfiguration Views.");
 	m_viewConfigurationViews.resize(viewConfigurationViewCount, { XR_TYPE_VIEW_CONFIGURATION_VIEW });
-	OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateViewConfigurationViews(Xr::instance, Xr::systemId, m_viewConfiguration, viewConfigurationViewCount, &viewConfigurationViewCount, m_viewConfigurationViews.data()), "Failed to enumerate ViewConfiguration Views.");
+	OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateViewConfigurationViews(Xr::instance, Xr::systemId, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, viewConfigurationViewCount, &viewConfigurationViewCount, m_viewConfigurationViews.data()), "Failed to enumerate ViewConfiguration Views.");
 }
 
 void OpenXRPlatform::create_swapchains()
@@ -202,11 +172,10 @@ void OpenXRPlatform::create_swapchains()
 	}
 
 	m_colorSwapchainInfos.resize(m_viewConfigurationViews.size());
-	m_depthSwapchainInfos.resize(m_viewConfigurationViews.size());
 
+	// for each eye
 	for (size_t i = 0; i < m_viewConfigurationViews.size(); i++) {
-		SwapchainInfo& colorSwapchainInfo = m_colorSwapchainInfos[i];
-		SwapchainInfo& depthSwapchainInfo = m_depthSwapchainInfos[i];
+		Swapchain& colorSwapchainInfo = m_colorSwapchainInfos[i];
 
 		// Color.
 		XrSwapchainCreateInfo swapchainCI{ XR_TYPE_SWAPCHAIN_CREATE_INFO };
@@ -220,59 +189,30 @@ void OpenXRPlatform::create_swapchains()
 		swapchainCI.arraySize = 1;
 		swapchainCI.mipCount = 1;
 		OPENXR_CHECK_PORTABLE(Xr::instance, xrCreateSwapchain(m_session, &swapchainCI, &colorSwapchainInfo.swapchain), "Failed to create Color Swapchain");
-		colorSwapchainInfo.swapchainFormat = swapchainCI.format;  // Save the swapchain format for later use.
 
-		// Depth.
-		swapchainCI.createFlags = 0;
-		swapchainCI.usageFlags = XR_SWAPCHAIN_USAGE_SAMPLED_BIT | XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT;
-		swapchainCI.format = GfxDevice::select_supported_depth_format(formats);
-		swapchainCI.sampleCount = m_viewConfigurationViews[i].recommendedSwapchainSampleCount;  // Use the recommended values from the XrViewConfigurationView.
-		swapchainCI.width = m_viewConfigurationViews[i].recommendedImageRectWidth;
-		swapchainCI.height = m_viewConfigurationViews[i].recommendedImageRectHeight;
-		swapchainCI.faceCount = 1;
-		swapchainCI.arraySize = 1;
-		swapchainCI.mipCount = 1;
-		OPENXR_CHECK_PORTABLE(Xr::instance, xrCreateSwapchain(m_session, &swapchainCI, &depthSwapchainInfo.swapchain), "Failed to create Depth Swapchain");
-		depthSwapchainInfo.swapchainFormat = swapchainCI.format;  // Save the swapchain format for later use.
+		colorSwapchainInfo.swapchainFormat = (VkFormat)swapchainCI.format; 
+		colorSwapchainInfo.width = m_viewConfigurationViews[i].recommendedImageRectWidth;
+		colorSwapchainInfo.height = m_viewConfigurationViews[i].recommendedImageRectHeight;
 
-		//// Get the number of images in the color/depth swapchain and allocate Swapchain image data via GraphicsAPI to store the returned array.
-		//uint32_t colorSwapchainImageCount = 0;
-		//OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateSwapchainImages(colorSwapchainInfo.swapchain, 0, &colorSwapchainImageCount, nullptr), "Failed to enumerate Color Swapchain Images.");
-		//XrSwapchainImageVulkanKHR* colorSwapchainImagesArray;
-		//OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateSwapchainImages(colorSwapchainInfo.swapchain, colorSwapchainImageCount, &colorSwapchainImageCount, (XrSwapchainImageBaseHeader*)colorSwapchainImagesArray), "Failed to enumerate Color Swapchain Images.");
+		// create image views
+		// color:
 
-		//uint32_t depthSwapchainImageCount = 0;
-		//OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateSwapchainImages(depthSwapchainInfo.swapchain, 0, &depthSwapchainImageCount, nullptr), "Failed to enumerate Depth Swapchain Images.");
-		//XrSwapchainImageBaseHeader* depthSwapchainImages;/* = m_graphicsAPI->AllocateSwapchainImageData(depthSwapchainInfo.swapchain, GraphicsAPI::SwapchainType::DEPTH, depthSwapchainImageCount);*/
-		//OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateSwapchainImages(depthSwapchainInfo.swapchain, depthSwapchainImageCount, &depthSwapchainImageCount, depthSwapchainImages), "Failed to enumerate Depth Swapchain Images.");
+		uint32_t colorSwapchainImageCount = 0;
+		OPENXR_CHECK_PORTABLE(Xr::instance, xrEnumerateSwapchainImages(colorSwapchainInfo.swapchain, 0, &colorSwapchainImageCount, nullptr), "Failed to enumerate Color Swapchain Images.");
 
-		//// Per image in the swapchains, fill out a GraphicsAPI::ImageViewCreateInfo structure and create a color/depth image view.
-		//for (uint32_t j = 0; j < colorSwapchainImageCount; j++) {
-		//	GraphicsAPI::ImageViewCreateInfo imageViewCI;
-		//	imageViewCI.image = m_graphicsAPI->GetSwapchainImage(colorSwapchainInfo.swapchain, j);
-		//	imageViewCI.type = GraphicsAPI::ImageViewCreateInfo::Type::RTV;
-		//	imageViewCI.view = GraphicsAPI::ImageViewCreateInfo::View::TYPE_2D;
-		//	imageViewCI.format = colorSwapchainInfo.swapchainFormat;
-		//	imageViewCI.aspect = GraphicsAPI::ImageViewCreateInfo::Aspect::COLOR_BIT;
-		//	imageViewCI.baseMipLevel = 0;
-		//	imageViewCI.levelCount = 1;
-		//	imageViewCI.baseArrayLayer = 0;
-		//	imageViewCI.layerCount = 1;
-		//	colorSwapchainInfo.imageViews.push_back(m_graphicsAPI->CreateImageView(imageViewCI));
-		//}
-		//for (uint32_t j = 0; j < depthSwapchainImageCount; j++) {
-		//	GraphicsAPI::ImageViewCreateInfo imageViewCI;
-		//	imageViewCI.image = m_graphicsAPI->GetSwapchainImage(depthSwapchainInfo.swapchain, j);
-		//	imageViewCI.type = GraphicsAPI::ImageViewCreateInfo::Type::DSV;
-		//	imageViewCI.view = GraphicsAPI::ImageViewCreateInfo::View::TYPE_2D;
-		//	imageViewCI.format = depthSwapchainInfo.swapchainFormat;
-		//	imageViewCI.aspect = GraphicsAPI::ImageViewCreateInfo::Aspect::DEPTH_BIT;
-		//	imageViewCI.baseMipLevel = 0;
-		//	imageViewCI.levelCount = 1;
-		//	imageViewCI.baseArrayLayer = 0;
-		//	imageViewCI.layerCount = 1;
-		//	depthSwapchainInfo.imageViews.push_back(m_graphicsAPI->CreateImageView(imageViewCI));
-		//}
+		colorSwapchainInfo.swapchainImageHandles = std::vector<XrSwapchainImageVulkanKHR>(colorSwapchainImageCount, { XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR });
+
+		OPENXR_CHECK_PORTABLE(Xr::instance, 
+			xrEnumerateSwapchainImages(colorSwapchainInfo.swapchain, colorSwapchainImageCount, &colorSwapchainImageCount, (XrSwapchainImageBaseHeader*)colorSwapchainInfo.swapchainImageHandles.data()),
+			"Failed to enumerate Color Swapchain Images."
+		);
+
+		// Per image in the eye
+		for (uint32_t j = 0; j < colorSwapchainImageCount; j++) {
+
+			auto ivinfo = vkinit::imageview_create_info(colorSwapchainInfo.swapchainFormat, colorSwapchainInfo.swapchainImageHandles[j].image, VK_IMAGE_ASPECT_COLOR_BIT);
+			colorSwapchainInfo.swapchainImages.push_back(GfxDevice::create_image_view(ivinfo));
+		}
 	}
 }
 
@@ -280,24 +220,15 @@ void OpenXRPlatform::destroy_swapchains()
 {
 	for (size_t i = 0; i < m_viewConfigurationViews.size(); i++)
 	{
-		SwapchainInfo& colorSwapchainInfo = m_colorSwapchainInfos[i];
-		SwapchainInfo& depthSwapchainInfo = m_depthSwapchainInfos[i];
+		Swapchain& colorSwapchainInfo = m_colorSwapchainInfos[i];
 
 		// Destroy the color and depth image views from GraphicsAPI.
-		for (VkImageView imageView : colorSwapchainInfo.imageViews) {
-			//m_graphicsAPI->DestroyImageView(imageView);
-		}
-		for (VkImageView imageView : depthSwapchainInfo.imageViews) {
-			//m_graphicsAPI->DestroyImageView(imageView);
+		for (VkImageView imageView : colorSwapchainInfo.swapchainImages) {
+			GfxDevice::destroy_image_view(imageView);
 		}
 
-		// Free the Swapchain Image Data.
-		//m_graphicsAPI->FreeSwapchainImageData(colorSwapchainInfo.swapchain);
-		//m_graphicsAPI->FreeSwapchainImageData(depthSwapchainInfo.swapchain);
-
-		// Destroy the swapchains.
+		// Destroy the swapchain.
 		OPENXR_CHECK_PORTABLE(Xr::instance, xrDestroySwapchain(colorSwapchainInfo.swapchain), "Failed to destroy Color Swapchain");
-		OPENXR_CHECK_PORTABLE(Xr::instance, xrDestroySwapchain(depthSwapchainInfo.swapchain), "Failed to destroy Depth Swapchain");
 	}
 }
 
@@ -311,20 +242,78 @@ void OpenXRPlatform::render()
 	XrFrameState frameState{ XR_TYPE_FRAME_STATE };
 	XrFrameWaitInfo frameWaitInfo{ XR_TYPE_FRAME_WAIT_INFO };
 	OPENXR_CHECK_PORTABLE(Xr::instance, xrWaitFrame(m_session, &frameWaitInfo, &frameState), "Failed to wait for XR Frame.");
+	input->poll_actions(frameState.predictedDisplayTime, m_localSpace);
 
-	// Tell the OpenXR compositor that the application is beginning the frame.
 	XrFrameBeginInfo frameBeginInfo{ XR_TYPE_FRAME_BEGIN_INFO };
 	OPENXR_CHECK_PORTABLE(Xr::instance, xrBeginFrame(m_session, &frameBeginInfo), "Failed to begin the XR Frame.");
 
-	input->poll_actions(frameState.predictedDisplayTime, m_localSpace);
+	
+	std::vector<XrView> views(m_viewConfigurationViews.size(), { XR_TYPE_VIEW });
+
+	XrViewState viewState{ XR_TYPE_VIEW_STATE };
+
+	XrViewLocateInfo viewLocateInfo{ XR_TYPE_VIEW_LOCATE_INFO };
+	viewLocateInfo.viewConfigurationType = m_viewConfiguration;
+	viewLocateInfo.displayTime = frameState.predictedDisplayTime;
+	viewLocateInfo.space = m_localSpace;
+
+	uint32_t viewCount = 0;
+	OPENXR_CHECK(xrLocateViews(m_session, &viewLocateInfo, &viewState, static_cast<uint32_t>(views.size()), &viewCount, views.data()), "Failed to locate views");
+	
+
+	// Per view in the view configuration:
+	for (uint32_t i = 0; i < viewCount; i++) {
+		Swapchain& colorSwapchainInfo = m_colorSwapchainInfos[i];
+
+		uint32_t colorImageIndex = 0;
+		XrSwapchainImageAcquireInfo acquireInfo{ XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
+		OPENXR_CHECK(xrAcquireSwapchainImage(colorSwapchainInfo.swapchain, &acquireInfo, &colorImageIndex), "Failed to acquire Image from the Color Swapchian");
+
+		XrSwapchainImageWaitInfo waitImageInfo{};
+		waitImageInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
+		waitImageInfo.timeout = std::numeric_limits<int64_t>::max();
+		OPENXR_CHECK(xrWaitSwapchainImage(colorSwapchainInfo.swapchain, &waitImageInfo), "Failed to wait for Image from the Color Swapchain");
+		
+		m_renderer->draw(colorSwapchainInfo.swapchainImageHandles[colorImageIndex].image);
+
+		XrSwapchainImageReleaseInfo releaseImageInfo{};
+		releaseImageInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;
+		OPENXR_CHECK(xrReleaseSwapchainImage(colorSwapchainInfo.swapchain, &releaseImageInfo), "Failed to release Image back to the Color Swapchain");
+	}
+
+
+	XrCompositionLayerProjectionView projectedViews[2]{};
+
+	for (size_t i = 0; i < m_eye_count; i++)
+	{
+		projectedViews[i].type = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
+		projectedViews[i].pose = views[i].pose;
+		projectedViews[i].fov = views[i].fov;
+		projectedViews[i].subImage = {
+			m_colorSwapchainInfos[i].swapchain,
+			{
+				{ 0, 0 },
+				{ (int32_t)m_colorSwapchainInfos[i].width, (int32_t)m_colorSwapchainInfos[i].height }
+			},
+			0
+		};
+	}
+
+	XrCompositionLayerProjection layer{};
+	layer.type = XR_TYPE_COMPOSITION_LAYER_PROJECTION;
+	layer.space = m_localSpace;
+	layer.viewCount = m_eye_count;
+	layer.views = projectedViews;
+
+	auto pLayer = (const XrCompositionLayerBaseHeader*)&layer;
 
 
 	// Tell OpenXR that we are finished with this frame; specifying its display time, environment blending and layers.
 	XrFrameEndInfo frameEndInfo{ XR_TYPE_FRAME_END_INFO };
 	frameEndInfo.displayTime = frameState.predictedDisplayTime;
 	frameEndInfo.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
-	frameEndInfo.layerCount = 0;
-	frameEndInfo.layers = nullptr;
+	frameEndInfo.layerCount = 1;
+	frameEndInfo.layers = &pLayer;
 	OPENXR_CHECK_PORTABLE(Xr::instance, xrEndFrame(m_session, &frameEndInfo), "Failed to end the XR Frame.");
 }
 
@@ -343,16 +332,6 @@ void OpenXRPlatform::create_instance()
 void OpenXRPlatform::destroy_instance()
 {
 	OPENXR_CHECK_PORTABLE(Xr::instance, xrDestroyInstance(Xr::instance), "Failed to destroy Instance.");
-}
-
-void OpenXRPlatform::create_debug()
-{
-
-}
-
-void OpenXRPlatform::destroy_debug()
-{
-
 }
 
 void OpenXRPlatform::get_properties()
@@ -390,13 +369,8 @@ void OpenXRPlatform::poll_events()
 	QUE_PROFILE;
 
 	XrEventDataBuffer eventData{ XR_TYPE_EVENT_DATA_BUFFER };
-	auto XrPollEvents = [&]() -> bool {
-		eventData = { XR_TYPE_EVENT_DATA_BUFFER };
-		return xrPollEvent(Xr::instance, &eventData) == XR_SUCCESS;
-		};
-
-
-	while (XrPollEvents()) {
+	
+	while (xrPollEvent(Xr::instance, &eventData) == XR_SUCCESS) {
 		switch (eventData.type) {
 			// Log the number of lost events from the runtime.
 		case XR_TYPE_EVENT_DATA_EVENTS_LOST: {

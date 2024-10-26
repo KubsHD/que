@@ -76,12 +76,12 @@ void App::create_reference_space()
 	XrReferenceSpaceCreateInfo referenceSpaceCI{ XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
 	referenceSpaceCI.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
 	referenceSpaceCI.poseInReferenceSpace = { {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f} };
-	OPENXR_CHECK(xrCreateReferenceSpace(m_session, &referenceSpaceCI, &m_localSpace), "Failed to create ReferenceSpace.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrCreateReferenceSpace(m_session, &referenceSpaceCI, &m_localSpace), "Failed to create ReferenceSpace.");
 }
 
 void App::destroy_reference_space()
 {
-	OPENXR_CHECK(xrDestroySpace(m_localSpace), "Failed to destroy ReferenceSpace.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrDestroySpace(m_localSpace), "Failed to destroy ReferenceSpace.");
 }
 
 bool App::render_layer(RenderLayerInfo& info)
@@ -125,13 +125,13 @@ bool App::render_layer(RenderLayerInfo& info)
 			QUE_PROFILE_SECTION("Acquire and wait for swapchain image");
 
 			XrSwapchainImageAcquireInfo acquireInfo{ XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
-			OPENXR_CHECK(xrAcquireSwapchainImage(colorSwapchainInfo.swapchain, &acquireInfo, &colorImageIndex), "Failed to acquire Image from the Color Swapchian");
-			OPENXR_CHECK(xrAcquireSwapchainImage(depthSwapchainInfo.swapchain, &acquireInfo, &depthImageIndex), "Failed to acquire Image from the Depth Swapchian");
+			OPENXR_CHECK_PORTABLE(m_xrInstance,xrAcquireSwapchainImage(colorSwapchainInfo.swapchain, &acquireInfo, &colorImageIndex), "Failed to acquire Image from the Color Swapchian");
+			OPENXR_CHECK_PORTABLE(m_xrInstance,xrAcquireSwapchainImage(depthSwapchainInfo.swapchain, &acquireInfo, &depthImageIndex), "Failed to acquire Image from the Depth Swapchian");
 
 			XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
 			waitInfo.timeout = XR_INFINITE_DURATION;
-			OPENXR_CHECK(xrWaitSwapchainImage(colorSwapchainInfo.swapchain, &waitInfo), "Failed to wait for Image from the Color Swapchain");
-			OPENXR_CHECK(xrWaitSwapchainImage(depthSwapchainInfo.swapchain, &waitInfo), "Failed to wait for Image from the Depth Swapchain");
+			OPENXR_CHECK_PORTABLE(m_xrInstance,xrWaitSwapchainImage(colorSwapchainInfo.swapchain, &waitInfo), "Failed to wait for Image from the Color Swapchain");
+			OPENXR_CHECK_PORTABLE(m_xrInstance,xrWaitSwapchainImage(depthSwapchainInfo.swapchain, &waitInfo), "Failed to wait for Image from the Depth Swapchain");
 		}
 		// Get the width and height and construct the viewport and scissors.
 		const uint32_t& width = m_viewConfigurationViews[i].recommendedImageRectWidth;
@@ -168,8 +168,8 @@ bool App::render_layer(RenderLayerInfo& info)
 			// Give the swapchain image back to OpenXR, allowing the compositor to use the image.
 			QUE_PROFILE_SECTION("Release swapchain image");
 			XrSwapchainImageReleaseInfo releaseInfo{ XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-			OPENXR_CHECK(xrReleaseSwapchainImage(colorSwapchainInfo.swapchain, &releaseInfo), "Failed to release Image back to the Color Swapchain");
-			OPENXR_CHECK(xrReleaseSwapchainImage(depthSwapchainInfo.swapchain, &releaseInfo), "Failed to release Image back to the Depth Swapchain");
+			OPENXR_CHECK_PORTABLE(m_xrInstance,xrReleaseSwapchainImage(colorSwapchainInfo.swapchain, &releaseInfo), "Failed to release Image back to the Color Swapchain");
+			OPENXR_CHECK_PORTABLE(m_xrInstance,xrReleaseSwapchainImage(depthSwapchainInfo.swapchain, &releaseInfo), "Failed to release Image back to the Depth Swapchain");
 		}
 	}
 
@@ -186,9 +186,9 @@ bool App::render_layer(RenderLayerInfo& info)
 void App::get_enviroment_blend_modes()
 {
 	uint32_t environmentBlendModeCount = 0;
-	OPENXR_CHECK(xrEnumerateEnvironmentBlendModes(m_xrInstance, m_xrSystemId, m_viewConfiguration, 0, &environmentBlendModeCount, nullptr), "Failed to enumerate EnvironmentBlend Modes.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateEnvironmentBlendModes(m_xrInstance, m_xrSystemId, m_viewConfiguration, 0, &environmentBlendModeCount, nullptr), "Failed to enumerate EnvironmentBlend Modes.");
 	m_environmentBlendModes.resize(environmentBlendModeCount);
-	OPENXR_CHECK(xrEnumerateEnvironmentBlendModes(m_xrInstance, m_xrSystemId, m_viewConfiguration, environmentBlendModeCount, &environmentBlendModeCount, m_environmentBlendModes.data()), "Failed to enumerate EnvironmentBlend Modes.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateEnvironmentBlendModes(m_xrInstance, m_xrSystemId, m_viewConfiguration, environmentBlendModeCount, &environmentBlendModeCount, m_environmentBlendModes.data()), "Failed to enumerate EnvironmentBlend Modes.");
 
 	// Pick the first application supported blend mode supported by the hardware.
 	for (const XrEnvironmentBlendMode& environmentBlendMode : m_applicationEnvironmentBlendModes) {
@@ -207,9 +207,9 @@ void App::get_view_configuration_views()
 {
 	// Gets the View Configuration Types. The first call gets the count of the array that will be returned. The next call fills out the array.
 	uint32_t viewConfigurationCount = 0;
-	OPENXR_CHECK(xrEnumerateViewConfigurations(m_xrInstance, m_xrSystemId, 0, &viewConfigurationCount, nullptr), "Failed to enumerate View Configurations.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateViewConfigurations(m_xrInstance, m_xrSystemId, 0, &viewConfigurationCount, nullptr), "Failed to enumerate View Configurations.");
 	m_viewConfigurations.resize(viewConfigurationCount);
-	OPENXR_CHECK(xrEnumerateViewConfigurations(m_xrInstance, m_xrSystemId, viewConfigurationCount, &viewConfigurationCount, m_viewConfigurations.data()), "Failed to enumerate View Configurations.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateViewConfigurations(m_xrInstance, m_xrSystemId, viewConfigurationCount, &viewConfigurationCount, m_viewConfigurations.data()), "Failed to enumerate View Configurations.");
 
 	for (const XrViewConfigurationType& viewConfig : m_applicationViewConfigurations)
 	{
@@ -227,17 +227,17 @@ void App::get_view_configuration_views()
 
 	// Gets the View Configuration Views. The first call gets the count of the array that will be returned. The next call fills out the array.
 	uint32_t viewConfigurationViewCount = 0;
-	OPENXR_CHECK(xrEnumerateViewConfigurationViews(m_xrInstance, m_xrSystemId, m_viewConfiguration, 0, &viewConfigurationViewCount, nullptr), "Failed to enumerate ViewConfiguration Views.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateViewConfigurationViews(m_xrInstance, m_xrSystemId, m_viewConfiguration, 0, &viewConfigurationViewCount, nullptr), "Failed to enumerate ViewConfiguration Views.");
 	m_viewConfigurationViews.resize(viewConfigurationViewCount, { XR_TYPE_VIEW_CONFIGURATION_VIEW });
-	OPENXR_CHECK(xrEnumerateViewConfigurationViews(m_xrInstance, m_xrSystemId, m_viewConfiguration, viewConfigurationViewCount, &viewConfigurationViewCount, m_viewConfigurationViews.data()), "Failed to enumerate ViewConfiguration Views.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateViewConfigurationViews(m_xrInstance, m_xrSystemId, m_viewConfiguration, viewConfigurationViewCount, &viewConfigurationViewCount, m_viewConfigurationViews.data()), "Failed to enumerate ViewConfiguration Views.");
 }
 
 void App::create_swapchains()
 {
 	uint32_t formatCount = 0;
-	OPENXR_CHECK(xrEnumerateSwapchainFormats(m_session, 0, &formatCount, nullptr), "Failed to enumerate Swapchain Formats");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateSwapchainFormats(m_session, 0, &formatCount, nullptr), "Failed to enumerate Swapchain Formats");
 	std::vector<int64_t> formats(formatCount);
-	OPENXR_CHECK(xrEnumerateSwapchainFormats(m_session, formatCount, &formatCount, formats.data()), "Failed to enumerate Swapchain Formats");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateSwapchainFormats(m_session, formatCount, &formatCount, formats.data()), "Failed to enumerate Swapchain Formats");
 	if (m_graphicsAPI->SelectDepthSwapchainFormat(formats) == 0) {
 		std::cerr << "Failed to find depth format for Swapchain." << std::endl;
 		DEBUG_BREAK;
@@ -261,7 +261,7 @@ void App::create_swapchains()
 		swapchainCI.faceCount = 1;
 		swapchainCI.arraySize = 1;
 		swapchainCI.mipCount = 1;
-		OPENXR_CHECK(xrCreateSwapchain(m_session, &swapchainCI, &colorSwapchainInfo.swapchain), "Failed to create Color Swapchain");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrCreateSwapchain(m_session, &swapchainCI, &colorSwapchainInfo.swapchain), "Failed to create Color Swapchain");
 		colorSwapchainInfo.swapchainFormat = swapchainCI.format;  // Save the swapchain format for later use.
 
 		// Depth.
@@ -274,19 +274,19 @@ void App::create_swapchains()
 		swapchainCI.faceCount = 1;
 		swapchainCI.arraySize = 1;
 		swapchainCI.mipCount = 1;
-		OPENXR_CHECK(xrCreateSwapchain(m_session, &swapchainCI, &depthSwapchainInfo.swapchain), "Failed to create Depth Swapchain");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrCreateSwapchain(m_session, &swapchainCI, &depthSwapchainInfo.swapchain), "Failed to create Depth Swapchain");
 		depthSwapchainInfo.swapchainFormat = swapchainCI.format;  // Save the swapchain format for later use.
 
 		// Get the number of images in the color/depth swapchain and allocate Swapchain image data via GraphicsAPI to store the returned array.
 		uint32_t colorSwapchainImageCount = 0;
-		OPENXR_CHECK(xrEnumerateSwapchainImages(colorSwapchainInfo.swapchain, 0, &colorSwapchainImageCount, nullptr), "Failed to enumerate Color Swapchain Images.");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateSwapchainImages(colorSwapchainInfo.swapchain, 0, &colorSwapchainImageCount, nullptr), "Failed to enumerate Color Swapchain Images.");
 		XrSwapchainImageBaseHeader* colorSwapchainImages = m_graphicsAPI->AllocateSwapchainImageData(colorSwapchainInfo.swapchain, GraphicsAPI::SwapchainType::COLOR, colorSwapchainImageCount);
-		OPENXR_CHECK(xrEnumerateSwapchainImages(colorSwapchainInfo.swapchain, colorSwapchainImageCount, &colorSwapchainImageCount, colorSwapchainImages), "Failed to enumerate Color Swapchain Images.");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateSwapchainImages(colorSwapchainInfo.swapchain, colorSwapchainImageCount, &colorSwapchainImageCount, colorSwapchainImages), "Failed to enumerate Color Swapchain Images.");
 
 		uint32_t depthSwapchainImageCount = 0;
-		OPENXR_CHECK(xrEnumerateSwapchainImages(depthSwapchainInfo.swapchain, 0, &depthSwapchainImageCount, nullptr), "Failed to enumerate Depth Swapchain Images.");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateSwapchainImages(depthSwapchainInfo.swapchain, 0, &depthSwapchainImageCount, nullptr), "Failed to enumerate Depth Swapchain Images.");
 		XrSwapchainImageBaseHeader* depthSwapchainImages = m_graphicsAPI->AllocateSwapchainImageData(depthSwapchainInfo.swapchain, GraphicsAPI::SwapchainType::DEPTH, depthSwapchainImageCount);
-		OPENXR_CHECK(xrEnumerateSwapchainImages(depthSwapchainInfo.swapchain, depthSwapchainImageCount, &depthSwapchainImageCount, depthSwapchainImages), "Failed to enumerate Depth Swapchain Images.");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateSwapchainImages(depthSwapchainInfo.swapchain, depthSwapchainImageCount, &depthSwapchainImageCount, depthSwapchainImages), "Failed to enumerate Depth Swapchain Images.");
 
 		// Per image in the swapchains, fill out a GraphicsAPI::ImageViewCreateInfo structure and create a color/depth image view.
 		for (uint32_t j = 0; j < colorSwapchainImageCount; j++) {
@@ -340,8 +340,8 @@ void App::destroy_swapchains()
 		m_graphicsAPI->FreeSwapchainImageData(depthSwapchainInfo.swapchain);
 
 		// Destroy the swapchains.
-		OPENXR_CHECK(xrDestroySwapchain(colorSwapchainInfo.swapchain), "Failed to destroy Color Swapchain");
-		OPENXR_CHECK(xrDestroySwapchain(depthSwapchainInfo.swapchain), "Failed to destroy Depth Swapchain");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrDestroySwapchain(colorSwapchainInfo.swapchain), "Failed to destroy Color Swapchain");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrDestroySwapchain(depthSwapchainInfo.swapchain), "Failed to destroy Depth Swapchain");
 	}
 }
 
@@ -354,12 +354,12 @@ void App::render_frame()
 
 	{
 		QUE_PROFILE_SECTION("XR Wait for frame");
-		OPENXR_CHECK(xrWaitFrame(m_session, &frameWaitInfo, &frameState), "Failed to wait for XR Frame.");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrWaitFrame(m_session, &frameWaitInfo, &frameState), "Failed to wait for XR Frame.");
 	}
 
 	// Tell the OpenXR compositor that the application is beginning the frame.
 	XrFrameBeginInfo frameBeginInfo{ XR_TYPE_FRAME_BEGIN_INFO };
-	OPENXR_CHECK(xrBeginFrame(m_session, &frameBeginInfo), "Failed to begin the XR Frame.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrBeginFrame(m_session, &frameBeginInfo), "Failed to begin the XR Frame.");
 
 	// Variables for rendering and layer composition.
 	bool rendered = false;
@@ -386,7 +386,7 @@ void App::render_frame()
 		frameEndInfo.environmentBlendMode = m_environmentBlendMode;
 		frameEndInfo.layerCount = static_cast<uint32_t>(renderLayerInfo.layers.size());
 		frameEndInfo.layers = renderLayerInfo.layers.data();
-		OPENXR_CHECK(xrEndFrame(m_session, &frameEndInfo), "Failed to end the XR Frame.");
+		OPENXR_CHECK_PORTABLE(m_xrInstance,xrEndFrame(m_session, &frameEndInfo), "Failed to end the XR Frame.");
 	}
 }
 
@@ -409,9 +409,9 @@ void App::create_instance()
 	// Get all the API Layers from the OpenXR runtime.
 	uint32_t apiLayerCount = 0;
 	std::vector<XrApiLayerProperties> apiLayerProperties;
-	OPENXR_CHECK(xrEnumerateApiLayerProperties(0, &apiLayerCount, nullptr), "Failed to enumerate ApiLayerProperties.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateApiLayerProperties(0, &apiLayerCount, nullptr), "Failed to enumerate ApiLayerProperties.");
 	apiLayerProperties.resize(apiLayerCount, { XR_TYPE_API_LAYER_PROPERTIES });
-	OPENXR_CHECK(xrEnumerateApiLayerProperties(apiLayerCount, &apiLayerCount, apiLayerProperties.data()), "Failed to enumerate ApiLayerProperties.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateApiLayerProperties(apiLayerCount, &apiLayerCount, apiLayerProperties.data()), "Failed to enumerate ApiLayerProperties.");
 
 	// Check the requested API layers against the ones from the OpenXR. If found add it to the Active API Layers.
 	for (auto& requestLayer : m_apiLayers) {
@@ -430,9 +430,9 @@ void App::create_instance()
 	// Get all the Instance Extensions from the OpenXR instance.
 	uint32_t extensionCount = 0;
 	std::vector<XrExtensionProperties> extensionProperties;
-	OPENXR_CHECK(xrEnumerateInstanceExtensionProperties(nullptr, 0, &extensionCount, nullptr), "Failed to enumerate InstanceExtensionProperties.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateInstanceExtensionProperties(nullptr, 0, &extensionCount, nullptr), "Failed to enumerate InstanceExtensionProperties.");
 	extensionProperties.resize(extensionCount, { XR_TYPE_EXTENSION_PROPERTIES });
-	OPENXR_CHECK(xrEnumerateInstanceExtensionProperties(nullptr, extensionCount, &extensionCount, extensionProperties.data()), "Failed to enumerate InstanceExtensionProperties.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrEnumerateInstanceExtensionProperties(nullptr, extensionCount, &extensionCount, extensionProperties.data()), "Failed to enumerate InstanceExtensionProperties.");
 
 	// Check the requested Instance Extensions against the ones from the OpenXR runtime.
 	// If an extension is found add it to Active Instance Extensions.
@@ -463,7 +463,7 @@ void App::create_instance()
 	createInfo.enabledApiLayerNames = m_activeAPILayers.data();
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(m_activeInstanceExtensions.size());
 	createInfo.enabledExtensionNames = m_activeInstanceExtensions.data();
-	OPENXR_CHECK(xrCreateInstance(&createInfo, &m_xrInstance), "Failed to create Instance.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrCreateInstance(&createInfo, &m_xrInstance), "Failed to create Instance.");
 
 	//
 	//xrCreateInstance(&createInfo, &m_xrInstance);
@@ -471,7 +471,7 @@ void App::create_instance()
 
 void App::destroy_instance()
 {
-	OPENXR_CHECK(xrDestroyInstance(m_xrInstance), "Failed to destroy Instance.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrDestroyInstance(m_xrInstance), "Failed to destroy Instance.");
 }
 
 void App::create_debug()
@@ -487,7 +487,7 @@ void App::destroy_debug()
 void App::get_properties()
 {
 	XrInstanceProperties instanceProperties{ XR_TYPE_INSTANCE_PROPERTIES };
-	OPENXR_CHECK(xrGetInstanceProperties(m_xrInstance, &instanceProperties), "Failed to get InstanceProperties.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrGetInstanceProperties(m_xrInstance, &instanceProperties), "Failed to get InstanceProperties.");
 
 	LOG_INFO("OpenXR Runtime: " << instanceProperties.runtimeName << " - "
 		<< XR_VERSION_MAJOR(instanceProperties.runtimeVersion) << "."
@@ -500,10 +500,10 @@ void App::get_system()
 	// Get the XrSystemId from the instance and the supplied XrFormFactor.
 	XrSystemGetInfo systemGI{ XR_TYPE_SYSTEM_GET_INFO };
 	systemGI.formFactor = m_xrFormFactor;
-	OPENXR_CHECK(xrGetSystem(m_xrInstance, &systemGI, &m_xrSystemId), "Failed to get SystemID.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrGetSystem(m_xrInstance, &systemGI, &m_xrSystemId), "Failed to get SystemID.");
 
 	// Get the System's properties for some general information about the hardware and the vendor.
-	OPENXR_CHECK(xrGetSystemProperties(m_xrInstance, m_xrSystemId, &m_xrSystemProperties), "Failed to get SystemProperties.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrGetSystemProperties(m_xrInstance, m_xrSystemId, &m_xrSystemProperties), "Failed to get SystemProperties.");
 }
 
 void App::create_session()
@@ -516,12 +516,12 @@ void App::create_session()
 	sessionCI.createFlags = 0;
 	sessionCI.systemId = m_xrSystemId;
 
-	OPENXR_CHECK(xrCreateSession(m_xrInstance, &sessionCI, &m_session), "Failed to create Session.");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrCreateSession(m_xrInstance, &sessionCI, &m_session), "Failed to create Session.");
 }
 
 void App::destroy_session()
 {
-	OPENXR_CHECK(xrDestroySession(m_session), "Failed to create XrSession");
+	OPENXR_CHECK_PORTABLE(m_xrInstance,xrDestroySession(m_session), "Failed to create XrSession");
 }
 
 void App::poll_events()
@@ -586,12 +586,12 @@ void App::poll_events()
 				// SessionState is ready. Begin the XrSession using the XrViewConfigurationType.
 				XrSessionBeginInfo sessionBeginInfo{ XR_TYPE_SESSION_BEGIN_INFO };
 				sessionBeginInfo.primaryViewConfigurationType = m_viewConfiguration;
-				OPENXR_CHECK(xrBeginSession(m_session, &sessionBeginInfo), "Failed to begin Session.");
+				OPENXR_CHECK_PORTABLE(m_xrInstance,xrBeginSession(m_session, &sessionBeginInfo), "Failed to begin Session.");
 				m_sessionRunning = true;
 			}
 			if (sessionStateChanged->state == XR_SESSION_STATE_STOPPING) {
 				// SessionState is stopping. End the XrSession.
-				OPENXR_CHECK(xrEndSession(m_session), "Failed to end Session.");
+				OPENXR_CHECK_PORTABLE(m_xrInstance,xrEndSession(m_session), "Failed to end Session.");
 				m_sessionRunning = false;
 			}
 			if (sessionStateChanged->state == XR_SESSION_STATE_EXITING) {

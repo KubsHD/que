@@ -27,13 +27,6 @@ PFN_vkSetDebugUtilsObjectNameEXT GfxDevice::vkSetDebugUtilsObjectNameEXT;
 PFN_vkCreateDebugUtilsMessengerEXT GfxDevice::vkCreateDebugUtilsMessengerEXT;
 
 
-void GfxDevice::Destroy()
-{
-	vkb::destroy_device(vkb_internal::device);
-	vkb::destroy_instance(vkb_internal::instance);
-
-	vmaDestroyAllocator(gpu::allocator);
-}
 
 #define VULKAN_CHECK(x, y)                                                                         \
     {                                                                                              \
@@ -246,11 +239,16 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 	vkb_internal::instance = inst_ret.value();
 	instance = inst_ret.value().instance;
 
+	VkPhysicalDeviceVulkan13Features features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+	features.dynamicRendering = true;
+	features.synchronization2 = true;
+
 	// physical device
 	vkb::PhysicalDeviceSelector selector{ vkb_internal::instance };
 	auto phys_ret = selector/*.set_surface(surface)*/
 		.defer_surface_initialization()
-		.set_minimum_version(1, 1) // require a vulkan 1.1 capable device
+		.set_required_features_13(features)
+		.set_minimum_version(1, 3)
 		.select();
 	if (!phys_ret) {
 		std::cerr << "Failed to select Vulkan Physical Device. Error: " << phys_ret.error().message() << "\n";
@@ -264,6 +262,7 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 
 	// device
 	vkb::DeviceBuilder device_builder{ phys_ret.value() };
+	
 
 	auto dev_ret = device_builder.build();
 	if (!dev_ret) {
@@ -295,3 +294,92 @@ void GfxDevice::InitCommon()
 }
 
 
+void GfxDevice::Destroy()
+{
+	vkb::destroy_device(vkb_internal::device);
+	vkb::destroy_instance(vkb_internal::instance);
+
+	vmaDestroyAllocator(gpu::allocator);
+}
+
+VkImageView GfxDevice::create_image_view(VkImageViewCreateInfo ivinfo)
+{
+	VkImageView iv;
+	VULKAN_CHECK(vkCreateImageView(device, &ivinfo, nullptr, &iv), "Failed to create image view.");
+	return iv;
+}
+
+void GfxDevice::destroy_image_view(VkImageView imageView)
+{
+	vkDestroyImageView(device, imageView, nullptr);
+}
+
+void GfxDevice::set_debug_name(VkBuffer object, const std::string& name)
+{
+#ifndef _DEBUG
+	return;
+#endif
+
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_BUFFER;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
+void GfxDevice::set_debug_name(VkImage object, const std::string& name)
+{
+#ifndef _DEBUG
+	return;
+#endif
+
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_IMAGE;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
+void GfxDevice::set_debug_name(VkImageView object, const std::string& name)
+{
+#ifndef _DEBUG
+	return;
+#endif
+
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
+void GfxDevice::set_debug_name(VkRenderPass object, const std::string& name)
+{
+
+}
+
+void GfxDevice::set_debug_name(VkCommandBuffer object, const std::string& name)
+{
+#ifndef _DEBUG
+	return;
+#endif
+
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_COMMAND_BUFFER;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
+void GfxDevice::set_debug_name(VkQueue object, const std::string& name)
+{
+#ifndef _DEBUG
+	return;
+#endif
+
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_QUEUE;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}

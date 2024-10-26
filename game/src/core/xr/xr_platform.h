@@ -9,6 +9,7 @@
 #include <core/asset.h>
 #include <core/ecs.h>
 #include <core/xr/xr_input.h>
+#include <gfx/renderer2.h>
 
 
 
@@ -21,7 +22,6 @@ public:
 	void destroy();
 
 	void poll();
-
 	void render();
 
 	std::shared_ptr<XrInput> input;
@@ -29,15 +29,20 @@ public:
 	struct RenderLayerInfo;
 	struct FrameRenderInfo;
 
-	struct SwapchainInfo {
+	struct Swapchain {
 		XrSwapchain swapchain = XR_NULL_HANDLE;
-		int64_t swapchainFormat = 0;
-		std::vector<VkImageView> imageViews;
+		VkFormat swapchainFormat = VK_FORMAT_MAX_ENUM;
+
+		int width;
+		int height;
+
+		std::vector<VkImageView> swapchainImages;
+		std::vector<XrSwapchainImageVulkanKHR> swapchainImageHandles;
 	};
 
-	struct FrameRenderInfo {
-		SwapchainInfo* colorSwapchainInfo;
-		SwapchainInfo* depthSwapchainInfo;
+	struct FrameRenderInfo {	
+		Swapchain* colorSwapchainInfo;
+		Swapchain* depthSwapchainInfo;
 
 		uint32_t colorImageIndex;
 		uint32_t depthImageIndex;
@@ -48,10 +53,6 @@ public:
 		XrView view;
 	};
 
-
-	void set_render_callback(std::function<void(FrameRenderInfo)> callback) {
-		m_render_callback = callback;
-	}
 	void run();
 private:
 	void create_reference_space();
@@ -66,9 +67,6 @@ private:
 	void create_instance();
 	void destroy_instance();
 
-	void create_debug();
-	void destroy_debug();
-
 	void create_session();
 	void destroy_session();
 
@@ -79,38 +77,27 @@ private:
 	void get_requirements();
 	void init_gfx_device_for_xr();
 protected:
-
-	XrDebugUtilsMessengerEXT m_debugMessenger = XR_NULL_HANDLE;
-
-	GraphicsAPI_Type m_apiType = VULKAN;
-
-	std::vector<const char*> m_activeAPILayers = {};
-	std::vector<const char*> m_activeInstanceExtensions = {};
-	std::vector<std::string> m_apiLayers = {};
-	std::vector<std::string> m_instanceExtensions = {};
-
+	int m_eye_count = 2;
+	
 	// session stuff
 	XrSession m_session = XR_NULL_HANDLE;
-
 	XrSessionState m_sessionState = XR_SESSION_STATE_UNKNOWN;
 
 	bool m_applicationRunning = true;
 	bool m_sessionRunning = false;
 
 	// swapchain stuff
-	std::vector<XrViewConfigurationType> m_applicationViewConfigurations = { XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO };
-	std::vector<XrViewConfigurationType> m_viewConfigurations;
-	XrViewConfigurationType m_viewConfiguration = XR_VIEW_CONFIGURATION_TYPE_MAX_ENUM;
+	XrViewConfigurationType m_viewConfiguration = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
 	std::vector<XrViewConfigurationView> m_viewConfigurationViews;
 
-	std::vector<SwapchainInfo> m_colorSwapchainInfos = {};
-	std::vector<SwapchainInfo> m_depthSwapchainInfos = {};
+	std::vector<Swapchain> m_colorSwapchainInfos = {};
+	std::vector<Swapchain> m_depthSwapchainInfos = {};
 
 	XrSpace m_localSpace = XR_NULL_HANDLE;
 
-	std::function<void(FrameRenderInfo)> m_render_callback;
-
 	XrGraphicsBindingVulkanKHR m_binding;
+
+	Renderer2* m_renderer;
 
 public:
 	struct RenderLayerInfo {

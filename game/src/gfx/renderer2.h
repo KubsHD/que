@@ -19,8 +19,9 @@ struct FrameData {
 class Renderer2 {
 public:
     Renderer2();
+	~Renderer2();
 
-    void draw();
+    void draw(VkImage swapchain_image);
 
 private:
 
