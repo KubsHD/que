@@ -35,7 +35,7 @@ void OpenXRPlatform::init()
 		create_swapchains();
 
 		// init renderer
-		m_renderer = new Renderer2();
+		m_renderer = new Renderer2(m_colorSwapchainInfos[0].swapchainFormat);
 
 		create_reference_space();
 

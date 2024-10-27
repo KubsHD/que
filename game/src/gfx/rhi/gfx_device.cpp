@@ -23,6 +23,8 @@ VkDevice GfxDevice::device;
 VkQueue GfxDevice::graphics_queue;
 VkPhysicalDevice GfxDevice::physical_device;
 
+GfxDevice::UploadContext GfxDevice::m_upload_context;
+
 PFN_vkSetDebugUtilsObjectNameEXT GfxDevice::vkSetDebugUtilsObjectNameEXT;
 PFN_vkCreateDebugUtilsMessengerEXT GfxDevice::vkCreateDebugUtilsMessengerEXT;
 
@@ -273,6 +275,7 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 	device = dev_ret.value().device;
 }
 
+
 void GfxDevice::InitCommon()
 {
 	// queue
@@ -291,6 +294,33 @@ void GfxDevice::InitCommon()
 	allocatorCI.instance = instance;
 
 	VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &gpu::allocator), "Failed to create VMA allocator.");
+
+	// immiedate context
+
+	VkFenceCreateInfo ufenceCI{};
+	ufenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	ufenceCI.pNext = nullptr;
+	VULKAN_CHECK(vkCreateFence(device, &ufenceCI, nullptr, &m_upload_context.uploadFence), "Failed to create Fence.");
+
+	// craete upload commandpool
+	VkCommandPoolCreateInfo uploadCommandPoolInfo{};
+	uploadCommandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	uploadCommandPoolInfo.pNext = nullptr;
+
+	uploadCommandPoolInfo.flags = 0;
+	uploadCommandPoolInfo.queueFamilyIndex = get_queue_family(vkb::QueueType::graphics);
+
+	VULKAN_CHECK_NOMSG(vkCreateCommandPool(device, &uploadCommandPoolInfo, nullptr, &m_upload_context.pool));
+
+	// create upload commandbuffer
+	VkCommandBufferAllocateInfo allocateInfo2{};
+	allocateInfo2.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocateInfo2.pNext = nullptr;
+	allocateInfo2.commandPool = m_upload_context.pool;
+	allocateInfo2.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocateInfo2.commandBufferCount = 1;
+	VULKAN_CHECK(vkAllocateCommandBuffers(device, &allocateInfo2, &m_upload_context.buffer), "Failed to allocate CommandBuffers.");
+
 }
 
 
@@ -300,6 +330,47 @@ void GfxDevice::Destroy()
 	vkb::destroy_instance(vkb_internal::instance);
 
 	vmaDestroyAllocator(gpu::allocator);
+}
+
+void GfxDevice::immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function)
+{
+	VkCommandBuffer cmd = m_upload_context.buffer;
+
+	VkCommandBufferBeginInfo cbbi{};
+	cbbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cbbi.pNext = nullptr;
+
+	cbbi.pInheritanceInfo = nullptr;
+	cbbi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	VULKAN_CHECK(vkBeginCommandBuffer(cmd, &cbbi), "Failed to begin cmd buf");
+
+	function(cmd);
+
+	VULKAN_CHECK(vkEndCommandBuffer(cmd), "Failed to end cmd buf");
+
+	VkSubmitInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	info.pNext = nullptr;
+
+	info.waitSemaphoreCount = 0;
+	info.pWaitSemaphores = nullptr;
+	info.pWaitDstStageMask = nullptr;
+	info.commandBufferCount = 1;
+	info.pCommandBuffers = &cmd;
+	info.signalSemaphoreCount = 0;
+	info.pSignalSemaphores = nullptr;
+
+
+	//submit command buffer to the queue and execute it.
+	// _uploadFence will now block until the graphic commands finish execution
+	VULKAN_CHECK(vkQueueSubmit(graphics_queue, 1, &info, m_upload_context.uploadFence), "Failed to submit buffer to queue");
+
+	VULKAN_CHECK_NOMSG(vkWaitForFences(device, 1, &m_upload_context.uploadFence, true, 9999999999));
+	VULKAN_CHECK_NOMSG(vkResetFences(device, 1, &m_upload_context.uploadFence));
+
+	// reset the command buffers inside the command pool
+	VULKAN_CHECK_NOMSG(vkResetCommandPool(device, m_upload_context.pool, 0));
 }
 
 VkImageView GfxDevice::create_image_view(VkImageViewCreateInfo ivinfo)
@@ -312,6 +383,40 @@ VkImageView GfxDevice::create_image_view(VkImageViewCreateInfo ivinfo)
 void GfxDevice::destroy_image_view(VkImageView imageView)
 {
 	vkDestroyImageView(device, imageView, nullptr);
+}
+
+VkPipeline GfxDevice::create_graphics_pipeline(VkGraphicsPipelineCreateInfo pipeline_info)
+{
+	return VkPipeline{};
+}
+
+void GfxDevice::destroy_pipeline(VkPipeline pipeline)
+{
+
+}
+
+GPUBuffer GfxDevice::create_buffer(int size, VkBufferUsageFlags usage_flags)
+{
+
+	VkBufferCreateInfo buffer_info{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+
+	buffer_info.size = size;
+	buffer_info.usage = usage_flags;
+
+	VmaAllocationCreateInfo  alloc_info{};
+	alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+	alloc_info.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+	
+	GPUBuffer buf;
+
+	VULKAN_CHECK_NOMSG(vmaCreateBuffer(gpu::allocator, &buffer_info, &alloc_info, &buf.buffer, &buf.allocation, &buf.allocation_info));
+
+	return buf;
+}
+
+void GfxDevice::destroy_buffer(GPUBuffer buffer)
+{
+	vmaDestroyBuffer(gpu::allocator, buffer.buffer, buffer.allocation);
 }
 
 void GfxDevice::set_debug_name(VkBuffer object, const std::string& name)

@@ -6,11 +6,33 @@
 
 #define NUM_FRAMES 3
 
+struct GPUBuffer {
+	VkBuffer buffer;
+	VmaAllocation allocation;
+	VmaAllocationInfo allocation_info;
+};
+
+struct GPUImage {
+	VkImage image;
+	VmaAllocation allocation;
+	VmaAllocationInfo allocation_info;
+};
+
 class GfxDevice {
 public:
+
+	struct UploadContext {
+		VkFence uploadFence;
+		VkCommandPool pool;
+		VkCommandBuffer buffer;
+	};
+
+
 	static void Init(const std::vector<std::string>& requested_extensions = {});
 	static void InitXr(XrInstance xri, XrSystemId xrsi);
 	static void Destroy();
+
+	static void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 
 	static VkInstance instance;
 	static VkDevice device;
@@ -31,11 +53,14 @@ public:
 	static VkImageView create_image_view(VkImageViewCreateInfo ivinfo);
 	static void destroy_image_view(VkImageView imageView);
 
+	static VkPipeline create_graphics_pipeline(VkGraphicsPipelineCreateInfo pipeline_info);
+	static void destroy_pipeline(VkPipeline pipeline);
+
 	//static VkImage create_image(VkImageCreateInfo iinfo);
 	//static void destroy_image(VkImage image);
 
-	//static VkBuffer create_buffer(VkBufferCreateInfo binfo);
-	//static void destroy_buffer(VkBuffer buffer);
+	static GPUBuffer create_buffer(int size, VkBufferUsageFlags usage_flags);
+	static void destroy_buffer(GPUBuffer buffer);
 
 	// debug name helpers
 	static void set_debug_name(VkBuffer object, const std::string& name);
@@ -46,6 +71,8 @@ public:
 	static void set_debug_name(VkQueue object, const std::string& name);
 
 private:
+	static UploadContext m_upload_context;
+
 	static void InitCommon();
 
 	static void LoadPFN_VkFunctions(VkInstance instance);

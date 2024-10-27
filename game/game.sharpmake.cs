@@ -28,6 +28,9 @@ namespace Que
             SourceFilesExtensions.Add(".vert");
             SourceFilesExtensions.Add(".frag");
             SourceFilesExtensions.Add(".glsl");
+            SourceFilesExtensions.Add(".hlsl");
+            SourceFilesExtensions.Add(".hlsli");
+
 
             var platformPath = Path.Combine(Globals.RootDirectory, "platform");
             AdditionalSourceRootPaths.Add(platformPath);
