@@ -329,6 +329,9 @@ void GfxDevice::InitCommon()
 
 void GfxDevice::Destroy()
 {
+	vkDestroyCommandPool(device, m_upload_context.pool, nullptr);
+	vkDestroyFence(device, m_upload_context.uploadFence, nullptr);
+
 	vmaDestroyAllocator(allocator);
 
 	vkb::destroy_device(vkb_internal::device);

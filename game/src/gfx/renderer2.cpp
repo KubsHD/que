@@ -182,9 +182,9 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 
 	GPUMeshBuffer meshBuffer;
 
-	meshBuffer.vertex_buffer = GfxDevice::create_buffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+	meshBuffer.vertex_buffer = GfxDevice::create_buffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
-	meshBuffer.index_buffer = GfxDevice::create_buffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+	meshBuffer.index_buffer = GfxDevice::create_buffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
 	meshBuffer.index_count = static_cast<uint32_t>(indices.size());
 

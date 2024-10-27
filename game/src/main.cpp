@@ -63,26 +63,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #if defined(XR_OS_WINDOWS) && defined(_DEBUG)
 
-	std::wstring commandLineStr(GetCommandLineW());
+	//std::wstring commandLineStr(GetCommandLineW());
 
-	std::wstring arg = L"--shader_compile";
-	if (commandLineStr.find(arg) != std::wstring::npos)
-	{
-		STARTUPINFO si{};
-		PROCESS_INFORMATION pi{};
+	//std::wstring arg = L"--shader_compile";
+	//if (commandLineStr.find(arg) != std::wstring::npos)
+	//{
+	//	STARTUPINFO si{};
+	//	PROCESS_INFORMATION pi{};
 
-		OutputDebugString("Compiling shaders...");
-		if (!CreateProcess(NULL, ".\\shader\\shader_compile.bat", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
-		{
-			OutputDebugString("ERROR COMPILING SHADERS");
-		}
-		WaitForSingleObject(pi.hProcess, INFINITE);
+	//	OutputDebugString("Compiling shaders...");
+	//	if (!CreateProcess(NULL, ".\\shader\\shader_compile.bat", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+	//	{
+	//		OutputDebugString("ERROR COMPILING SHADERS");
+	//	}
+	//	WaitForSingleObject(pi.hProcess, INFINITE);
 
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
+	//	CloseHandle(pi.hProcess);
+	//	CloseHandle(pi.hThread);
 
-		OutputDebugString(" Done!\n");
-	}
+	//	OutputDebugString(" Done!\n");
+	//}
 #endif
 
 #if defined(XR_OS_WINDOWS) && !defined(_DEBUG)
