@@ -26,7 +26,6 @@ public:
 
 	void init() override;
 
-
 	void update(float dt) override;
 	void render(FrameRenderInfo& info) override;
 	void destroy() override;

@@ -103,22 +103,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
-#include <gfx/rhi/gfx_device.h>
-#include <gfx/rhi/gfx_swapchain.h>
-
-#include <core/xr/xr_platform.h>
+#include <game.h>
 
 void App_Main()
 {
 	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
 	LOG_INFO("Que MAIN");
 
-	auto platform = new OpenXRPlatform();
-	platform->init();
+	Game* game = new Game();
+	game->run();
 
-	platform->run();
-
-	platform->destroy();
+	delete game;
 
 	return;
 }
@@ -159,7 +154,7 @@ extern "C"
 
 		App::androidApp = app;
 
-		App_Main(VULKAN);
+		App_Main();
 
 		FMOD_Android_JNI_Close();
 	}

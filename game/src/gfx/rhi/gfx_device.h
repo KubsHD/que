@@ -70,7 +70,6 @@ public:
 	static void set_debug_name(VkBuffer object, const std::string& name);
 	static void set_debug_name(VkImage object, const std::string& name);
 	static void set_debug_name(VkImageView object, const std::string& name);
-	static void set_debug_name(VkRenderPass object, const std::string& name);
 	static void set_debug_name(VkCommandBuffer object, const std::string& name);
 	static void set_debug_name(VkQueue object, const std::string& name);
 

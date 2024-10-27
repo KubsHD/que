@@ -152,8 +152,8 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 	// instance
 	vkb::InstanceBuilder builder;
 	builder.set_app_name("Que")
-#if _DEBUG
 		.request_validation_layers()
+#if _DEBUG
 		.set_debug_callback(debugCallback)
 #endif
 		.desire_api_version(1, 3);
@@ -218,9 +218,9 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 	// instance
 	vkb::InstanceBuilder builder;
 	builder.set_app_name("Que")
-#if _DEBUG
 		.request_validation_layers()
 		.set_debug_callback(debugCallback)
+#if _DEBUG
 #endif
 		.desire_api_version(1, 3);
 
@@ -462,11 +462,6 @@ void GfxDevice::set_debug_name(VkImageView object, const std::string& name)
 	name_info.objectHandle = (uint64_t)object;
 	name_info.pObjectName = name.c_str();
 	vkSetDebugUtilsObjectNameEXT(device, &name_info);
-}
-
-void GfxDevice::set_debug_name(VkRenderPass object, const std::string& name)
-{
-
 }
 
 void GfxDevice::set_debug_name(VkCommandBuffer object, const std::string& name)

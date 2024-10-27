@@ -219,8 +219,6 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 	return meshBuffer;
 }
 
-
-
 void Renderer2::create_pipelines()
 {
 
@@ -257,10 +255,17 @@ void Renderer2::create_pipelines()
 
 
 	pipelineBuilder.vertex_input_info.vertexBindingDescriptionCount = 1;
-	pipelineBuilder.vertex_input_info.pVertexBindingDescriptions = &Vertex2::get_binding_description();
+	
+
+	// referencing this directly crashes vkCreateGraphicsPipelines in release mode
+	auto bdata = Vertex2::get_binding_description();
+	pipelineBuilder.vertex_input_info.pVertexBindingDescriptions = &bdata;
 
 	pipelineBuilder.vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(Vertex2::get_attributes_descriptions().size());
-	pipelineBuilder.vertex_input_info.pVertexAttributeDescriptions = Vertex2::get_attributes_descriptions().data();
+
+	// referencing this directly crashes vkCreateGraphicsPipelines in release mode
+	auto data = Vertex2::get_attributes_descriptions();
+	pipelineBuilder.vertex_input_info.pVertexAttributeDescriptions = data.data();
 
 	//finally build the pipeline
 	pip = pipelineBuilder.build_pipeline(GfxDevice::device);

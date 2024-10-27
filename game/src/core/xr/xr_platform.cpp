@@ -319,10 +319,7 @@ void OpenXRPlatform::render()
 
 void OpenXRPlatform::run()
 {
-	while (m_applicationRunning) {
-		poll();
-		render();
-	}
+
 }
 
 void OpenXRPlatform::create_instance()
@@ -383,7 +380,7 @@ void OpenXRPlatform::poll_events()
 			XrEventDataInstanceLossPending* instanceLossPending = reinterpret_cast<XrEventDataInstanceLossPending*>(&eventData);
 			LOG_INFO("OPENXR: Instance Loss Pending at: " << instanceLossPending->lossTime);
 			m_sessionRunning = false;
-			m_applicationRunning = false;
+			is_running = false;
 			break;
 		}
 													 // Log that the interaction profile has changed.
@@ -432,13 +429,13 @@ void OpenXRPlatform::poll_events()
 			if (sessionStateChanged->state == XR_SESSION_STATE_EXITING) {
 				// SessionState is exiting. Exit the application.
 				m_sessionRunning = false;
-				m_applicationRunning = false;
+				is_running = false;
 			}
 			if (sessionStateChanged->state == XR_SESSION_STATE_LOSS_PENDING) {
 				// SessionState is loss pending. Exit the application.
 				// It's possible to try a reestablish an XrInstance and XrSession, but we will simply exit here.
 				m_sessionRunning = false;
-				m_applicationRunning = false;
+				is_running = false;
 			}
 			// Store state for reference across the application.
 			m_sessionState = sessionStateChanged->state;
@@ -508,7 +505,7 @@ void OpenXRPlatform::poll_system_events()
 {
 	// Checks whether Android has requested that application should by destroyed.
 	if (androidApp->destroyRequested != 0) {
-		m_applicationRunning = false;
+		is_running = false;
 		return;
 	}
 	while (true) {

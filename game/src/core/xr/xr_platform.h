@@ -43,6 +43,8 @@ public:
 		XrView view;
 	};
 
+	bool is_running = true;
+
 	void run();
 private:
 	void create_reference_space();
@@ -73,7 +75,6 @@ protected:
 	XrSession m_session = XR_NULL_HANDLE;
 	XrSessionState m_sessionState = XR_SESSION_STATE_UNKNOWN;
 
-	bool m_applicationRunning = true;
 	bool m_sessionRunning = false;
 
 	// swapchain stuff
