@@ -9,6 +9,10 @@
 #include "pipeline/builder.h"
 #include "vertex.h"
 
+struct ColorData {
+	glm::vec3 color;
+};
+
 Renderer2::Renderer2(VkFormat color_format)
 {
 	m_color_format = color_format;
@@ -42,6 +46,43 @@ Renderer2::Renderer2(VkFormat color_format)
 	create_descriptors();
 
 	create_pipelines();
+
+	std::vector<Vertex2> rect_vertices;
+	rect_vertices.resize(4);
+
+	rect_vertices[0].x = 0.5;
+	rect_vertices[0].y = -0.5;
+	rect_vertices[0].z = 0;
+
+	rect_vertices[1].x = 0.5;
+	rect_vertices[1].y = 0.5;
+	rect_vertices[1].z = 0;
+
+	rect_vertices[2].x = -0.5;
+	rect_vertices[2].y = -0.5;
+	rect_vertices[2].z = 0;
+
+	rect_vertices[3].x = -0.5;
+	rect_vertices[3].y = 0.5;
+	rect_vertices[3].z = 0;
+
+	std::vector<uint32_t> rect_indices;
+	rect_indices.resize(6);
+
+	rect_indices[0] = 0;
+	rect_indices[1] = 1;
+	rect_indices[2] = 2;
+
+	rect_indices[3] = 2;
+	rect_indices[4] = 1;
+	rect_indices[5] = 3;
+
+	test = upload_mesh(rect_indices, rect_vertices);
+
+	main_deletion_queue.push_function([&]() {
+		GfxDevice::destroy_buffer(test.index_buffer);
+		GfxDevice::destroy_buffer(test.vertex_buffer);
+	});
 }
 
 Renderer2::~Renderer2()
@@ -56,7 +97,7 @@ Renderer2::~Renderer2()
 
 int _frameNumber = 0;
 
-void Renderer2::draw(VkImage swapchain_image)
+void Renderer2::draw(Swapchain& swp, int image_index)
 {
 	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
 	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
@@ -71,18 +112,53 @@ void Renderer2::draw(VkImage swapchain_image)
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
 
-	VkClearColorValue clearValue;
+	VkClearValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 120.f));
 	clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
 	VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
 
-	vkinit::transition_image(cmd, swapchain_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vkCmdClearColorImage(cmd, swapchain_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &clearRange);
+	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(swp.swapchainImages[image_index], &clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	VkExtent2D _windowExtent = {swp.width, swp.height };
+
+	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, nullptr);
+
+
+	vkCmdBeginRendering(cmd, &render_info);
+
+	//set dynamic viewport and scissor
+	VkViewport viewport = {};
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = swp.width;
+	viewport.height = swp.height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+	VkRect2D scissor = {};
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = swp.width;
+	scissor.extent.height = swp.height;
+
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(cmd, 0, 1, &test.vertex_buffer.buffer, offsets);
+	vkCmdBindIndexBuffer(cmd, test.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+	ColorData cd;
+	cd.color = glm::vec3(1, 0, 0);
+
+	vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ColorData), &cd);
+
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pip);
+	vkCmdDrawIndexed(cmd, test.index_count, 1, 0, 0, 0);
 
-	vkinit::transition_image(cmd, swapchain_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
+	vkCmdEndRendering(cmd);
 
 	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
 
@@ -99,9 +175,51 @@ void Renderer2::draw(VkImage swapchain_image)
 	_frameNumber++;
 }
 
-struct ColorData {
-	glm::vec3 color;
-};
+GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices)
+{
+	const size_t vertexBufferSize = vertices.size() * sizeof(Vertex2);
+	const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
+
+	GPUMeshBuffer meshBuffer;
+
+	meshBuffer.vertex_buffer = GfxDevice::create_buffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+
+	meshBuffer.index_buffer = GfxDevice::create_buffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+
+	meshBuffer.index_count = static_cast<uint32_t>(indices.size());
+
+	GPUBuffer staging = GfxDevice::create_buffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+	void* data;
+	vmaMapMemory(GfxDevice::allocator, staging.allocation, &data);
+
+	memcpy(data, vertices.data(), vertexBufferSize);
+	memcpy((char*)data + vertexBufferSize, indices.data(), indexBufferSize);
+
+	vmaUnmapMemory(GfxDevice::allocator, staging.allocation);
+
+	GfxDevice::immediate_submit([&](VkCommandBuffer cmd) {
+		VkBufferCopy vertexCopy{ 0 };
+		vertexCopy.dstOffset = 0;
+		vertexCopy.srcOffset = 0;
+		vertexCopy.size = vertexBufferSize;
+
+		vkCmdCopyBuffer(cmd, staging.buffer, meshBuffer.vertex_buffer.buffer, 1, &vertexCopy);
+
+		VkBufferCopy indexCopy{ 0 };
+		indexCopy.dstOffset = 0;
+		indexCopy.srcOffset = vertexBufferSize;
+		indexCopy.size = indexBufferSize;
+
+		vkCmdCopyBuffer(cmd, staging.buffer, meshBuffer.index_buffer.buffer, 1, &indexCopy);
+	});
+
+	GfxDevice::destroy_buffer(staging);
+
+	return meshBuffer;
+}
+
+
 
 void Renderer2::create_pipelines()
 {
@@ -139,10 +257,10 @@ void Renderer2::create_pipelines()
 
 
 	pipelineBuilder.vertex_input_info.vertexBindingDescriptionCount = 1;
-	pipelineBuilder.vertex_input_info.pVertexBindingDescriptions = &Vertex::get_binding_description();
+	pipelineBuilder.vertex_input_info.pVertexBindingDescriptions = &Vertex2::get_binding_description();
 
-	pipelineBuilder.vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(Vertex::get_attributes_descriptions().size());
-	pipelineBuilder.vertex_input_info.pVertexAttributeDescriptions = Vertex::get_attributes_descriptions().data();
+	pipelineBuilder.vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(Vertex2::get_attributes_descriptions().size());
+	pipelineBuilder.vertex_input_info.pVertexAttributeDescriptions = Vertex2::get_attributes_descriptions().data();
 
 	//finally build the pipeline
 	pip = pipelineBuilder.build_pipeline(GfxDevice::device);

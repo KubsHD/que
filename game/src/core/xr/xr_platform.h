@@ -10,6 +10,7 @@
 #include <core/ecs.h>
 #include <core/xr/xr_input.h>
 #include <gfx/renderer2.h>
+#include <gfx/rhi/gfx_swapchain.h>
 
 
 
@@ -28,17 +29,6 @@ public:
 
 	struct RenderLayerInfo;
 	struct FrameRenderInfo;
-
-	struct Swapchain {
-		XrSwapchain swapchain = XR_NULL_HANDLE;
-		VkFormat swapchainFormat = VK_FORMAT_MAX_ENUM;
-
-		int width;
-		int height;
-
-		std::vector<VkImageView> swapchainImages;
-		std::vector<XrSwapchainImageVulkanKHR> swapchainImageHandles;
-	};
 
 	struct FrameRenderInfo {	
 		Swapchain* colorSwapchainInfo;

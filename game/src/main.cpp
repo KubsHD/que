@@ -1,9 +1,8 @@
 #include "pch.h"
 
-#include <game_app.h>
 #include <common/DebugOutput.h>
 
-void App_Main(GraphicsAPI_Type apiType);
+void App_Main();
 
 #if defined(XR_OS_WINDOWS)
 
@@ -90,7 +89,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	auto crashpadok = start_crash_handler();
 #endif
 
-	App_Main(VULKAN);
+	App_Main();
 
 #if (_DEBUG && LIVEPP_ENABLED)
 	if (lpp::LppIsValidDefaultAgent(&lppAgent))
@@ -106,10 +105,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #include <SDL3/SDL_vulkan.h>
 #include <gfx/rhi/gfx_device.h>
 #include <gfx/rhi/gfx_swapchain.h>
-#include <game.h>
 
+#include <core/xr/xr_platform.h>
 
-void App_Main(GraphicsAPI_Type apiType)
+void App_Main()
 {
 	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
 	LOG_INFO("Que MAIN");

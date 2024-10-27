@@ -30,6 +30,7 @@ namespace Que
             SourceFilesExtensions.Add(".glsl");
             SourceFilesExtensions.Add(".hlsl");
             SourceFilesExtensions.Add(".hlsli");
+            SourceFilesExtensions.Add(".py");
 
 
             var platformPath = Path.Combine(Globals.RootDirectory, "platform");
@@ -168,9 +169,9 @@ namespace Que
             }
 
             // shader pipeline
-            GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", ResolveString(conf.TargetPath, conf, target) + "\\shader");
-            conf.EventPreBuild.Add($"call  {conf.TargetPath + "\\shader\\shader_compile.bat"}");
-
+            //GenerateShaderCompileBat($"{realProjectPath}\\data\\shader", ResolveString(conf.TargetPath, conf, target) + "\\shader");
+            //conf.EventPreBuild.Add($"call  {conf.TargetPath + "\\shader\\shader_compile.bat"}");
+            conf.EventPreBuild.Add($"python {realProjectPath + "\\scripts\\compile_shaders.py"} {realProjectPath + "\\data\\shader\\hlsl"} {conf.TargetPath + "\\shader"}");
 
             conf.Defines.Add("JPH_FLOATING_POINT_EXCEPTIONS_ENABLED");
             if (target.Optimization == Optimization.Debug)

@@ -274,7 +274,7 @@ void OpenXRPlatform::render()
 		waitImageInfo.timeout = std::numeric_limits<int64_t>::max();
 		OPENXR_CHECK(xrWaitSwapchainImage(colorSwapchainInfo.swapchain, &waitImageInfo), "Failed to wait for Image from the Color Swapchain");
 		
-		m_renderer->draw(colorSwapchainInfo.swapchainImageHandles[colorImageIndex].image);
+		m_renderer->draw(colorSwapchainInfo, colorImageIndex);
 
 		XrSwapchainImageReleaseInfo releaseImageInfo{};
 		releaseImageInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;

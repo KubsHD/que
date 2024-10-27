@@ -15,13 +15,14 @@ namespace vkb_internal {
 }
 
 namespace gpu {
-	VmaAllocator allocator;
 }
 
 VkInstance GfxDevice::instance;
 VkDevice GfxDevice::device;
 VkQueue GfxDevice::graphics_queue;
 VkPhysicalDevice GfxDevice::physical_device;
+
+VmaAllocator GfxDevice::allocator;
 
 GfxDevice::UploadContext GfxDevice::m_upload_context;
 
@@ -273,6 +274,8 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 	}
 	vkb_internal::device = dev_ret.value();
 	device = dev_ret.value().device;
+
+	InitCommon();
 }
 
 
@@ -293,7 +296,7 @@ void GfxDevice::InitCommon()
 	allocatorCI.device = device;
 	allocatorCI.instance = instance;
 
-	VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &gpu::allocator), "Failed to create VMA allocator.");
+	VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &allocator), "Failed to create VMA allocator.");
 
 	// immiedate context
 
@@ -326,10 +329,10 @@ void GfxDevice::InitCommon()
 
 void GfxDevice::Destroy()
 {
+	vmaDestroyAllocator(allocator);
+
 	vkb::destroy_device(vkb_internal::device);
 	vkb::destroy_instance(vkb_internal::instance);
-
-	vmaDestroyAllocator(gpu::allocator);
 }
 
 void GfxDevice::immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function)
@@ -395,7 +398,7 @@ void GfxDevice::destroy_pipeline(VkPipeline pipeline)
 
 }
 
-GPUBuffer GfxDevice::create_buffer(int size, VkBufferUsageFlags usage_flags)
+GPUBuffer GfxDevice::create_buffer(int size, VkBufferUsageFlags usage_flags, VmaMemoryUsage mem_usage)
 {
 
 	VkBufferCreateInfo buffer_info{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -409,14 +412,14 @@ GPUBuffer GfxDevice::create_buffer(int size, VkBufferUsageFlags usage_flags)
 	
 	GPUBuffer buf;
 
-	VULKAN_CHECK_NOMSG(vmaCreateBuffer(gpu::allocator, &buffer_info, &alloc_info, &buf.buffer, &buf.allocation, &buf.allocation_info));
+	VULKAN_CHECK_NOMSG(vmaCreateBuffer(allocator, &buffer_info, &alloc_info, &buf.buffer, &buf.allocation, &buf.allocation_info));
 
 	return buf;
 }
 
 void GfxDevice::destroy_buffer(GPUBuffer buffer)
 {
-	vmaDestroyBuffer(gpu::allocator, buffer.buffer, buffer.allocation);
+	vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
 }
 
 void GfxDevice::set_debug_name(VkBuffer object, const std::string& name)

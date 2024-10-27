@@ -1,11 +1,14 @@
 #pragma once
 
 #include <core/types.h>
+
 #include <vulkan/vulkan.h>
-#include "rhi/vk_descriptor.h"
 #include <common/deletion_queue.h>
 
-#define NUM_FRAMES 3
+#include "rhi/vk_descriptor.h"
+#include "rhi/gfx_device.h"
+#include "vertex.h"
+#include "rhi/gfx_swapchain.h"
 
 struct FrameData {
 	VkCommandPool command_pool;
@@ -17,15 +20,25 @@ struct FrameData {
 };
 
 
+struct GPUMeshBuffer {
+	GPUBuffer vertex_buffer;
+	GPUBuffer index_buffer;
+	uint32_t index_count;
+};
+
 
 class Renderer2 {
 public:
     Renderer2(VkFormat color_format);
 	~Renderer2();
 
-    void draw(VkImage swapchain_image);
+    void draw(Swapchain& swp, int image_index);
+
+	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
 
 private:
+
+	GPUMeshBuffer test;
 
 	VkFormat m_color_format;
 

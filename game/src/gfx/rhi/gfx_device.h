@@ -3,6 +3,7 @@
 #include <core/types.h>
 
 #include <vulkan/vulkan.h>
+#include <lib/vk_mem_alloc.h>
 
 #define NUM_FRAMES 3
 
@@ -39,6 +40,9 @@ public:
 	static VkQueue graphics_queue;
 	static VkPhysicalDevice physical_device;
 
+	static VmaAllocator allocator;
+
+
 	static VkQueue get_queue(vkb::QueueType type);
 	static uint32_t get_queue_family(vkb::QueueType type);
 
@@ -59,7 +63,7 @@ public:
 	//static VkImage create_image(VkImageCreateInfo iinfo);
 	//static void destroy_image(VkImage image);
 
-	static GPUBuffer create_buffer(int size, VkBufferUsageFlags usage_flags);
+	static GPUBuffer create_buffer(int size, VkBufferUsageFlags usage_flags, VmaMemoryUsage mem_usage);
 	static void destroy_buffer(GPUBuffer buffer);
 
 	// debug name helpers
