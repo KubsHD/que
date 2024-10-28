@@ -1,13 +1,13 @@
 struct SceneData {
-	float4x4 viewProj;
-	float4x4 view;
-	float4x4 proj;
+	row_major float4x4 viewProj;
+	row_major float4x4 view;
+	row_major float4x4 proj;
 	float3 camPos;
 };
 
 struct InstanceData {
-	float4x4 model;
-	float4x4 modelInvTrans;
+	row_major float4x4 model;
+	row_major float4x4 modelInvTrans;
 };
 
 [[vk::binding(0,0)]]

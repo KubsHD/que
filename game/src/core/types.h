@@ -5,6 +5,15 @@
 #include <filesystem>
 #include <glm/glm.hpp>
 
+enum GraphicsAPI_Type : uint8_t {
+	UNKNOWN,
+	D3D11,
+	D3D12,
+	OPENGL,
+	OPENGL_ES,
+	VULKAN
+};
+
 using String = std::string;
 
 template<typename T>

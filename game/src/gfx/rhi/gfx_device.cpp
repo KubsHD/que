@@ -420,6 +420,17 @@ GPUBuffer GfxDevice::create_buffer(int size, VkBufferUsageFlags usage_flags, Vma
 	return buf;
 }
 
+void GfxDevice::upload_buffer(GPUBuffer buffer, size_t offset, void* data, int size)
+{
+	void* mappedData = nullptr;
+	VULKAN_CHECK(vmaMapMemory(allocator, buffer.allocation, &mappedData), "Failed to map memory!");
+	if (mappedData && data) {
+		memcpy((char*)mappedData + offset, data, size);
+	}
+
+	vmaUnmapMemory(allocator, buffer.allocation);
+}
+
 void GfxDevice::destroy_buffer(GPUBuffer buffer)
 {
 	vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);

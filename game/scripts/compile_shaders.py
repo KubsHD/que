@@ -34,8 +34,14 @@ for f in files:
 	ps_output_path = os.path.join(target_dir, filename + '.ps_c')
 
 	# compile the shader
-	subprocess.run([dxc_path, "-spirv", "-T", "vs_6_0", "-E", "vs_main", full_path, "-Fo", vs_output_path])
-	subprocess.run([dxc_path, "-spirv", "-T", "ps_6_0", "-E", "ps_main", full_path, "-Fo", ps_output_path])
 
-	print("Compiled " + f + " to " + output_path)
+	r1 = subprocess.run([dxc_path, "-spirv", "-T", "vs_6_0", "-E", "vs_main", full_path, "-Fo", vs_output_path])
+	r2 = subprocess.run([dxc_path, "-spirv", "-T", "ps_6_0", "-E", "ps_main", full_path, "-Fo", ps_output_path])
+	
+	if (r1.returncode == 0 and r2.returncode == 0):
+		print("Compiled " + f + " to " + output_path)
+	else:	
+		print("Failed to compile " + f)
+
+
 	

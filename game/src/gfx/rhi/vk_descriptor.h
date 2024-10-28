@@ -28,3 +28,16 @@ struct DescriptorAllocator {
 
 	VkDescriptorSet allocate(VkDevice device, VkDescriptorSetLayout layout);
 };
+
+struct DescriptorWriter {
+	std::deque<VkDescriptorImageInfo> image_infos;
+	std::deque<VkDescriptorBufferInfo> buffer_infos;
+	std::vector<VkWriteDescriptorSet> writes;
+
+	void write_image(int binding, VkImageView iv, VkSampler sampler, VkImageLayout layout, VkDescriptorType);
+	void write_buffer(int binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
+
+
+	void clear();
+	void update_set(VkDevice device, VkDescriptorSet set);
+};

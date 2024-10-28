@@ -12,7 +12,7 @@ VSOutput vs_main(VertexInput input, uint VertexIndex: SV_VertexID) {
     VSOutput output;
     output.texCoord = input.texCoord;
     output.normal = input.normal;
-    output.position = float4(input.position, 0.0f);
+    output.position = mul(Scene.viewProj, float4(input.position, 0.0f));
     output.worldPos = input.position;
     output.TBN = float3x3(input.tangent, input.bitangent, input.normal);
     return output;

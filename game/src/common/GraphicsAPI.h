@@ -97,14 +97,8 @@
 // OpenXR Helper
 #include "openxr_helper.h"
 
-enum GraphicsAPI_Type : uint8_t {
-    UNKNOWN,
-    D3D11,
-    D3D12,
-    OPENGL,
-    OPENGL_ES,
-    VULKAN
-};
+
+#include <core/types.h>
 
 bool CheckGraphicsAPI_TypeIsValidForPlatform(GraphicsAPI_Type type);
 

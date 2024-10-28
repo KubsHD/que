@@ -9,6 +9,7 @@
 #include "rhi/gfx_device.h"
 #include "vertex.h"
 #include "rhi/gfx_swapchain.h"
+#include "buffers.h"
 
 struct FrameData {
 	VkCommandPool command_pool;
@@ -38,6 +39,8 @@ public:
 
 private:
 
+	void draw_internal(VkCommandBuffer cmd);
+
 	GPUMeshBuffer test;
 
 	VkFormat m_color_format;
@@ -50,7 +53,6 @@ private:
 	// desc
 	DescriptorAllocator global_descriptor_allocator;
 
-	VkDescriptorSet unlit_pipeline_desc_set;
 	VkDescriptorSetLayout unlit_pipeline_desc_layout;
 
 	DeletionQueue main_deletion_queue;
@@ -60,4 +62,13 @@ private:
 
 	void create_pipelines();
 	void create_descriptors();
+
+	// buffers
+	VkDescriptorSet scene_data_set;
+	gfx::SceneData m_scene_data_cpu{};
+	GPUBuffer m_scene_data_gpu;
+
+	VkDescriptorSet instance_data_set;
+	GPUBuffer m_instance_data_gpu;
+	gfx::InstanceData m_instance_data_cpu{};
 };

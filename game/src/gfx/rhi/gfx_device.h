@@ -64,6 +64,7 @@ public:
 	//static void destroy_image(VkImage image);
 
 	static GPUBuffer create_buffer(int size, VkBufferUsageFlags usage_flags, VmaMemoryUsage mem_usage);
+	static void upload_buffer(GPUBuffer buffer, size_t offset, void* data, int size);
 	static void destroy_buffer(GPUBuffer buffer);
 
 	// debug name helpers

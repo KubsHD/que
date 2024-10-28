@@ -99,11 +99,19 @@ int _frameNumber = 0;
 
 void Renderer2::draw(Swapchain& swp, int image_index)
 {
+
+
+
+
 	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
 	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
 
 	VkCommandBuffer cmd = frame.main_command_buffer;
 	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
+
+	m_scene_data_cpu.viewProj = glm::perspective(glm::radians(90.0f), (float)swp.width / (float)swp.height, 0.1f, 100.0f) * glm::lookAt(glm::vec3(0, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+
+	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -145,18 +153,8 @@ void Renderer2::draw(Swapchain& swp, int image_index)
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(cmd, 0, 1, &test.vertex_buffer.buffer, offsets);
-	vkCmdBindIndexBuffer(cmd, test.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	draw_internal(cmd);
 
-	ColorData cd;
-	cd.color = glm::vec3(1, 0, 0);
-
-	vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ColorData), &cd);
-
-
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pip);
-	vkCmdDrawIndexed(cmd, test.index_count, 1, 0, 0, 0);
 
 	vkCmdEndRendering(cmd);
 
@@ -219,8 +217,48 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 	return meshBuffer;
 }
 
+void Renderer2::draw_internal(VkCommandBuffer cmd)
+{
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(cmd, 0, 1, &test.vertex_buffer.buffer, offsets);
+	vkCmdBindIndexBuffer(cmd, test.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+	ColorData cd;
+	cd.color = glm::vec3(1, 0, 0);
+
+	vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ColorData), &cd);
+	
+
+
+
+	{
+		DescriptorWriter writer;
+		writer.write_buffer(0, m_scene_data_gpu.buffer, sizeof(gfx::SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
+		writer.update_set(GfxDevice::device, unlit_pipeline_desc_set);
+	}
+	
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &unlit_pipeline_desc_set, 0, nullptr);
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pip);
+	vkCmdDrawIndexed(cmd, test.index_count, 1, 0, 0, 0);
+
+
+	
+
+
+
+
+
+}
+
 void Renderer2::create_pipelines()
 {
+	m_scene_data_gpu = GfxDevice::create_buffer(sizeof(gfx::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
+
+	main_deletion_queue.push_function([&]() {
+		GfxDevice::destroy_buffer(m_scene_data_gpu);
+	});
 
 
 	PipelineBuilder pipelineBuilder;
@@ -236,6 +274,9 @@ void Renderer2::create_pipelines()
 	VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 	pipeline_layout_info.pPushConstantRanges = &bufferRange;
 	pipeline_layout_info.pushConstantRangeCount = 1;
+	pipeline_layout_info.pSetLayouts = &unlit_pipeline_desc_layout;
+	pipeline_layout_info.setLayoutCount = 1;
+
 
 	VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &layout));
 
@@ -284,15 +325,15 @@ void Renderer2::create_descriptors()
 {
 	std::vector<DescriptorAllocator::PoolSizeRatio> sizes =
 	{
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
 	};
 
 	global_descriptor_allocator.init_pool(GfxDevice::device, 10, sizes);
 
 	{
 		DescriptorLayoutBuilder builder;
-		builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		unlit_pipeline_desc_layout = builder.build(GfxDevice::device, VK_SHADER_STAGE_FRAGMENT_BIT);
+		builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		unlit_pipeline_desc_layout = builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 	}
 
 	unlit_pipeline_desc_set = global_descriptor_allocator.allocate(GfxDevice::device, unlit_pipeline_desc_layout);
