@@ -43,4 +43,46 @@ namespace glm {
 			xrMat.m[12], xrMat.m[13], xrMat.m[14], xrMat.m[15]
 		);
 	}
+
+	// https://github.com/jherico/OpenXR-Samples/blob/master/src/examples/sdl2_gl_single_file_example_c.cpp
+	inline XrFovf toTanFovf(const XrFovf& fov) {
+		return { tanf(fov.angleLeft), tanf(fov.angleRight), tanf(fov.angleUp), tanf(fov.angleDown) };
+	}
+
+	inline glm::mat4 to_glm_projection(const XrFovf& fov, float nearZ = 0.01f, float farZ = 10000.0f) {
+		auto tanFov = toTanFovf(fov);
+		const auto& tanAngleRight = tanFov.angleRight;
+		const auto& tanAngleLeft = tanFov.angleLeft;
+		const auto& tanAngleUp = tanFov.angleUp;
+		const auto& tanAngleDown = tanFov.angleDown;
+
+		const float tanAngleWidth = tanAngleRight - tanAngleLeft;
+		const float tanAngleHeight = (tanAngleDown - tanAngleUp);
+		const float offsetZ = 0;
+
+		glm::mat4 resultm{};
+		float* result = &resultm[0][0];
+		// normal projection
+		result[0] = 2 / tanAngleWidth;
+		result[4] = 0;
+		result[8] = (tanAngleRight + tanAngleLeft) / tanAngleWidth;
+		result[12] = 0;
+
+		result[1] = 0;
+		result[5] = 2 / tanAngleHeight;
+		result[9] = (tanAngleUp + tanAngleDown) / tanAngleHeight;
+		result[13] = 0;
+
+		result[2] = 0;
+		result[6] = 0;
+		result[10] = -(farZ + offsetZ) / (farZ - nearZ);
+		result[14] = -(farZ * (nearZ + offsetZ)) / (farZ - nearZ);
+
+		result[3] = 0;
+		result[7] = 0;
+		result[11] = -1;
+		result[15] = 0;
+
+		return resultm;
+	}
 }

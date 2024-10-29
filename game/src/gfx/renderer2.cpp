@@ -8,6 +8,7 @@
 #include <gfx/rhi/vk_image.h>
 #include "pipeline/builder.h"
 #include "vertex.h"
+#include <common/glm_helpers.h>
 
 struct ColorData {
 	glm::vec3 color;
@@ -110,7 +111,7 @@ Renderer2::~Renderer2()
 
 int _frameNumber = 0;
 
-void Renderer2::draw(Swapchain& swp, int image_index)
+void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 {
 	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
 	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
@@ -118,19 +119,19 @@ void Renderer2::draw(Swapchain& swp, int image_index)
 	VkCommandBuffer cmd = frame.main_command_buffer;
 	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
 
+	glm::mat4 projection = glm::to_glm_projection(view.fov);
 
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)swp.width / (float)swp.height, 0.1f, 100.0f);
-	glm::mat4 view = glm::lookAt(
-		glm::vec3(0, 0, -3), // Camera is at (4,3,3), in World Space
-		glm::vec3(0, 0, 0), // and looks at the origin
-		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
+	// https://gitlab.com/amini-allight/openxr-tutorial/-/blob/master/examples/part-9/openxr_example.cpp?ref_type=heads#L1434
+	glm::mat4 viewMatrix = glm::inverse(
+		glm::translate(glm::mat4(1.0f), glm::vec3(view.pose.position.x, view.pose.position.y, view.pose.position.z))
+		* glm::mat4_cast(glm::quat(view.pose.orientation.w, view.pose.orientation.x, view.pose.orientation.y, view.pose.orientation.z))
 	);
 
-	m_scene_data_cpu.viewProj = projection * view;
+	m_scene_data_cpu.viewProj = projection * viewMatrix;
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
 	m_instance_data_cpu.model = glm::mat4(1);
-	//m_instance_data_cpu.model = glm::scale(m_instance_data_cpu.model, glm::vec3(0.1f));
+	m_instance_data_cpu.model = glm::scale(m_instance_data_cpu.model, glm::vec3(0.1f));
 
 	GfxDevice::upload_buffer(m_instance_data_gpu, 0, &m_instance_data_cpu, sizeof(gfx::InstanceData));
 

@@ -33,7 +33,7 @@ public:
     Renderer2(VkFormat color_format);
 	~Renderer2();
 
-    void draw(Swapchain& swp, int image_index);
+    void draw(Swapchain& swp, int image_index,XrView view);
 
 	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
 
