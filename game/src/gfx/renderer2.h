@@ -53,7 +53,7 @@ private:
 	// desc
 	DescriptorAllocator global_descriptor_allocator;
 
-	VkDescriptorSetLayout unlit_pipeline_desc_layout;
+	std::vector<VkDescriptorSetLayout> unlit_pipeline_desc_layouts;
 
 	DeletionQueue main_deletion_queue;
 
@@ -61,14 +61,25 @@ private:
 	VkPipelineLayout layout;
 
 	void create_pipelines();
-	void create_descriptors();
+	void create_global_descriptors();
 
 	// buffers
 	VkDescriptorSet scene_data_set;
-	gfx::SceneData m_scene_data_cpu{};
+
 	GPUBuffer m_scene_data_gpu;
+	gfx::SceneData m_scene_data_cpu{};
 
 	VkDescriptorSet instance_data_set;
-	GPUBuffer m_instance_data_gpu;
 	gfx::InstanceData m_instance_data_cpu{};
+	GPUBuffer m_instance_data_gpu;
+
+	void create_default_textures();
+public:
+	// default textures
+	GPUImage texture_white;
+	GPUImage texture_black;
+	GPUImage texture_checker;
+
+	VkSampler default_sampler_linear;
+	VkSampler default_sampler_nearest;
 };

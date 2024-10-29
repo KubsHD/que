@@ -7,6 +7,8 @@
 #include <common/DebugOutput.h>
 #include <common/openxr_helper.h>
 #include <core/xr/xr_wrapper.h>
+#include <common/vk_initializers.h>
+#include "vk_image.h"
 
 namespace vkb_internal {
 	vkb::Instance instance;
@@ -401,9 +403,85 @@ void GfxDevice::destroy_pipeline(VkPipeline pipeline)
 
 }
 
+GPUImage GfxDevice::create_image(VkExtent2D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped)
+{
+	GPUImage img{};
+
+	img.format = format;
+	img.size = size;
+
+	VkImageCreateInfo iinfo = vkinit::image_create_info(format, usage, { size.width, size.height, 1 });
+
+	VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+	if (format == VK_FORMAT_D32_SFLOAT) {
+		aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+
+	if (mipmapped) {
+		iinfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
+	}
+
+	VmaAllocationCreateInfo alloc_info{};
+	alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	alloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+
+	vmaCreateImage(allocator, &iinfo, &alloc_info, &img.image, &img.allocation, &img.allocation_info);
+
+	VkImageViewCreateInfo view_info = vkinit::imageview_create_info(format, img.image, aspectFlag);
+	view_info.subresourceRange.levelCount = iinfo.mipLevels;
+
+	VULKAN_CHECK_NOMSG(vkCreateImageView(device, &view_info, nullptr, &img.view));
+
+	return img;
+}
+
+GPUImage GfxDevice::create_image(void* data, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped)
+{
+	GPUImage img = create_image(size, format, usage, mipmapped);
+
+	upload_image(img, data, img.size.width * img.size.height * 4);
+
+	return img;
+}
+
+void GfxDevice::upload_image(GPUImage image, void* data, int size)
+{
+	GPUBuffer staging = create_buffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+	upload_buffer(staging, 0, data, size);
+
+	immediate_submit([&](VkCommandBuffer cmd) {
+
+		VkBufferImageCopy copy{};
+
+		copy.imageExtent = { image.size.width, image.size.height, 1 };
+		
+		copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		copy.imageSubresource.layerCount = 1;
+		copy.imageSubresource.mipLevel = 0;
+		copy.imageSubresource.baseArrayLayer = 0;
+
+		copy.bufferOffset = 0;
+		copy.bufferRowLength = 0;
+		copy.bufferImageHeight = 0;
+
+		vkCmdCopyBufferToImage(cmd, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
+		vkutil::transition_image(cmd, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	});
+
+	destroy_buffer(staging);
+}
+
+void GfxDevice::destroy_image(GPUImage image)
+{
+	vmaDestroyImage(allocator, image.image, image.allocation);
+	vkDestroyImageView(device, image.view, nullptr);
+}
+
 GPUBuffer GfxDevice::create_buffer(int size, VkBufferUsageFlags usage_flags, VmaMemoryUsage mem_usage)
 {
-
 	VkBufferCreateInfo buffer_info{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 
 	buffer_info.size = size;

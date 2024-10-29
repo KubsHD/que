@@ -22,7 +22,7 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::build(VkDevice device, VkShaderSt
 {
 	for (auto& b : bindings)
 	{
-		b.stageFlags |= shader_stages;
+		b.stageFlags = shader_stages;
 	}
 
 	VkDescriptorSetLayoutCreateInfo layout_info{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };

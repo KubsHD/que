@@ -14,7 +14,7 @@
 #include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>
 #include <lib/stb_image.h>
-#include <common/vk_image.h>
+#include <gfx/rhi/vk_image.h>
 
 
 #if defined(__ANDROID__)
@@ -351,7 +351,7 @@ GraphicsAPI::Image AssetSystem::load_image(String path, TextureType type)
 
 		m_api->immediate_submit([&](VkCommandBuffer cmd) {
 
-			vkinit::transition_image(cmd, img.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			vkutil::transition_image(cmd, img.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 			VkBufferImageCopy copyRegion = {};
 			copyRegion.bufferOffset = 0;
@@ -367,9 +367,9 @@ GraphicsAPI::Image AssetSystem::load_image(String path, TextureType type)
 			vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, img.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 			if (type != TT_HDRI)
-				vkinit::generate_mipmaps(cmd, img.image, VkExtent2D{ (unsigned int)texWidth, (unsigned int)texHeight });
+				vkutil::generate_mipmaps(cmd, img.image, VkExtent2D{ (unsigned int)texWidth, (unsigned int)texHeight });
 			else
-				vkinit::transition_image(cmd, img.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				vkutil::transition_image(cmd, img.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		});
 	}
 

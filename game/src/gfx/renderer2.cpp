@@ -5,7 +5,7 @@
 #include "rhi/gfx_device.h"
 #include "rhi/gfx_swapchain.h"
 #include <common/vk_initializers.h>
-#include <common/vk_image.h>
+#include <gfx/rhi/vk_image.h>
 #include "pipeline/builder.h"
 #include "vertex.h"
 
@@ -43,9 +43,11 @@ Renderer2::Renderer2(VkFormat color_format)
 
 	VULKAN_CHECK_NOMSG(vkAllocateCommandBuffers(GfxDevice::device, &cmdAllocInfo, &frame.main_command_buffer));
 
-	create_descriptors();
+	create_global_descriptors();
 
 	create_pipelines();
+
+	create_default_textures();
 
 	std::vector<Vertex2> rect_vertices;
 	rect_vertices.resize(4);
@@ -53,18 +55,27 @@ Renderer2::Renderer2(VkFormat color_format)
 	rect_vertices[0].x = 0.5;
 	rect_vertices[0].y = -0.5;
 	rect_vertices[0].z = 0;
+	rect_vertices[0].u = 1;
+	rect_vertices[0].v = 0;
 
 	rect_vertices[1].x = 0.5;
 	rect_vertices[1].y = 0.5;
 	rect_vertices[1].z = 0;
+	rect_vertices[1].u = 1;
+	rect_vertices[1].v = 1;
+
 
 	rect_vertices[2].x = -0.5;
 	rect_vertices[2].y = -0.5;
 	rect_vertices[2].z = 0;
+	rect_vertices[2].u = 0;
+	rect_vertices[2].v = 0;
 
 	rect_vertices[3].x = -0.5;
 	rect_vertices[3].y = 0.5;
 	rect_vertices[3].z = 0;
+	rect_vertices[3].u = 0;
+	rect_vertices[3].v = 1;
 
 	std::vector<uint32_t> rect_indices;
 	rect_indices.resize(6);
@@ -78,6 +89,8 @@ Renderer2::Renderer2(VkFormat color_format)
 	rect_indices[5] = 3;
 
 	test = upload_mesh(rect_indices, rect_vertices);
+
+
 
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_buffer(test.index_buffer);
@@ -99,38 +112,38 @@ int _frameNumber = 0;
 
 void Renderer2::draw(Swapchain& swp, int image_index)
 {
-
-
-
-
 	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
 	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
 
 	VkCommandBuffer cmd = frame.main_command_buffer;
 	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
 
-	m_scene_data_cpu.viewProj = glm::perspective(glm::radians(90.0f), (float)swp.width / (float)swp.height, 0.1f, 100.0f) * glm::lookAt(glm::vec3(0, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)swp.width / (float)swp.height, 0.1f, 100.0f);
+	glm::mat4 view = glm::lookAt(
+		glm::vec3(0, 0, -3), // Camera is at (4,3,3), in World Space
+		glm::vec3(0, 0, 0), // and looks at the origin
+		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
+	);
+
+	m_scene_data_cpu.viewProj = projection * view;
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
+	m_instance_data_cpu.model = glm::mat4(1);
+	//m_instance_data_cpu.model = glm::scale(m_instance_data_cpu.model, glm::vec3(0.1f));
+
+	GfxDevice::upload_buffer(m_instance_data_gpu, 0, &m_instance_data_cpu, sizeof(gfx::InstanceData));
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-	//start the command buffer recording
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
-
 
 	VkClearValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 120.f));
 	clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
 	VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
-
 	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(swp.swapchainImages[image_index], &clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
 	VkExtent2D _windowExtent = {swp.width, swp.height };
-
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, nullptr);
-
 
 	vkCmdBeginRendering(cmd, &render_info);
 
@@ -154,7 +167,6 @@ void Renderer2::draw(Swapchain& swp, int image_index)
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 	draw_internal(cmd);
-
 
 	vkCmdEndRendering(cmd);
 
@@ -181,9 +193,7 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 	GPUMeshBuffer meshBuffer;
 
 	meshBuffer.vertex_buffer = GfxDevice::create_buffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-
 	meshBuffer.index_buffer = GfxDevice::create_buffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-
 	meshBuffer.index_count = static_cast<uint32_t>(indices.size());
 
 	GPUBuffer staging = GfxDevice::create_buffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
@@ -225,39 +235,37 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 
 	ColorData cd;
 	cd.color = glm::vec3(1, 0, 0);
-
 	vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ColorData), &cd);
-	
-
-
 
 	{
 		DescriptorWriter writer;
 		writer.write_buffer(0, m_scene_data_gpu.buffer, sizeof(gfx::SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		writer.update_set(GfxDevice::device, scene_data_set);
+	}
 
-		writer.update_set(GfxDevice::device, unlit_pipeline_desc_set);
+	{
+		DescriptorWriter writer;
+		writer.write_buffer(0, m_instance_data_gpu.buffer, sizeof(gfx::InstanceData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		writer.write_image(1, texture_checker.view, default_sampler_nearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.update_set(GfxDevice::device, instance_data_set);
 	}
 	
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &unlit_pipeline_desc_set, 0, nullptr);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &scene_data_set, 0, nullptr);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, &instance_data_set, 0, nullptr);
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pip);
 	vkCmdDrawIndexed(cmd, test.index_count, 1, 0, 0, 0);
-
-
-	
-
-
-
-
-
 }
 
 void Renderer2::create_pipelines()
 {
 	m_scene_data_gpu = GfxDevice::create_buffer(sizeof(gfx::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	m_instance_data_gpu = GfxDevice::create_buffer(sizeof(gfx::InstanceData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_buffer(m_scene_data_gpu);
+		GfxDevice::destroy_buffer(m_instance_data_gpu);
 	});
 
 
@@ -274,8 +282,8 @@ void Renderer2::create_pipelines()
 	VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 	pipeline_layout_info.pPushConstantRanges = &bufferRange;
 	pipeline_layout_info.pushConstantRangeCount = 1;
-	pipeline_layout_info.pSetLayouts = &unlit_pipeline_desc_layout;
-	pipeline_layout_info.setLayoutCount = 1;
+	pipeline_layout_info.pSetLayouts = unlit_pipeline_desc_layouts.data();
+	pipeline_layout_info.setLayoutCount = unlit_pipeline_desc_layouts.size();
 
 
 	VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &layout));
@@ -321,7 +329,7 @@ void Renderer2::create_pipelines()
 		});
 }
 
-void Renderer2::create_descriptors()
+void Renderer2::create_global_descriptors()
 {
 	std::vector<DescriptorAllocator::PoolSizeRatio> sizes =
 	{
@@ -333,13 +341,61 @@ void Renderer2::create_descriptors()
 	{
 		DescriptorLayoutBuilder builder;
 		builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		unlit_pipeline_desc_layout = builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+		unlit_pipeline_desc_layouts.push_back(builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
 	}
 
-	unlit_pipeline_desc_set = global_descriptor_allocator.allocate(GfxDevice::device, unlit_pipeline_desc_layout);
+	{
+		DescriptorLayoutBuilder	builder;
+		builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		unlit_pipeline_desc_layouts.push_back(builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
+	}
+
+	scene_data_set = global_descriptor_allocator.allocate(GfxDevice::device, unlit_pipeline_desc_layouts[0]);
+	instance_data_set = global_descriptor_allocator.allocate(GfxDevice::device, unlit_pipeline_desc_layouts[1]);
 
 	main_deletion_queue.push_function([&]() {
 		global_descriptor_allocator.destroy_pool(GfxDevice::device);
-		vkDestroyDescriptorSetLayout(GfxDevice::device, unlit_pipeline_desc_layout, nullptr);
+		vkDestroyDescriptorSetLayout(GfxDevice::device, unlit_pipeline_desc_layouts[0], nullptr);
+		vkDestroyDescriptorSetLayout(GfxDevice::device, unlit_pipeline_desc_layouts[1], nullptr);
+	});
+
+
+}
+
+void Renderer2::create_default_textures()
+{
+
+
+	// https://vkguide.dev/docs/new_chapter_4/textures/
+	uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+	uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	std::array<uint32_t, 16 * 16 > pixels; //for 16x16 checkerboard texture
+	for (int x = 0; x < 16; x++) {
+		for (int y = 0; y < 16; y++) {
+			pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+		}
+	}
+	texture_checker = GfxDevice::create_image(pixels.data(), VkExtent2D{ 16, 16 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT);
+
+
+	// samplers
+	VkSamplerCreateInfo sampl = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+
+	sampl.magFilter = VK_FILTER_NEAREST;
+	sampl.minFilter = VK_FILTER_NEAREST;
+
+	vkCreateSampler(GfxDevice::device, &sampl, nullptr, &default_sampler_nearest);
+
+	sampl.magFilter = VK_FILTER_LINEAR;
+	sampl.minFilter = VK_FILTER_LINEAR;
+	vkCreateSampler(GfxDevice::device, &sampl, nullptr, &default_sampler_linear);
+
+	main_deletion_queue.push_function([&]() {
+		vkDestroySampler(GfxDevice::device, default_sampler_nearest, nullptr);
+		vkDestroySampler(GfxDevice::device, default_sampler_linear, nullptr);
+
+		GfxDevice::destroy_image(texture_checker);
 	});
 }

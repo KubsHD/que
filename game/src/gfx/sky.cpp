@@ -4,7 +4,7 @@
 #include "sky.h"
 #include <core/asset.h>
 #include <common/vk_initializers.h>
-#include <common/vk_image.h>
+#include <gfx/rhi/vk_image.h>
 
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -60,7 +60,7 @@ namespace gfx {
 		// change image layout for rendering
 
 		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			vkinit::transition_image(cmd, s.skyCubemap.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			vkutil::transition_image(cmd, s.skyCubemap.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 		});
 
 		// create view for the image
@@ -227,7 +227,7 @@ namespace gfx {
 
 		// change to image layout ready to be used in a shader
 		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			vkinit::transition_image(cmd, s.skyCubemap.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			vkutil::transition_image(cmd, s.skyCubemap.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		});
 
 
@@ -274,7 +274,7 @@ namespace gfx {
 		// change image layout for rendering
 
 		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			vkinit::transition_image(cmd, s.skyIrradiance.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			vkutil::transition_image(cmd, s.skyIrradiance.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 		});
 
 		// create view for the image
@@ -442,7 +442,7 @@ namespace gfx {
 
 		// change to image layout ready to be used in a shader
 		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			vkinit::transition_image(cmd, s.skyIrradiance.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			vkutil::transition_image(cmd, s.skyIrradiance.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		});
 
 	}

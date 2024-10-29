@@ -22,7 +22,7 @@
 #include <common/vk_initializers.h>
 #include <core/profiler.h>
 #include "DebugOutput.h"
-#include "vk_image.h"
+#include <gfx/rhi/vk_image.h>
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -380,7 +380,7 @@ GraphicsAPI_Vulkan::GraphicsAPI_Vulkan(XrInstance m_xrInstance, XrSystemId syste
 
     
     immediate_submit([&](VkCommandBuffer buf) {
-        vkinit::transition_image(buf, tex_placeholder.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        vkutil::transition_image(buf, tex_placeholder.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     });
 }
 

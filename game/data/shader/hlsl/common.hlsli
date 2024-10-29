@@ -10,12 +10,22 @@ struct InstanceData {
 	row_major float4x4 modelInvTrans;
 };
 
+
+// vk::binding(x,y)
+// where x is the binding slot
+// and y is the descriptor set index
+// so layout(set=y, binding=x) in GLSL	
+
 [[vk::binding(0,0)]]
 ConstantBuffer<SceneData> Scene;
 
-[[vk::binding(1,0)]]
+[[vk::binding(0,1)]]
 ConstantBuffer<InstanceData> Instance;
 
+[[vk::binding(1,1)]][[vk::combinedImageSampler]]
+Texture2D tex_diffuse : register(t1);
+[[vk::binding(1,1)]][[vk::combinedImageSampler]]
+SamplerState tex_diffuse_sm : register(s1);
 
 struct VertexInput
 {

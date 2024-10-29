@@ -15,8 +15,12 @@ struct GPUBuffer {
 
 struct GPUImage {
 	VkImage image;
+	VkImageView view;
 	VmaAllocation allocation;
 	VmaAllocationInfo allocation_info;
+
+	VkFormat format;
+	VkExtent2D size;
 };
 
 class GfxDevice {
@@ -27,7 +31,6 @@ public:
 		VkCommandPool pool;
 		VkCommandBuffer buffer;
 	};
-
 
 	static void Init(const std::vector<std::string>& requested_extensions = {});
 	static void InitXr(XrInstance xri, XrSystemId xrsi);
@@ -60,8 +63,10 @@ public:
 	static VkPipeline create_graphics_pipeline(VkGraphicsPipelineCreateInfo pipeline_info);
 	static void destroy_pipeline(VkPipeline pipeline);
 
-	//static VkImage create_image(VkImageCreateInfo iinfo);
-	//static void destroy_image(VkImage image);
+	static GPUImage create_image(VkExtent2D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+	static GPUImage create_image(void* data, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+	static void upload_image(GPUImage image, void* data, int size);
+	static void destroy_image(GPUImage image);
 
 	static GPUBuffer create_buffer(int size, VkBufferUsageFlags usage_flags, VmaMemoryUsage mem_usage);
 	static void upload_buffer(GPUBuffer buffer, size_t offset, void* data, int size);

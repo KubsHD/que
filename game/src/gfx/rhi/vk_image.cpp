@@ -1,11 +1,11 @@
 ﻿#include "pch.h"
 
 #include "vk_image.h"
-#include "vk_initializers.h"
+#include <common/vk_initializers.h>
 
 #include <cmath>
 
-void vkinit::transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout, int mipLevel)
+void vkutil::transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout, int mipLevel)
 {
 	VkImageMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -33,7 +33,7 @@ void vkinit::transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout 
 	vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
-void vkinit::generate_mipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D size)
+void vkutil::generate_mipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D size)
 {
 	int mipLevels = int(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
 	for (int mip = 0; mip < mipLevels; mip++) 
@@ -42,7 +42,7 @@ void vkinit::generate_mipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D siz
 		halfSize.width /= 2;
 		halfSize.height /= 2;
 
-		vkinit::transition_image(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, mip);
+		vkutil::transition_image(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, mip);
 
 		if (mip < mipLevels - 1) {
 			VkImageBlit blitRegion{};
