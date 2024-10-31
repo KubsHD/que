@@ -9,6 +9,8 @@
 #include <common/vk_initializers.h>
 #include <base/numerics/safe_conversions.h>
 
+#include <entt/entt.hpp>
+
 #if defined(__ANDROID__)
 android_app* OpenXRPlatform::androidApp = nullptr;
 OpenXRPlatform::AndroidAppState OpenXRPlatform::androidAppState = {};
@@ -19,7 +21,7 @@ OpenXRPlatform::OpenXRPlatform()
 
 }
 
-void OpenXRPlatform::init()
+void OpenXRPlatform::init(entt::registry& reg)
 {
 	{
 		QUE_PROFILE_SECTION("OpenXr Init");
@@ -35,7 +37,7 @@ void OpenXRPlatform::init()
 		create_swapchains();
 
 		// init renderer
-		m_renderer = new Renderer2(m_colorSwapchainInfos[0].swapchainFormat);
+		m_renderer = new Renderer2(m_colorSwapchainInfos[0].swapchainFormat, reg);
 
 		create_reference_space();
 

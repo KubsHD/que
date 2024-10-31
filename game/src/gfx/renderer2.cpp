@@ -9,12 +9,12 @@
 #include "pipeline/builder.h"
 #include "vertex.h"
 #include <common/glm_helpers.h>
+#include <entt/entt.hpp>
 
-struct ColorData {
-	glm::vec3 color;
-};
+#include <core/components/components.h>
+#include <game/components/mesh_component.h>
 
-Renderer2::Renderer2(VkFormat color_format)
+Renderer2::Renderer2(VkFormat color_format, entt::registry& reg) : m_reg(reg)
 {
 	this->color_format = color_format;
 
@@ -110,6 +110,11 @@ Renderer2::~Renderer2()
 }
 
 int _frameNumber = 0;
+
+void Renderer2::register_mesh(const MeshComponent* mc)
+{
+	m_reg.emplace<core_mesh_component>(mc->entity->internal_entity, mc->get_model());
+}
 
 void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 {
@@ -225,9 +230,6 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 
 void Renderer2::draw_internal(VkCommandBuffer cmd)
 {
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(cmd, 0, 1, &test.vertex_buffer.buffer, offsets);
-	vkCmdBindIndexBuffer(cmd, test.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
 	{
 		DescriptorWriter writer;
@@ -238,12 +240,31 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->pipeline);
 
 	GPUDrawPushConstants pc;
-	pc.model = glm::mat4(1.0f);
-	vkCmdPushConstants(cmd, mat_unlit_instance.pipeline->layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUDrawPushConstants), &pc);
+	
+	VkDeviceSize offset = 0;
 
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->layout, 0, 1, &scene_data_set, 0, nullptr);
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->layout, 1, 1, &mat_unlit_instance.material_set, 0, nullptr);
-	vkCmdDrawIndexed(cmd, test.index_count, 1, 0, 0, 0);
+
+	auto modelsToRender = m_reg.view<core_transform_component, core_mesh_component>();
+	for (const auto&& [e, tc, mc] : modelsToRender.each())
+	{
+		tc.calculate_matrix();
+		glm::mat4 model_matrix = tc.matrix;
+
+		pc.model = model_matrix;
+
+		for (auto& mesh : mc.model->meshes)
+		{
+			vkCmdBindVertexBuffers(cmd, 0, 1, &mesh.vertex_buffer.buffer, &offset);
+			vkCmdBindIndexBuffer(cmd, mesh.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+
+			vkCmdPushConstants(cmd, mat_unlit_instance.pipeline->layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUDrawPushConstants), &pc);
+			vkCmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0);
+		}
+	};
+
 }
 
 void Renderer2::create_pipelines()

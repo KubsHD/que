@@ -5,14 +5,14 @@
 #include <core/physics.h>
 #include <core/xr/xr_input.h>
 
-class Renderer;
+class Renderer2;
 
 struct engine_wrapper {
 	AudioSystem* audio;
 	AssetManager* asset;
 	PhysicsSystem* physics;
 	XrInput* input;
-	Renderer* render;
+	Renderer2* render;
 	entt::registry* reg;
 };
 

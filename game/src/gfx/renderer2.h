@@ -12,6 +12,8 @@
 #include "buffers.h"
 #include "mat/mat_unlit.h"
 
+class MeshComponent;
+
 struct FrameData {
 	VkCommandPool command_pool;
 	VkCommandBuffer main_command_buffer;
@@ -35,12 +37,14 @@ struct GPUMeshBuffer {
 
 class Renderer2 {
 public:
-    Renderer2(VkFormat color_format);
+    Renderer2(VkFormat color_format, entt::registry& reg);
 	~Renderer2();
 
     void draw(Swapchain& swp, int image_index,XrView view);
 
 	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
+
+	void register_mesh(const MeshComponent* mc);
 
 	DeletionQueue main_deletion_queue;
 	VkFormat color_format;
@@ -53,6 +57,8 @@ private:
 	uint32_t m_queue_family;
 
     FrameData frame;
+
+	entt::registry& m_reg;
 
 	void create_global_descriptors();
 	void create_pipelines();
@@ -80,4 +86,5 @@ public:
 	// materials
 	MaterialInstance mat_unlit_instance;
 	MAT_Unlit mat_unlit;
+
 };

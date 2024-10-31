@@ -8,6 +8,7 @@
 #include <game/scenes/game_scene.h>
 
 #include <asset/asset_manager.h>
+#include <entt/entt.hpp>
 
 template<typename T>
 void Game::change_scene()
@@ -24,7 +25,7 @@ void Game::change_scene()
 	m_current_scene->engine.audio = m_audio_system.get();
 	m_current_scene->engine.physics = m_physics_system.get();
 	m_current_scene->engine.reg = &m_registry;
-	/*m_current_scene->engine.render = m_renderer.get();*/
+	m_current_scene->engine.render = platform->get_renderer();
 	m_current_scene->engine.input = platform->input.get();
 
 	m_current_scene->init();
@@ -39,7 +40,7 @@ Game::Game()
 	AssetManager::Init(*m_audio_system.get());
 
 	platform = new OpenXRPlatform();
-	platform->init();
+	platform->init(m_registry);
 
 	PhysicsSystem::init_static();
 	m_physics_system = std::make_unique<PhysicsSystem>();
@@ -55,7 +56,7 @@ Game::Game()
 	// todo: to refactor all below
 
 	g_engine.asset = new AssetManager();
-	/*g_engine.render = m_renderer.get();*/
+	g_engine.render = platform->get_renderer();
 
 	change_scene<GameScene>();
 }

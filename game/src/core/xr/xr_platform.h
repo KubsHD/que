@@ -19,11 +19,13 @@ public:
 	OpenXRPlatform();
 	~OpenXRPlatform() = default;
 
-	void init();
+	void init(entt::registry& reg);
 	void destroy();
 
 	void poll();
 	void render();
+
+	Renderer2* get_renderer() { return m_renderer; }
 
 	std::shared_ptr<XrInput> input;
 

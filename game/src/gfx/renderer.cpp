@@ -210,7 +210,6 @@ void Renderer::draw_sky(App::FrameRenderInfo& info)
 
 	for (auto mesh : skybox_cube.meshes)
 	{
-
 		m_graphicsAPI->DrawIndexed(mesh.index_count);
 	}
 

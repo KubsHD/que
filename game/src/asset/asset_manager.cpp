@@ -197,8 +197,11 @@ Model AssetManager::load_model(Path path)
 		
 
 		internal_mesh.vertex_buffer = GfxDevice::create_buffer(sizeof(Vertex2) * vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-		internal_mesh.index_buffer = GfxDevice::create_buffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+		internal_mesh.index_buffer = GfxDevice::create_buffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 		internal_mesh.index_count = indices.size();
+
+		GfxDevice::upload_buffer(internal_mesh.vertex_buffer, 0, vertices.data(), sizeof(Vertex2) * vertices.size());
+		GfxDevice::upload_buffer(internal_mesh.index_buffer, 0, indices.data(), sizeof(uint32_t) * indices.size());
 
 		internal_mesh.vertices = vertices;
 		internal_mesh.indices = indices;
@@ -295,6 +298,12 @@ Model AssetManager::load_model_json(Path path)
 					indices.push_back(face.mIndices[j]);
 			}
 
+			internal_mesh.vertex_buffer = GfxDevice::create_buffer(sizeof(Vertex2) * vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+			internal_mesh.index_buffer = GfxDevice::create_buffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+			internal_mesh.index_count = indices.size();
+
+			GfxDevice::upload_buffer(internal_mesh.vertex_buffer, 0, vertices.data(), sizeof(Vertex2) * vertices.size());
+			GfxDevice::upload_buffer(internal_mesh.index_buffer, 0, indices.data(), sizeof(uint32_t) * indices.size());
 
 			internal_mesh.vertices = vertices;
 			internal_mesh.indices = indices;
