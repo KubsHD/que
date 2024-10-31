@@ -7,6 +7,8 @@
 #include <game/components/player_component.h>
 #include <game/scenes/game_scene.h>
 
+#include <asset/asset_manager.h>
+
 template<typename T>
 void Game::change_scene()
 {
@@ -32,12 +34,15 @@ void Game::change_scene()
 
 Game::Game()
 {
+	AssetManager::Init();
+
 	platform = new OpenXRPlatform();
 	platform->init();
 
 	PhysicsSystem::init_static();
 	m_physics_system = std::make_unique<PhysicsSystem>();
 	m_audio_system = std::make_unique<AudioSystem>();
+
 
 	init_imgui();
 

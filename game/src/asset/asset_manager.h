@@ -5,11 +5,15 @@
 #include <core/audio.h>
 #include "mesh.h"
 
+
 class AssetManager {
 public:
 	static void Init();
 
 	static std::vector<char> read_all_bytes(String path);
+	static std::vector<char> read_all_bytes_raw(String path);
+
+
 	static GPUImage load_image(String path, TextureType type);
 
 	static std::shared_ptr<Sound> load_sound(String path);

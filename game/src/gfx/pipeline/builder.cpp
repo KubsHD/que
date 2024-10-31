@@ -187,7 +187,7 @@ VkShaderModule PipelineBuilder::load_shader_module(const char* filename, VkDevic
 {
 	VkShaderModule mod;
 
-	std::vector<char> code = AssetManager::read_all_bytes(filename);
+	std::vector<char> code = AssetManager::read_all_bytes_raw(filename);
 
 	VkShaderModuleCreateInfo createInfo = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
 
