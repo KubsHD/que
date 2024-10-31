@@ -18,11 +18,7 @@ class GraphicsAPI_Vulkan;
 struct aiScene;
 struct aiMaterial;
 
-enum TextureType {
-	TT_DIFFUSE = 0,
-	TT_NORMAL = 1,
-	TT_HDRI = 2
-};
+
 
 class AssetSystem {
 public:

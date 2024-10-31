@@ -78,6 +78,7 @@ public:
 	static void set_debug_name(VkImageView object, const std::string& name);
 	static void set_debug_name(VkCommandBuffer object, const std::string& name);
 	static void set_debug_name(VkQueue object, const std::string& name);
+	static void set_debug_name(VkDescriptorSet object, const std::string& name);
 
 private:
 	static UploadContext m_upload_context;

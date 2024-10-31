@@ -10,6 +10,9 @@ struct InstanceData {
 	row_major float4x4 modelInvTrans;
 };
 
+struct GPUDrawPushConstants {
+	row_major float4x4 model;
+};
 
 // vk::binding(x,y)
 // where x is the binding slot
@@ -18,14 +21,6 @@ struct InstanceData {
 
 [[vk::binding(0,0)]]
 ConstantBuffer<SceneData> Scene;
-
-[[vk::binding(0,1)]]
-ConstantBuffer<InstanceData> Instance;
-
-[[vk::binding(1,1)]][[vk::combinedImageSampler]]
-Texture2D tex_diffuse : register(t1);
-[[vk::binding(1,1)]][[vk::combinedImageSampler]]
-SamplerState tex_diffuse_sm : register(s1);
 
 struct VertexInput
 {

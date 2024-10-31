@@ -1,28 +1,28 @@
 #include "common.hlsli"
 
 struct VSOutput {
-    [[vk::location(0)]] float2 texCoord : TEXCOORD;
-    [[vk::location(1)]] float3 normal : NORMAL;
-    [[vk::location(2)]] float4 position : SV_POSITION;
-    [[vk::location(3)]] float3 worldPos : WORLDPOS;
-    [[vk::location(4)]] float3x3 TBN : TBN;
+    float4 position : SV_POSITION;
+    float2 texCoord : TEXCOORD;
 };
+
+[[vk::push_constant]]
+GPUDrawPushConstants pc;
 
 VSOutput vs_main(VertexInput input, uint VertexIndex: SV_VertexID) {
     VSOutput output;
     output.texCoord = input.texCoord;
-    output.normal = input.normal;
-    output.position = mul(mul(float4(input.position, 1.0f), Instance.model), Scene.viewProj);
-    output.worldPos = input.position;
-    output.TBN = float3x3(input.tangent, input.bitangent, input.normal);
+    output.position = mul(mul(float4(input.position, 1.0f), pc.model), Scene.viewProj);
     return output;
 }
 
-struct ColorData {
-	float3 color;
-};
+[[vk::binding(0,1)]]
+[[vk::combinedImageSampler]]
+Texture2D tex_diffuse : register(t1);
 
-[[vk::push_constant]] ColorData PushConstants;
+[[vk::binding(0,1)]]
+[[vk::combinedImageSampler]]
+SamplerState tex_diffuse_sm : register(s1);
+
 
 float4 ps_main(VSOutput input) : SV_TARGET {
     return tex_diffuse.Sample(tex_diffuse_sm, input.texCoord);

@@ -10,6 +10,7 @@
 #include "vertex.h"
 #include "rhi/gfx_swapchain.h"
 #include "buffers.h"
+#include "mat/mat_unlit.h"
 
 struct FrameData {
 	VkCommandPool command_pool;
@@ -18,15 +19,19 @@ struct FrameData {
 	VkSemaphore swapchain_semaphore;
 	VkSemaphore render_semaphore;
 	VkFence main_fence;
+
+	DeletionQueue deletion_queue;
 };
 
+struct GPUDrawPushConstants {
+	glm::mat4 model;
+};
 
 struct GPUMeshBuffer {
 	GPUBuffer vertex_buffer;
 	GPUBuffer index_buffer;
 	uint32_t index_count;
 };
-
 
 class Renderer2 {
 public:
@@ -37,49 +42,42 @@ public:
 
 	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
 
+	DeletionQueue main_deletion_queue;
+	VkFormat color_format;
 private:
-
 	void draw_internal(VkCommandBuffer cmd);
 
 	GPUMeshBuffer test;
-
-	VkFormat m_color_format;
 
 	VkQueue m_queue;
 	uint32_t m_queue_family;
 
     FrameData frame;
 
+	void create_global_descriptors();
+	void create_pipelines();
+	void create_default_textures();
+
+public:
 	// desc
 	DescriptorAllocator global_descriptor_allocator;
 
-	std::vector<VkDescriptorSetLayout> unlit_pipeline_desc_layouts;
-
-	DeletionQueue main_deletion_queue;
-
-	VkPipeline pip;
-	VkPipelineLayout layout;
-
-	void create_pipelines();
-	void create_global_descriptors();
-
-	// buffers
+	// global scene data
 	VkDescriptorSet scene_data_set;
+	VkDescriptorSetLayout scene_data_set_layout;
 
-	GPUBuffer m_scene_data_gpu;
 	gfx::SceneData m_scene_data_cpu{};
+	GPUBuffer m_scene_data_gpu;
 
-	VkDescriptorSet instance_data_set;
-	gfx::InstanceData m_instance_data_cpu{};
-	GPUBuffer m_instance_data_gpu;
-
-	void create_default_textures();
-public:
-	// default textures
+	// default resources
 	GPUImage texture_white;
 	GPUImage texture_black;
 	GPUImage texture_checker;
 
 	VkSampler default_sampler_linear;
 	VkSampler default_sampler_nearest;
+
+	// materials
+	MaterialInstance mat_unlit_instance;
+	MAT_Unlit mat_unlit;
 };

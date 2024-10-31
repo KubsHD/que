@@ -58,6 +58,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 	void* pUserData) {
 
+	// ignore unused vertex shader input warning
+	if (pCallbackData->messageIdNumber == 101294395)
+		return VK_FALSE;
+
 	std::cerr << "ERROR: VALIDATION: " << pCallbackData->pMessage << std::endl;
 
 	return VK_FALSE;
@@ -326,6 +330,7 @@ void GfxDevice::InitCommon()
 	allocateInfo2.commandBufferCount = 1;
 	VULKAN_CHECK(vkAllocateCommandBuffers(device, &allocateInfo2, &m_upload_context.buffer), "Failed to allocate CommandBuffers.");
 
+	LoadPFN_VkFunctions(instance);
 }
 
 
@@ -466,6 +471,8 @@ void GfxDevice::upload_image(GPUImage image, void* data, int size)
 		copy.bufferRowLength = 0;
 		copy.bufferImageHeight = 0;
 
+		vkutil::transition_image(cmd, image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
 		vkCmdCopyBufferToImage(cmd, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
 		vkutil::transition_image(cmd, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -574,6 +581,19 @@ void GfxDevice::set_debug_name(VkQueue object, const std::string& name)
 
 	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 	name_info.objectType = VK_OBJECT_TYPE_QUEUE;
+	name_info.objectHandle = (uint64_t)object;
+	name_info.pObjectName = name.c_str();
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
+void GfxDevice::set_debug_name(VkDescriptorSet object, const std::string& name)
+{
+#ifndef _DEBUG
+	return;
+#endif
+
+	VkDebugUtilsObjectNameInfoEXT name_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+	name_info.objectType = VK_OBJECT_TYPE_DESCRIPTOR_SET;
 	name_info.objectHandle = (uint64_t)object;
 	name_info.pObjectName = name.c_str();
 	vkSetDebugUtilsObjectNameEXT(device, &name_info);

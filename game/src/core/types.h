@@ -14,6 +14,12 @@ enum GraphicsAPI_Type : uint8_t {
 	VULKAN
 };
 
+enum TextureType {
+	TT_DIFFUSE = 0,
+	TT_NORMAL = 1,
+	TT_HDRI = 2
+};
+
 using String = std::string;
 
 template<typename T>

@@ -16,7 +16,7 @@ struct ColorData {
 
 Renderer2::Renderer2(VkFormat color_format)
 {
-	m_color_format = color_format;
+	this->color_format = color_format;
 
     m_queue = GfxDevice::get_queue(vkb::QueueType::graphics);
 	m_queue_family = GfxDevice::get_queue_family(vkb::QueueType::graphics);
@@ -44,11 +44,11 @@ Renderer2::Renderer2(VkFormat color_format)
 
 	VULKAN_CHECK_NOMSG(vkAllocateCommandBuffers(GfxDevice::device, &cmdAllocInfo, &frame.main_command_buffer));
 
+	create_default_textures();
 	create_global_descriptors();
 
 	create_pipelines();
 
-	create_default_textures();
 
 	std::vector<Vertex2> rect_vertices;
 	rect_vertices.resize(4);
@@ -129,11 +129,6 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	m_scene_data_cpu.viewProj = projection * viewMatrix;
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
-
-	m_instance_data_cpu.model = glm::mat4(1);
-	m_instance_data_cpu.model = glm::scale(m_instance_data_cpu.model, glm::vec3(0.1f));
-
-	GfxDevice::upload_buffer(m_instance_data_gpu, 0, &m_instance_data_cpu, sizeof(gfx::InstanceData));
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
@@ -234,100 +229,42 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 	vkCmdBindVertexBuffers(cmd, 0, 1, &test.vertex_buffer.buffer, offsets);
 	vkCmdBindIndexBuffer(cmd, test.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-	ColorData cd;
-	cd.color = glm::vec3(1, 0, 0);
-	vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ColorData), &cd);
-
 	{
 		DescriptorWriter writer;
 		writer.write_buffer(0, m_scene_data_gpu.buffer, sizeof(gfx::SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 		writer.update_set(GfxDevice::device, scene_data_set);
 	}
 
-	{
-		DescriptorWriter writer;
-		writer.write_buffer(0, m_instance_data_gpu.buffer, sizeof(gfx::InstanceData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		writer.write_image(1, texture_checker.view, default_sampler_nearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		writer.update_set(GfxDevice::device, instance_data_set);
-	}
-	
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &scene_data_set, 0, nullptr);
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, &instance_data_set, 0, nullptr);
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pip);
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->pipeline);
+
+	GPUDrawPushConstants pc;
+	pc.model = glm::mat4(1.0f);
+	vkCmdPushConstants(cmd, mat_unlit_instance.pipeline->layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUDrawPushConstants), &pc);
+
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->layout, 0, 1, &scene_data_set, 0, nullptr);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->layout, 1, 1, &mat_unlit_instance.material_set, 0, nullptr);
 	vkCmdDrawIndexed(cmd, test.index_count, 1, 0, 0, 0);
 }
 
 void Renderer2::create_pipelines()
 {
 	m_scene_data_gpu = GfxDevice::create_buffer(sizeof(gfx::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-	m_instance_data_gpu = GfxDevice::create_buffer(sizeof(gfx::InstanceData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
+	mat_unlit.create(this);
+
+	MAT_Unlit::Resoruces res;
+	res.diffuse = texture_checker;
+	res.diffuse_sampler = default_sampler_nearest;
+
+	mat_unlit_instance = mat_unlit.write(GfxDevice::device, res, &global_descriptor_allocator);
+
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_buffer(m_scene_data_gpu);
-		GfxDevice::destroy_buffer(m_instance_data_gpu);
+		mat_unlit.clear(GfxDevice::device);
 	});
 
-
-	PipelineBuilder pipelineBuilder;
-
-	auto vs = PipelineBuilder::load_shader_module("shader/unlit.vs_c", GfxDevice::device);
-	auto ps = PipelineBuilder::load_shader_module("shader/unlit.ps_c", GfxDevice::device);
-
-	VkPushConstantRange bufferRange{};
-	bufferRange.offset = 0;
-	bufferRange.size = sizeof(ColorData);
-	bufferRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
-	pipeline_layout_info.pPushConstantRanges = &bufferRange;
-	pipeline_layout_info.pushConstantRangeCount = 1;
-	pipeline_layout_info.pSetLayouts = unlit_pipeline_desc_layouts.data();
-	pipeline_layout_info.setLayoutCount = unlit_pipeline_desc_layouts.size();
-
-
-	VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &layout));
-
-	//use the triangle layout we created
-	pipelineBuilder.pipeline_layout = layout;
-	pipelineBuilder.set_shaders(vs, ps);
-	pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-	pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-	pipelineBuilder.set_multisampling_none();
-	pipelineBuilder.disable_blending();
-	pipelineBuilder.disable_depthtest();
-
-	//connect the image format we will draw into, from draw image
-	pipelineBuilder.set_color_attachment_format(m_color_format);
-	pipelineBuilder.set_depth_format(VK_FORMAT_UNDEFINED);
-
-
-	pipelineBuilder.vertex_input_info.vertexBindingDescriptionCount = 1;
-	
-
-	// referencing this directly crashes vkCreateGraphicsPipelines in release mode
-	auto bdata = Vertex2::get_binding_description();
-	pipelineBuilder.vertex_input_info.pVertexBindingDescriptions = &bdata;
-
-	pipelineBuilder.vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(Vertex2::get_attributes_descriptions().size());
-
-	// referencing this directly crashes vkCreateGraphicsPipelines in release mode
-	auto data = Vertex2::get_attributes_descriptions();
-	pipelineBuilder.vertex_input_info.pVertexAttributeDescriptions = data.data();
-
-	//finally build the pipeline
-	pip = pipelineBuilder.build_pipeline(GfxDevice::device);
-
-	//clean structures
-	vkDestroyShaderModule(GfxDevice::device, vs, nullptr);
-	vkDestroyShaderModule(GfxDevice::device, ps, nullptr);
-
-	main_deletion_queue.push_function([&]() {
-		vkDestroyPipelineLayout(GfxDevice::device, layout, nullptr);
-		vkDestroyPipeline(GfxDevice::device, pip, nullptr);
-		});
 }
 
 void Renderer2::create_global_descriptors()
@@ -342,26 +279,16 @@ void Renderer2::create_global_descriptors()
 	{
 		DescriptorLayoutBuilder builder;
 		builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		unlit_pipeline_desc_layouts.push_back(builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
+		scene_data_set_layout = builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 	}
 
-	{
-		DescriptorLayoutBuilder	builder;
-		builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		unlit_pipeline_desc_layouts.push_back(builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
-	}
-
-	scene_data_set = global_descriptor_allocator.allocate(GfxDevice::device, unlit_pipeline_desc_layouts[0]);
-	instance_data_set = global_descriptor_allocator.allocate(GfxDevice::device, unlit_pipeline_desc_layouts[1]);
+	scene_data_set = global_descriptor_allocator.allocate(GfxDevice::device, scene_data_set_layout);
+	GfxDevice::set_debug_name(scene_data_set, "Global Scene Descriptor Set");
 
 	main_deletion_queue.push_function([&]() {
 		global_descriptor_allocator.destroy_pool(GfxDevice::device);
-		vkDestroyDescriptorSetLayout(GfxDevice::device, unlit_pipeline_desc_layouts[0], nullptr);
-		vkDestroyDescriptorSetLayout(GfxDevice::device, unlit_pipeline_desc_layouts[1], nullptr);
+		vkDestroyDescriptorSetLayout(GfxDevice::device, scene_data_set_layout, nullptr);
 	});
-
-
 }
 
 void Renderer2::create_default_textures()
@@ -378,7 +305,9 @@ void Renderer2::create_default_textures()
 		}
 	}
 	texture_checker = GfxDevice::create_image(pixels.data(), VkExtent2D{ 16, 16 }, VK_FORMAT_R8G8B8A8_UNORM,
-		VK_IMAGE_USAGE_SAMPLED_BIT);
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	GfxDevice::set_debug_name(texture_checker.image, "Checkerboard Texture");
+	
 
 
 	// samplers

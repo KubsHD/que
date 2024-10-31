@@ -4,6 +4,11 @@
 
 #include <vulkan/vulkan.h>
 
+struct GPUPipeline {
+	VkPipeline pipeline;
+	VkPipelineLayout layout;
+};
+
 class PipelineBuilder {
 public:
 	std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
