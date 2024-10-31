@@ -9,7 +9,7 @@ void SpeakerInteractableComponent::on_interact()
 
 void SpeakerInteractableComponent::init()
 {
-	m_sound = AssetSystem::load_sound("data/audio/speaker_2.mp3");
+	m_sound = g_engine.asset->load_sound("audio/speaker_2.mp3");
 }
 
 void SpeakerInteractableComponent::update()

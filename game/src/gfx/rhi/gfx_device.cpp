@@ -445,7 +445,12 @@ GPUImage GfxDevice::create_image(void* data, VkExtent2D size, VkFormat format, V
 {
 	GPUImage img = create_image(size, format, usage, mipmapped);
 
-	upload_image(img, data, img.size.width * img.size.height * 4);
+	int pixels = img.size.width * img.size.height * 4;
+
+	if (format == VK_FORMAT_R32G32B32A32_SFLOAT)
+		pixels *= sizeof(float);
+
+	upload_image(img, data, pixels);
 
 	return img;
 }

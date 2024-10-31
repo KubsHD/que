@@ -31,6 +31,7 @@
 
 #include <game/components/mesh_component.h>
 
+
 Renderer::Renderer(std::shared_ptr<GraphicsAPI_Vulkan> gapi, std::vector<App::SwapchainInfo> colorFormats, std::vector<App::SwapchainInfo> depthFormats, entt::registry& reg) 
 	: m_colorSwapchainInfos(colorFormats), m_depthSwapchainInfos(depthFormats), m_graphicsAPI(gapi), m_reg(reg)
 {
@@ -149,8 +150,7 @@ void Renderer::render_model(glm::mat4 model_matrix, const Model& model)
 
 			m_graphicsAPI->UpdateDescriptors();
 
-			m_graphicsAPI->SetVertexBuffers(&mesh.vertex_buffer, 1);
-			m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
+
 			m_graphicsAPI->DrawIndexed(mesh.index_count);
 		}
 	}
@@ -175,8 +175,7 @@ void Renderer::render_model(glm::mat4 model_matrix, const Model& model)
 
 			m_graphicsAPI->UpdateDescriptors();
 
-			m_graphicsAPI->SetVertexBuffers(&mesh.vertex_buffer, 1);
-			m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
+
 			m_graphicsAPI->DrawIndexed(mesh.index_count);
 		}
 	}
@@ -211,8 +210,7 @@ void Renderer::draw_sky(App::FrameRenderInfo& info)
 
 	for (auto mesh : skybox_cube.meshes)
 	{
-		m_graphicsAPI->SetVertexBuffers(&mesh.vertex_buffer, 1);
-		m_graphicsAPI->SetIndexBuffer(mesh.index_buffer);
+
 		m_graphicsAPI->DrawIndexed(mesh.index_count);
 	}
 
@@ -249,12 +247,6 @@ void Renderer::create_engine_resources()
 	m_graphicsAPI->MainDeletionQueue.push_function([&]() {
 		vkDestroySampler(m_graphicsAPI->GetDevice(), sampler, nullptr);
 
-		for (auto m : skybox_cube.meshes)
-		{
-			m_graphicsAPI->DestroyBuffer(m.index_buffer);
-			m_graphicsAPI->DestroyBuffer(m.vertex_buffer);
-		}
-
 		m_graphicsAPI->DestroyPipeline(m_sky_render_pipeline);
 		m_graphicsAPI->DestroyBuffer(m_sceneData);
 		m_graphicsAPI->DestroyPipeline(m_pipeline);
@@ -266,3 +258,4 @@ void Renderer::destroy_resources()
 {
 	m_graphicsAPI->MainDeletionQueue.execute();
 }
+

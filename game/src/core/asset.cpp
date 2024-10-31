@@ -107,7 +107,6 @@ Model AssetSystem::load_model(Path path)
 
 	for (int m = 0; m < scene->mNumMeshes; m++)
 	{
-		std::vector<Vertex> vertices;
 		std::vector<uint32_t> indices;
 
 		Mesh internal_mesh;
@@ -116,13 +115,7 @@ Model AssetSystem::load_model(Path path)
 		auto mesh = scene->mMeshes[m];
 
 		for (size_t i = 0; i < mesh->mNumVertices; i++) {
-			vertices.push_back({
-				mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z,
-				mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z,
-				mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,
-				mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z,
-				mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y
-				});
+	
 		}
 
 		for (unsigned int i = 0; i < mesh->mNumFaces; i++)
@@ -131,12 +124,9 @@ Model AssetSystem::load_model(Path path)
 			for (unsigned int j = 0; j < face.mNumIndices; j++)
 				indices.push_back(face.mIndices[j]);
 		}
-		internal_mesh.vertex_buffer = m_api->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
-		internal_mesh.index_buffer = m_api->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
-		internal_mesh.index_count = indices.size();
 
-		internal_mesh.vertices = vertices;
-		internal_mesh.indices = indices;
+
+
 
 		auto model_directory = path.parent_path();
 
@@ -421,7 +411,6 @@ Model AssetSystem::load_model_json(Path path)
 		const aiScene* scene = imp.ReadFile(modelPath, aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
 		for (int m = 0; m < scene->mNumMeshes; m++)
 		{
-			std::vector<Vertex> vertices;
 			std::vector<uint32_t> indices;
 
 			Mesh internal_mesh;
@@ -430,13 +419,7 @@ Model AssetSystem::load_model_json(Path path)
 			auto mesh = scene->mMeshes[m];
 
 			for (size_t i = 0; i < mesh->mNumVertices; i++) {
-				vertices.push_back({
-					mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z,
-					mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z,
-					mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,
-					mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z,
-					mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y
-					});
+	
 			}
 
 			for (unsigned int i = 0; i < mesh->mNumFaces; i++)
@@ -446,12 +429,8 @@ Model AssetSystem::load_model_json(Path path)
 					indices.push_back(face.mIndices[j]);
 			}
 
-			internal_mesh.vertex_buffer = m_api->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::VERTEX, sizeof(float) * 14, sizeof(Vertex) * vertices.size(), vertices.data() });
-			internal_mesh.index_buffer = m_api->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::INDEX, sizeof(uint32_t), sizeof(uint32_t) * indices.size(), indices.data() });
-			internal_mesh.index_count = indices.size();
 
-			internal_mesh.vertices = vertices;
-			internal_mesh.indices = indices;
+
 
 			internal_mesh.material_index = mesh->mMaterialIndex;
 
@@ -554,3 +533,4 @@ GraphicsAPI::Image AssetSystem::try_to_load_texture_type(const aiScene* scene, a
 	
 	return m_api->tex_placeholder;
 } 
+

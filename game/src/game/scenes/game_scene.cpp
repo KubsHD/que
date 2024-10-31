@@ -13,13 +13,13 @@
 
 void GameScene::init()
 {
-	bgm = engine.asset->load_sound("data/audio/background_music_1.mp3");
+	bgm = engine.asset->load_sound("audio/background_music_1.mp3");
 
-	level_model = engine.asset->load_model("data/level/testlevel.gltf");
-	skybox_cube = engine.asset->load_model("data/cube.gltf");
-	controller =  engine.asset->load_model_json("data/models/meta/model_controller_left.model");
-	skybox_image =engine.asset->load_image("data/apartment.hdr", TT_HDRI);
-	test_cube =   engine.asset->load_model_json("data/models/blocks/brick/Cube.model");
+	level_model = engine.asset->load_model("level/testlevel.gltf");
+	skybox_cube = engine.asset->load_model("cube.gltf");
+	controller =  engine.asset->load_model_json("models/meta/model_controller_left.model");
+	skybox_image =engine.asset->load_image("apartment.hdr", TT_HDRI);
+	test_cube =   engine.asset->load_model_json("models/blocks/brick/Cube.model");
 
 	engine.audio->play_sound(*bgm);
 
@@ -70,7 +70,7 @@ void GameScene::destroy()
 
 void GameScene::load_saved_objects()
 {
-	auto so = engine.asset->read_json("data/saved_objects.json");
+	auto so = engine.asset->read_json("saved_objects.json");
 
 	models.reserve(so["objects"].size());
 
@@ -80,7 +80,7 @@ void GameScene::load_saved_objects()
 
 		String modelPath = obj["model"];
 
-		models.push_back(AssetSystem::load_model_json(modelPath));
+		models.push_back(AssetManager::load_model_json(modelPath));
 
 		JPH::RefConst<JPH::Shape> shape = nullptr;
 
@@ -89,11 +89,8 @@ void GameScene::load_saved_objects()
 
 		auto ent = game::tmpl::create_block(*this, ser::vec3_deserialize(obj["position"]), &models[models.size() - 1], shape);
 
-
-
 		if (modelPath.find("glosnik") != std::string::npos)
 			ent->add<SpeakerInteractableComponent>();
-
 	}
 }
 

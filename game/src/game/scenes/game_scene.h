@@ -23,8 +23,8 @@ private:
 	Model controller;
 
 	Model skybox_cube;
-	GraphicsAPI::Image skybox_image;
-	GraphicsAPI::Image blank_texture;
+	GPUImage skybox_image;
+	GPUImage blank_texture;
 
 	GraphicsAPI::Pipeline sky_pipeline;
 	Model test_cube;

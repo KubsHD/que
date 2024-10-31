@@ -7,6 +7,7 @@
 #include "asset.h"
 #include <lib/json.hpp>
 #include <common/serialization.h>
+#include <asset/asset_manager.h>
 
 JPH::RefConst<JPH::Shape> core::physics::create_mesh_shape(Mesh m)
 {
@@ -65,7 +66,7 @@ namespace nl = nlohmann;
 
 JPH::RefConst<JPH::Shape> core::physics::load_from_file(String path)
 {
-	nl::json j = AssetSystem::Instance->read_json(path);
+	nl::json j = AssetManager::read_json(path);
 
 	std::string fileName = j.at("file").get<std::string>();
 	std::string type = j.at("type").get<std::string>();

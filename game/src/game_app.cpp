@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#if 0
+
 #include "game_app.h"
 
 #include <asset/mesh.h>
@@ -227,3 +229,5 @@ void GameApp::destroy()
 	m_graphicsAPI->MainDeletionQueue.execute();
 }
 
+
+#endif

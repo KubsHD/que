@@ -1,6 +1,6 @@
 #pragma once
 
-#include <core/asset.h>
+#include <asset/asset_manager.h>
 #include <core/audio.h>
 #include <core/physics.h>
 #include <core/xr/xr_input.h>
@@ -9,7 +9,7 @@ class Renderer;
 
 struct engine_wrapper {
 	AudioSystem* audio;
-	AssetSystem* asset;
+	AssetManager* asset;
 	PhysicsSystem* physics;
 	XrInput* input;
 	Renderer* render;

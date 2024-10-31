@@ -1,7 +1,7 @@
 {
     "objects": [
         {
-            "model": "data/models/env/beachball/beachball.model",
+            "model": "models/env/beachball/beachball.model",
             "position": {
                 "x": 0,
                 "y": 0,
@@ -9,8 +9,8 @@
             }
         },
         {
-            "model": "data/models/env/glosnik/glosnik.model",
-            "physics": "data/models/env/glosnik/glosnik.physics",
+            "model": "models/env/glosnik/glosnik.model",
+            "physics": "models/env/glosnik/glosnik.physics",
             "position": {
                 "x": 0,
                 "y": 5,

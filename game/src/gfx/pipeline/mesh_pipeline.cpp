@@ -21,13 +21,13 @@ namespace pipeline
 		GraphicsAPI::PipelineCreateInfo pipelineCI{};
 
 		pipelineCI.shaders = { vs, ps };
-		pipelineCI.vertexInputState.attributes = {
+	/*	pipelineCI.vertexInputState.attributes = {
 				{0, 0, GraphicsAPI::VertexType::VEC3, 0, "POSITION"},
 				{1, 0, GraphicsAPI::VertexType::VEC3, offsetof(Vertex, nx), "NORMAL"},
 				{2, 0, GraphicsAPI::VertexType::VEC3, offsetof(Vertex, tx), "TANGENT"},
 				{3, 0, GraphicsAPI::VertexType::VEC3, offsetof(Vertex, btx), "BITANGENT"},
 				{4, 0, GraphicsAPI::VertexType::VEC2, offsetof(Vertex, u), "TEXCOORD"}
-		};
+		};*/
 		// stride VVVV ie. sizeof(Vertex)
 		pipelineCI.vertexInputState.bindings = { {0, 0, 14 * sizeof(float)} };
 		pipelineCI.inputAssemblyState = { GraphicsAPI::PrimitiveTopology::TRIANGLE_LIST, false };

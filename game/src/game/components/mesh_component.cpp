@@ -12,7 +12,8 @@ MeshComponent::MeshComponent(Model* model) : m_model(model)
 
 void MeshComponent::init()
 {
-	entity->scene->engine.render->register_mesh(this);
+	// todo
+	//entity->scene->engine.render->register_mesh(this);
 }
 
 void MeshComponent::update()

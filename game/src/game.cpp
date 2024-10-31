@@ -20,7 +20,7 @@ void Game::change_scene()
 
 	m_current_scene = new T();
 
-	m_current_scene->engine.asset = m_asset_manager.get();
+	m_current_scene->engine.asset = new AssetManager();
 	m_current_scene->engine.audio = m_audio_system.get();
 	m_current_scene->engine.physics = m_physics_system.get();
 	m_current_scene->engine.reg = &m_registry;
@@ -34,14 +34,15 @@ void Game::change_scene()
 
 Game::Game()
 {
-	AssetManager::Init();
+	m_audio_system = std::make_unique<AudioSystem>();
+
+	AssetManager::Init(*m_audio_system.get());
 
 	platform = new OpenXRPlatform();
 	platform->init();
 
 	PhysicsSystem::init_static();
 	m_physics_system = std::make_unique<PhysicsSystem>();
-	m_audio_system = std::make_unique<AudioSystem>();
 
 
 	init_imgui();
@@ -53,10 +54,10 @@ Game::Game()
 
 	// todo: to refactor all below
 
-	/*g_engine.asset = m_asset_manager.get();*/
+	g_engine.asset = new AssetManager();
 	/*g_engine.render = m_renderer.get();*/
 
-	//change_scene<GameScene>();
+	change_scene<GameScene>();
 }
 
 Game::~Game()

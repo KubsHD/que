@@ -217,9 +217,9 @@ namespace gfx {
 				vkCmdSetScissor(cmd, 0, static_cast<uint32_t>(vkRect2D.size()), vkRect2D.data());
 
 				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(cmd, 0, 1, &cube.meshes[0].vertex_buffer, offsets);
+			/*	vkCmdBindVertexBuffers(cmd, 0, 1, &cube.meshes[0].vertex_buffer, offsets);
 				vkCmdBindIndexBuffer(cmd, cube.meshes[0].index_buffer, 0, VK_INDEX_TYPE_UINT32);
-				vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);
+				vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);*/
 
 				vkCmdEndRenderPass(cmd);
 			}
@@ -432,9 +432,9 @@ namespace gfx {
 				vkCmdSetScissor(cmd, 0, static_cast<uint32_t>(vkRect2D.size()), vkRect2D.data());
 
 				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(cmd, 0, 1, &cube.meshes[0].vertex_buffer, offsets);
+		/*		vkCmdBindVertexBuffers(cmd, 0, 1, &cube.meshes[0].vertex_buffer, offsets);
 				vkCmdBindIndexBuffer(cmd, cube.meshes[0].index_buffer, 0, VK_INDEX_TYPE_UINT32);
-				vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);
+				vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);*/
 
 				vkCmdEndRenderPass(cmd);
 			}

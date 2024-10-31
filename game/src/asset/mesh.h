@@ -8,6 +8,8 @@
 #include <gfx/pipeline/pipelines.h>
 
 
+#include <gfx/vertex.h>
+#include <gfx/rhi/gfx_device.h>
 
 struct GPUModelConstant {
 	XrMatrix4x4f model;
@@ -34,33 +36,12 @@ struct Material {
 	glm::vec3 color;
 };
 
-struct Vertex {
-	float x;
-	float y;
-	float z;
-
-	float nx;
-	float ny;
-	float nz;
-
-	float tx;
-	float ty;
-	float tz;
-
-	float btx;
-	float bty;
-	float btz;
-
-	float u;
-	float v;
-};
-
 struct Mesh {
-	std::vector<Vertex> vertices;
+	std::vector<Vertex2> vertices;
 	std::vector<uint32_t> indices;
 
-	VkBuffer index_buffer;
-	VkBuffer vertex_buffer;
+	GPUBuffer index_buffer;
+	GPUBuffer vertex_buffer;
 	uint32_t index_count;
 	int material_index;
 };
