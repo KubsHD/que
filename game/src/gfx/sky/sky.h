@@ -3,13 +3,15 @@
 #include <core/types.h>
 #include <gfx/rhi/gfx_device.h>
 
+#include "sky_types.h"
+
 struct Model;
 class Renderer2;
 
 namespace gfx {
 	struct Sky {
-		GPUPipeline sky_render_pipeline;
-		GPUPipeline sky_cube_render_pipeline;
+		SkyIntermiedatePipeline sky_render_pipeline{};
+		SkyIntermiedatePipeline sky_cube_render_pipeline{};
 
 		GPUImage skyImage;
 		// cube probably
@@ -17,7 +19,5 @@ namespace gfx {
 		GPUImage skyIrradiance;
 	};
 
-	namespace sky {
-		Sky create_sky(Renderer2& gapi, String hdriPath, String cube);
-	}
+	Sky create_sky(Renderer2& gapi, String hdriPath, String cube);
 }

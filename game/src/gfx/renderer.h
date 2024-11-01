@@ -7,7 +7,7 @@
 #include <entt/entt.hpp>
 #include <core/physics.h>
 #include <gfx/buffers.h>
-#include <gfx/sky.h>
+#include <gfx/sky/sky.h>
 #include <asset/mesh.h>
 #include <app.h>
 

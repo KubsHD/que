@@ -4,6 +4,8 @@
 #include <gfx/pipeline/builder.h>
 #include <memory>
 
+#include "sky_types.h"
+
 class Renderer2;
 
 namespace pipeline {

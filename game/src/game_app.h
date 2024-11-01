@@ -6,7 +6,7 @@
 #include <core/xr/xr_input.h>
 #include <core/physics.h>
 #include <gfx/buffers.h>
-#include <gfx/sky.h>
+#include <gfx/sky/sky.h>
 #include <core/systems/base_system.h>
 
 

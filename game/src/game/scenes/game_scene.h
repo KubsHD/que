@@ -26,7 +26,6 @@ private:
 	GPUImage skybox_image;
 	GPUImage blank_texture;
 
-	GraphicsAPI::Pipeline sky_pipeline;
 	Model test_cube;
 
 	Vector<Model> models;

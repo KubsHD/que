@@ -11,12 +11,9 @@
 #include <core/profiler.h>
 
 
-#include <gfx/pipeline/sky_pipeline.h>
+#include <gfx/sky/sky_pipeline.h>
 #include <gfx/pipeline/mesh_pipeline.h>
-#include <gfx/pipeline/sky_cube_render_pipeline.h>
-#include <gfx/pipeline/sky_irradiance_generate.h>
-
-#include <gfx/sky.h>
+#include <gfx/sky/sky.h>
 
 #include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>

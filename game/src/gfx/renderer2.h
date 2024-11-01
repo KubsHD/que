@@ -11,7 +11,7 @@
 #include "rhi/gfx_swapchain.h"
 #include "buffers.h"
 #include "mat/mat_unlit.h"
-#include "sky.h"
+#include "sky/sky.h"
 
 class MeshComponent;
 
@@ -42,6 +42,8 @@ public:
     Renderer2(Swapchain& swapchain_info, entt::registry& reg);
 	~Renderer2();
 
+	void load_default_resources();
+
     void draw(Swapchain& swp, int image_index,XrView view);
 
 	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
@@ -52,15 +54,13 @@ public:
 
 	VkFormat color_format;
 	VkFormat depth_format;
+	gfx::Sky sky;
 private:
 	void draw_internal(VkCommandBuffer cmd);
-
-	GPUMeshBuffer test;
 
 	VkQueue m_queue;
 	uint32_t m_queue_family;
 
-	gfx::Sky sky;
 
 	// depth stuff
 	GPUImage depth_image;

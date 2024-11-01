@@ -4,7 +4,6 @@
 
 #include <asset/mesh.h>
 #include <common/vk_initializers.h>
-
 #include <gfx/renderer2.h>
 
 namespace pipeline {
@@ -61,8 +60,6 @@ namespace pipeline {
 		auto data = Vertex2::get_attributes_descriptions();
 		pipelineBuilder.vertex_input_info.pVertexAttributeDescriptions = data.data();
 
-
-		//finally build the pipeline
 		pl.pipeline = pipelineBuilder.build_pipeline(GfxDevice::device);
 
 		//clean structures

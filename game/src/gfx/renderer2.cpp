@@ -14,7 +14,7 @@
 #include <core/components/components.h>
 #include <game/components/mesh_component.h>
 #include <core/profiler.h>
-#include "sky.h"
+#include "sky/sky.h"
 
 Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg)
 {
@@ -57,55 +57,9 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	create_pipelines();
 
-	sky = gfx::sky::create_sky(*this, "apartment.hdr", "cube.gltf");
-
-	std::vector<Vertex2> rect_vertices;
-	rect_vertices.resize(4);
-
-	rect_vertices[0].x = 0.5;
-	rect_vertices[0].y = -0.5;
-	rect_vertices[0].z = 0;
-	rect_vertices[0].u = 1;
-	rect_vertices[0].v = 0;
-
-	rect_vertices[1].x = 0.5;
-	rect_vertices[1].y = 0.5;
-	rect_vertices[1].z = 0;
-	rect_vertices[1].u = 1;
-	rect_vertices[1].v = 1;
-
-
-	rect_vertices[2].x = -0.5;
-	rect_vertices[2].y = -0.5;
-	rect_vertices[2].z = 0;
-	rect_vertices[2].u = 0;
-	rect_vertices[2].v = 0;
-
-	rect_vertices[3].x = -0.5;
-	rect_vertices[3].y = 0.5;
-	rect_vertices[3].z = 0;
-	rect_vertices[3].u = 0;
-	rect_vertices[3].v = 1;
-
-	std::vector<uint32_t> rect_indices;
-	rect_indices.resize(6);
-
-	rect_indices[0] = 0;
-	rect_indices[1] = 1;
-	rect_indices[2] = 2;
-
-	rect_indices[3] = 2;
-	rect_indices[4] = 1;
-	rect_indices[5] = 3;
-
-	test = upload_mesh(rect_indices, rect_vertices);
-
 
 
 	main_deletion_queue.push_function([&]() {
-		GfxDevice::destroy_buffer(test.index_buffer);
-		GfxDevice::destroy_buffer(test.vertex_buffer);
-
 		GfxDevice::destroy_image(depth_image);
 	});
 }
@@ -118,6 +72,11 @@ Renderer2::~Renderer2()
 	vkDestroySemaphore(GfxDevice::device, frame.swapchain_semaphore, nullptr);
 	vkDestroySemaphore(GfxDevice::device, frame.render_semaphore, nullptr);
 	vkDestroyCommandPool(GfxDevice::device, frame.command_pool, nullptr);
+}
+
+void Renderer2::load_default_resources()
+{
+	sky = gfx::create_sky(*this, "apartment.hdr", "cube.gltf");
 }
 
 int _frameNumber = 0;

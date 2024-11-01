@@ -47,6 +47,7 @@ Game::Game()
 	PhysicsSystem::init_static();
 	m_physics_system = std::make_unique<PhysicsSystem>();
 
+	platform->get_renderer()->load_default_resources();
 
 	init_imgui();
 
