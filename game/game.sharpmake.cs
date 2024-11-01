@@ -174,6 +174,7 @@ namespace Que
             conf.EventPreBuild.Add($"python {realProjectPath + "\\scripts\\compile_shaders.py"} {realProjectPath + "\\data\\shader\\hlsl"} {conf.TargetPath + "\\shader"}");
 
             conf.Defines.Add("JPH_FLOATING_POINT_EXCEPTIONS_ENABLED");
+            conf.Defines.Add("GLM_FORCE_DEPTH_ZERO_TO_ONE");
             if (target.Optimization == Optimization.Debug)
                 CheckForLivePPSupport(conf, target);
         }
@@ -184,7 +185,7 @@ namespace Que
             {
                 Console.WriteLine("Found Live++, enabling support");
                 conf.Defines.Add("LIVEPP_ENABLED");
-                File.AppendAllText(GetConfigFilePath(conf, target), $"#define LIVEPP_PATH L\"{Path.GetFullPath("deps/LivePP")}\"");
+                File.AppendAllText(GetConfigFilePath(conf, target), $"#define LIVEPP_PATH L\"{Path.GetFullPath("deps/LivePP").Replace(@"\", @"\\")}\"");
             }
         }
 

@@ -51,7 +51,7 @@ bool start_crash_handler()
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-#if (_DEBUG && LIVEPP_ENABLED)
+#if (_DEBUG && LIVEPP_ENABLED && 0)
 	lpp::LppDefaultAgent lppAgent = lpp::LppCreateDefaultAgent(nullptr, LIVEPP_PATH);
 
 	if (lpp::LppIsValidDefaultAgent(&lppAgent))
@@ -91,7 +91,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	App_Main();
 
-#if (_DEBUG && LIVEPP_ENABLED)
+#if (_DEBUG && LIVEPP_ENABLED && 0)
 	if (lpp::LppIsValidDefaultAgent(&lppAgent))
 	{
 		lpp::LppDestroyDefaultAgent(&lppAgent);

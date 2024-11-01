@@ -46,11 +46,12 @@ void MAT_Unlit::create(Renderer2* ren)
 	pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
 	pipelineBuilder.set_multisampling_none();
 	pipelineBuilder.disable_blending();
-	pipelineBuilder.disable_depthtest();
+	pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_LESS);
+//	pipelineBuilder.disable_depthtest();
 
 	//connect the image format we will draw into, from draw image
 	pipelineBuilder.set_color_attachment_format(ren->color_format);
-	pipelineBuilder.set_depth_format(VK_FORMAT_UNDEFINED);
+	pipelineBuilder.set_depth_format(ren->depth_format);
 
 
 	pipelineBuilder.vertex_input_info.vertexBindingDescriptionCount = 1;

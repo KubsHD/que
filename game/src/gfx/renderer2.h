@@ -37,7 +37,7 @@ struct GPUMeshBuffer {
 
 class Renderer2 {
 public:
-    Renderer2(VkFormat color_format, entt::registry& reg);
+    Renderer2(Swapchain& swapchain_info, entt::registry& reg);
 	~Renderer2();
 
     void draw(Swapchain& swp, int image_index,XrView view);
@@ -47,7 +47,9 @@ public:
 	void register_mesh(const MeshComponent* mc);
 
 	DeletionQueue main_deletion_queue;
+
 	VkFormat color_format;
+	VkFormat depth_format;
 private:
 	void draw_internal(VkCommandBuffer cmd);
 
@@ -55,6 +57,9 @@ private:
 
 	VkQueue m_queue;
 	uint32_t m_queue_family;
+
+	// depth stuff
+	GPUImage depth_image;
 
     FrameData frame;
 

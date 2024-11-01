@@ -35,6 +35,8 @@ void Game::change_scene()
 
 Game::Game()
 {
+	QUE_PROFILE;
+
 	m_audio_system = std::make_unique<AudioSystem>();
 
 

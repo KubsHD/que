@@ -46,6 +46,18 @@ Sound* AudioSystem::create_sound(String path, SoundType type)
 
 	fmod_call(m_system->createSound(path.c_str(), type == SoundType::SPATIAL ? FMOD_3D : FMOD_DEFAULT, nullptr, &snd->sound));
 
+	FMOD_SOUND_TYPE sound_type;
+	FMOD_SOUND_FORMAT sound_format;
+	int channels, bits;
+	float rate;
+
+	snd->sound->getFormat(&sound_type, &sound_format, &channels, &bits);
+
+	if (sound_type == FMOD_SOUND_TYPE_FSB)
+	{
+		snd->sound->getSubSound(0, &snd->sound);
+	}
+
 	return snd;
 }
 

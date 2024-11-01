@@ -15,7 +15,6 @@ public:
 	static std::vector<char> read_all_bytes(String path);
 	static std::vector<char> read_all_bytes_raw(String path);
 
-
 	static GPUImage load_texture(String path, TextureType type);
 
 	static std::shared_ptr<Sound> load_sound(String path);

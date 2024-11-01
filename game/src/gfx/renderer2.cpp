@@ -13,10 +13,15 @@
 
 #include <core/components/components.h>
 #include <game/components/mesh_component.h>
+#include <core/profiler.h>
 
-Renderer2::Renderer2(VkFormat color_format, entt::registry& reg) : m_reg(reg)
+Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg)
 {
-	this->color_format = color_format;
+	QUE_PROFILE;
+
+	this->color_format = swapchain_info.swapchainFormat;
+
+	depth_format = VK_FORMAT_D32_SFLOAT;
 
     m_queue = GfxDevice::get_queue(vkb::QueueType::graphics);
 	m_queue_family = GfxDevice::get_queue_family(vkb::QueueType::graphics);
@@ -43,6 +48,8 @@ Renderer2::Renderer2(VkFormat color_format, entt::registry& reg) : m_reg(reg)
 	cmdAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
 	VULKAN_CHECK_NOMSG(vkAllocateCommandBuffers(GfxDevice::device, &cmdAllocInfo, &frame.main_command_buffer));
+
+	depth_image = GfxDevice::create_image(VkExtent2D{(uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height},VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	create_default_textures();
 	create_global_descriptors();
@@ -96,6 +103,8 @@ Renderer2::Renderer2(VkFormat color_format, entt::registry& reg) : m_reg(reg)
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_buffer(test.index_buffer);
 		GfxDevice::destroy_buffer(test.vertex_buffer);
+
+		GfxDevice::destroy_image(depth_image);
 	});
 }
 
@@ -141,10 +150,12 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkClearValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 120.f));
 	clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
-	VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
+	
 	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(swp.swapchainImages[image_index], &clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
 	VkExtent2D _windowExtent = {swp.width, swp.height };
-	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, nullptr);
+	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
 	vkCmdBeginRendering(cmd, &render_info);
 
@@ -166,6 +177,7 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	scissor.extent.height = swp.height;
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
+
 
 	draw_internal(cmd);
 
@@ -270,7 +282,6 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 void Renderer2::create_pipelines()
 {
 	m_scene_data_gpu = GfxDevice::create_buffer(sizeof(gfx::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
 	mat_unlit.create(this);
@@ -285,7 +296,6 @@ void Renderer2::create_pipelines()
 		GfxDevice::destroy_buffer(m_scene_data_gpu);
 		mat_unlit.clear(GfxDevice::device);
 	});
-
 }
 
 void Renderer2::create_global_descriptors()
