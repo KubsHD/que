@@ -282,7 +282,7 @@ Model AssetManager::load_model(Path path)
 		internal_mesh.vertices = vertices;
 		internal_mesh.indices = indices;
 
-		auto model_directory = real_path.parent_path();
+		auto model_directory = path.parent_path();
 
 		if (mesh->mMaterialIndex >= 0)
 		{
@@ -319,8 +319,6 @@ Model AssetManager::load_model_json(Path path)
 		return *cached;
 	}
 
-	const fs::path real_path = root_path / path;
-
 	Model model{};
 
 	auto loadMeshes = [&](String modelPath) -> std::vector<Mesh> {
@@ -334,7 +332,9 @@ Model AssetManager::load_model_json(Path path)
 		}
 #endif
 
-		const aiScene* scene = imp.ReadFile(modelPath, aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
+		auto real_path = (root_path / modelPath);
+
+		const aiScene* scene = imp.ReadFile(real_path.string(), aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
 		for (int m = 0; m < scene->mNumMeshes; m++)
 		{
 			std::vector<Vertex2> vertices;
@@ -383,10 +383,10 @@ Model AssetManager::load_model_json(Path path)
 		return meshes;
 		};
 
-	auto file_bytes = read_all_bytes(real_path.string());
+	auto file_bytes = read_all_bytes(path.string());
 	auto desc = nlohmann::json::parse(file_bytes);
 
-	auto desc_directory = real_path.parent_path().string();
+	auto desc_directory = path.parent_path().string();
 
 	model.meshes = loadMeshes(desc_directory + "/" + (String)desc["file"]);
 

@@ -248,15 +248,19 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 	vkb_internal::instance = inst_ret.value();
 	instance = inst_ret.value().instance;
 
-	VkPhysicalDeviceVulkan13Features features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
-	features.dynamicRendering = true;
-	features.synchronization2 = true;
+	VkPhysicalDeviceFeatures features{};
+	features.samplerAnisotropy = true;
+
+	VkPhysicalDeviceVulkan13Features features13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+	features13.dynamicRendering = true;
+	features13.synchronization2 = true;
 
 	// physical device
 	vkb::PhysicalDeviceSelector selector{ vkb_internal::instance };
 	auto phys_ret = selector/*.set_surface(surface)*/
 		.defer_surface_initialization()
-		.set_required_features_13(features)
+		.set_required_features(features)
+		.set_required_features_13(features13)
 		.set_minimum_version(1, 3)
 		.select();
 	if (!phys_ret) {
