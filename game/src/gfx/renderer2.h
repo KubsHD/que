@@ -89,7 +89,6 @@ public:
 	VkSampler default_sampler_nearest;
 
 	// materials
-	MaterialInstance mat_unlit_instance;
 	MAT_Unlit mat_unlit;
 
 };

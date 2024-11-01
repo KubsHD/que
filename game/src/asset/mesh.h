@@ -2,12 +2,10 @@
 
 #include "pch.h"
 
-#include <common/GraphicsAPI.h>
 #include <common/GraphicsAPI_Vulkan.h>
 #include <common/xr_linear_algebra.h>
 #include <gfx/pipeline/pipelines.h>
-
-
+#include <gfx/pipeline/builder.h>
 #include <gfx/vertex.h>
 #include <gfx/rhi/gfx_device.h>
 
@@ -50,6 +48,11 @@ struct Model {
 	std::string name;
 	std::vector<Mesh> meshes;
 	std::unordered_map<unsigned int, Material> materials;
+
+	std::unordered_map<unsigned int, MaterialInstance> materials2;
+
+
+
 	std::unordered_map<PipelineType, Vector<Mesh>> sorted_meshes;
 };
 

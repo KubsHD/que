@@ -7,10 +7,6 @@
 class Renderer2;
 class DescriptorAllocator;
 
-struct MaterialInstance {
-	GPUPipeline* pipeline;
-	VkDescriptorSet material_set;
-};
 
 struct MAT_Unlit {
 	GPUPipeline pipeline;

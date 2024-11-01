@@ -38,6 +38,8 @@ std::shared_ptr<T> try_cache_load(String path, std::unordered_map<std::string, s
 	return nullptr;
 }
 
+
+
 void AssetManager::Init(AudioSystem& asys, Renderer2& ren)
 {
 	m_audio_system_reference = &asys;
@@ -134,6 +136,22 @@ std::vector<char> AssetManager::read_all_bytes_raw(String path)
 #endif
 }
 
+GPUImage AssetManager::try_to_load_texture_type(const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path)
+{
+	aiString path;
+	material->GetTexture(type, 0, &path);
+
+	const aiTexture* tex = scene->GetEmbeddedTexture(path.C_Str());
+
+	//load texture with stb
+	if (!tex && path.length > 0)
+	{
+		return load_texture(root_path + "/" + std::string(path.C_Str()), type == aiTextureType_NORMALS ? TT_NORMAL : TT_DIFFUSE);
+	}
+	// TODO: embedded texture support
+
+	return m_renderer_reference->texture_checker;
+}
 
 GPUImage AssetManager::load_texture(String path, TextureType type)
 {
@@ -235,8 +253,6 @@ Model AssetManager::load_model(Path path)
 		std::vector<uint32_t> indices;
 
 		Mesh internal_mesh;
-
-
 		auto mesh = scene->mMeshes[m];
 
 		for (size_t i = 0; i < mesh->mNumVertices; i++) {
@@ -256,8 +272,6 @@ Model AssetManager::load_model(Path path)
 				indices.push_back(face.mIndices[j]);
 		}
 
-		
-
 		internal_mesh.vertex_buffer = GfxDevice::create_buffer(sizeof(Vertex2) * vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 		internal_mesh.index_buffer = GfxDevice::create_buffer(sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 		internal_mesh.index_count = indices.size();
@@ -272,41 +286,23 @@ Model AssetManager::load_model(Path path)
 
 		if (mesh->mMaterialIndex >= 0)
 		{
-			// check if material index is in map 
-			// if not, load material
-
-
 			if (mod.materials.find(mesh->mMaterialIndex) == mod.materials.end())
 			{
 				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-				Material mat;
+				MAT_Unlit::Resoruces res;
 
-				mod.materials.emplace(mesh->mMaterialIndex, mat);
+				res.diffuse = try_to_load_texture_type(scene, material, aiTextureType_DIFFUSE, model_directory.string());
+				res.diffuse_sampler = m_renderer_reference->default_sampler_linear;
+
+				MaterialInstance mat = m_renderer_reference->mat_unlit.write(GfxDevice::device, res, &m_renderer_reference->global_descriptor_allocator);
+
+				mod.materials2.emplace(mesh->mMaterialIndex, mat);
 			}
 
 			internal_mesh.material_index = mesh->mMaterialIndex;
 		}
 		mod.meshes.push_back(internal_mesh);
-	}
-
-	mod.sorted_meshes[PipelineType::LIT].reserve(1);
-	mod.sorted_meshes[PipelineType::UNLIT].reserve(1);
-
-
-	for (const auto& mesh : mod.meshes)
-	{
-
-		const auto& material = mod.materials.at(mesh.material_index);
-
-		if (material.type == PipelineType::UNLIT)
-		{
-			mod.sorted_meshes[PipelineType::UNLIT].push_back(mesh);
-		}
-		else if (material.type == PipelineType::LIT)
-		{
-			mod.sorted_meshes[PipelineType::LIT].push_back(mesh);
-		}
 	}
 
 	m_model_cache.emplace(path.string(), std::make_shared<Model>(mod));
@@ -346,7 +342,6 @@ Model AssetManager::load_model_json(Path path)
 
 			Mesh internal_mesh;
 
-
 			auto mesh = scene->mMeshes[m];
 
 			for (size_t i = 0; i < mesh->mNumVertices; i++) {
@@ -383,6 +378,8 @@ Model AssetManager::load_model_json(Path path)
 			
 		}
 
+
+
 		return meshes;
 		};
 
@@ -392,6 +389,60 @@ Model AssetManager::load_model_json(Path path)
 	auto desc_directory = real_path.parent_path().string();
 
 	model.meshes = loadMeshes(desc_directory + "/" + (String)desc["file"]);
+
+	for (auto material : desc["materials"])
+	{
+		if (material.contains("shader"))
+		{
+			auto& shader_type = material["shader"];
+			if (shader_type == "lit")
+			{
+				MAT_Unlit::Resoruces rs;
+				rs.diffuse = load_texture(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+				rs.diffuse_sampler = m_renderer_reference->default_sampler_linear;
+
+				auto inst = m_renderer_reference->mat_unlit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
+
+				model.materials2.emplace((int)material["id"], inst);
+			}
+			else if (shader_type == "unlit")
+			{
+
+				MAT_Unlit::Resoruces rs;
+				rs.diffuse = m_renderer_reference->texture_checker;
+				rs.diffuse_sampler = m_renderer_reference->default_sampler_linear;
+
+				auto inst = m_renderer_reference->mat_unlit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
+
+				model.materials2.emplace((int)material["id"], inst);
+			}
+		}
+		else
+		{
+			//m.type = PipelineType::LIT;
+
+			//// legacy
+			//m.diff = load_te(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+			//m.norm = load_image(desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+			//m.orm = load_image(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+			//m.emission = m_api->tex_placeholder;
+
+			MAT_Unlit::Resoruces rs;
+			rs.diffuse = load_texture(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+			rs.diffuse_sampler = m_renderer_reference->default_sampler_linear;
+
+			auto inst = m_renderer_reference->mat_unlit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
+
+			model.materials2.emplace((int)material["id"], inst);
+		}
+
+	}
+
+
+
+
+
+
 
 	m_model_cache.emplace(path.string(), std::make_shared<Model>(model));
 

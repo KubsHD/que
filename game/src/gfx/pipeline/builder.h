@@ -9,6 +9,12 @@ struct GPUPipeline {
 	VkPipelineLayout layout;
 };
 
+struct MaterialInstance {
+	GPUPipeline* pipeline;
+	VkDescriptorSet material_set;
+};
+
+
 class PipelineBuilder {
 public:
 	std::vector<VkPipelineShaderStageCreateInfo> shader_stages;

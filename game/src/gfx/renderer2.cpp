@@ -249,14 +249,12 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 		writer.update_set(GfxDevice::device, scene_data_set);
 	}
 
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->pipeline);
 
 	GPUDrawPushConstants pc;
-	
 	VkDeviceSize offset = 0;
 
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->layout, 0, 1, &scene_data_set, 0, nullptr);
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_unlit_instance.pipeline->layout, 1, 1, &mat_unlit_instance.material_set, 0, nullptr);
+
+	
 
 	auto modelsToRender = m_reg.view<core_transform_component, core_mesh_component>();
 	for (const auto&& [e, tc, mc] : modelsToRender.each())
@@ -268,11 +266,22 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 
 		for (auto& mesh : mc.model->meshes)
 		{
+			auto minst = mc.model->materials2[mesh.material_index];
+
+			if (minst.pipeline == nullptr)
+			{
+				continue;
+			}
+
+			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->pipeline);
+
 			vkCmdBindVertexBuffers(cmd, 0, 1, &mesh.vertex_buffer.buffer, &offset);
 			vkCmdBindIndexBuffer(cmd, mesh.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->layout, 0, 1, &scene_data_set, 0, nullptr);
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->layout, 1, 1, &mc.model->materials2[mesh.material_index].material_set, 0, nullptr);
 
-			vkCmdPushConstants(cmd, mat_unlit_instance.pipeline->layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUDrawPushConstants), &pc);
+			vkCmdPushConstants(cmd, minst.pipeline->layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUDrawPushConstants), &pc);
 			vkCmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0);
 		}
 	};
@@ -286,11 +295,6 @@ void Renderer2::create_pipelines()
 
 	mat_unlit.create(this);
 
-	MAT_Unlit::Resoruces res;
-	res.diffuse = texture_checker;
-	res.diffuse_sampler = default_sampler_nearest;
-
-	mat_unlit_instance = mat_unlit.write(GfxDevice::device, res, &global_descriptor_allocator);
 
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_buffer(m_scene_data_gpu);
@@ -302,10 +306,12 @@ void Renderer2::create_global_descriptors()
 {
 	std::vector<DescriptorAllocator::PoolSizeRatio> sizes =
 	{
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 }
 	};
 
-	global_descriptor_allocator.init_pool(GfxDevice::device, 10, sizes);
+	global_descriptor_allocator.init_pool(GfxDevice::device, 100, sizes);
 
 	{
 		DescriptorLayoutBuilder builder;

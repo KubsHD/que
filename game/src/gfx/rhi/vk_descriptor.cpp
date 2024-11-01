@@ -38,6 +38,8 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::build(VkDevice device, VkShaderSt
 	return layout;
 }
 
+// allocator
+
 void DescriptorAllocator::init_pool(VkDevice device, uint32_t max_sets, std::vector<PoolSizeRatio> pool_sizes)
 {
 	std::vector<VkDescriptorPoolSize> sizes;
