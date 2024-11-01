@@ -49,6 +49,6 @@ VkPipelineLayoutCreateInfo pipeline_layout_create_info();
 VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info(VkShaderStageFlagBits stage,
     VkShaderModule shaderModule,
     const char * entry = "main");
-VkSamplerCreateInfo sampler_create_info(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode);
+VkSamplerCreateInfo sampler_create_info(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode, int aniso = 0);
 
 } // namespace vkinit

@@ -340,7 +340,7 @@ VkPipelineShaderStageCreateInfo vkinit::pipeline_shader_stage_create_info(VkShad
     return info;
 }
 
-VkSamplerCreateInfo vkinit::sampler_create_info(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode)
+VkSamplerCreateInfo vkinit::sampler_create_info(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode, int aniso)
 {
 
     VkSamplerCreateInfo info{};
@@ -358,6 +358,12 @@ VkSamplerCreateInfo vkinit::sampler_create_info(VkFilter minFilter, VkFilter mag
 	info.addressModeU = addressMode;
 	info.addressModeV = addressMode;
 	info.addressModeW = addressMode;
+
+    if (aniso > 0)
+    {
+		info.anisotropyEnable = VK_TRUE;
+        info.maxAnisotropy = aniso;
+    }
 
     return info;
 }

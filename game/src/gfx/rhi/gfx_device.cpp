@@ -450,12 +450,12 @@ GPUImage GfxDevice::create_image(void* data, VkExtent2D size, VkFormat format, V
 	if (format == VK_FORMAT_R32G32B32A32_SFLOAT)
 		pixels *= sizeof(float);
 
-	upload_image(img, data, pixels);
+	upload_image(img, data, pixels, mipmapped);
 
 	return img;
 }
 
-void GfxDevice::upload_image(GPUImage image, void* data, int size)
+void GfxDevice::upload_image(GPUImage image, void* data, int size, bool mipmapped)
 {
 	GPUBuffer staging = create_buffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
@@ -480,7 +480,10 @@ void GfxDevice::upload_image(GPUImage image, void* data, int size)
 
 		vkCmdCopyBufferToImage(cmd, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
-		vkutil::transition_image(cmd, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		if (mipmapped)
+			vkutil::generate_mipmaps(cmd, image.image, image.size);
+		else
+			vkutil::transition_image(cmd, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	});
 
 	destroy_buffer(staging);

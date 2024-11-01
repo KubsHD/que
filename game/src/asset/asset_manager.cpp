@@ -191,7 +191,7 @@ GPUImage AssetManager::load_texture(String path, TextureType type)
 	else
 		pixel_ptr = stbi_load_from_memory((stbi_uc*)bytes.data(), bytes.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
-	GPUImage img = GfxDevice::create_image(pixel_ptr, VkExtent2D{ (uint32_t)texWidth, (uint32_t)texHeight }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, false);
+	GPUImage img = GfxDevice::create_image(pixel_ptr, VkExtent2D{ (uint32_t)texWidth, (uint32_t)texHeight }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, true);
 
 	m_image_cache.emplace(path, std::make_shared<GPUImage>(img));
 

@@ -348,11 +348,11 @@ void Renderer2::create_default_textures()
 
 
 	// samplers
-	VkSamplerCreateInfo sampl = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+	VkSamplerCreateInfo sampl = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
 
 	sampl.magFilter = VK_FILTER_NEAREST;
 	sampl.minFilter = VK_FILTER_NEAREST;
-
+	
 	vkCreateSampler(GfxDevice::device, &sampl, nullptr, &default_sampler_nearest);
 
 	sampl.magFilter = VK_FILTER_LINEAR;
