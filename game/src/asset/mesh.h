@@ -52,3 +52,4 @@ struct Model {
 	std::unordered_map<unsigned int, Material> materials;
 	std::unordered_map<PipelineType, Vector<Mesh>> sorted_meshes;
 };
+

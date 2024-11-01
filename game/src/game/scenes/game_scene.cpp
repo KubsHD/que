@@ -18,7 +18,7 @@ void GameScene::init()
 	level_model = engine.asset->load_model("level/testlevel.gltf");
 	skybox_cube = engine.asset->load_model("cube.gltf");
 	controller =  engine.asset->load_model_json("models/meta/model_controller_left.model");
-	skybox_image =engine.asset->load_image("apartment.hdr", TT_HDRI);
+	skybox_image =engine.asset->load_texture("apartment.hdr", TT_HDRI);
 	test_cube =   engine.asset->load_model_json("models/blocks/brick/Cube.model");
 
 	engine.audio->play_sound(*bgm);

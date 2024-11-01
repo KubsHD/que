@@ -7,6 +7,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <gfx/vertex.h>
+#include <gfx/renderer2.h>
 
 fs::path root_path;
 
@@ -14,11 +15,33 @@ std::string cache_path;
 
 std::unordered_map<std::string, std::shared_ptr<Sound>> AssetManager::m_sound_cache;
 
-AudioSystem* AssetManager::m_audio_system_reference;
+std::unordered_map<std::string, std::shared_ptr<GPUImage>> m_image_cache;
+std::unordered_map<std::string, std::shared_ptr<Model>> m_model_cache;
 
-void AssetManager::Init(AudioSystem& asys)
+
+
+AudioSystem* AssetManager::m_audio_system_reference;
+Renderer2* AssetManager::m_renderer_reference;
+
+template<typename T>
+std::shared_ptr<T> try_cache_load(String path, std::unordered_map<std::string, std::shared_ptr<T>>& cache)
+{
+	QUE_PROFILE;
+	QUE_PROFILE_TAG("Asset path", path.c_str());
+	const fs::path real_path = root_path / path;
+	for (auto [k, v] : cache)
+	{
+		if (k == path)
+			return v;
+	}
+
+	return nullptr;
+}
+
+void AssetManager::Init(AudioSystem& asys, Renderer2& ren)
 {
 	m_audio_system_reference = &asys;
+	m_renderer_reference = &ren;
 
 	cache_path = ".cache/";
 
@@ -48,6 +71,34 @@ void AssetManager::Init(AudioSystem& asys)
 #else
 	root_path = "data/";
 #endif
+}
+
+void AssetManager::Destroy()
+{
+	for (auto [k, v] : m_sound_cache)
+	{
+	}
+
+	m_sound_cache.clear();
+
+	for (auto [k, v] : m_image_cache)
+	{
+		GfxDevice::destroy_image(*v);
+	}
+
+	m_image_cache.clear();
+
+	for (auto [k, v] : m_model_cache)
+	{
+		for (auto& mesh : v->meshes)
+		{
+			GfxDevice::destroy_buffer(mesh.vertex_buffer);
+			GfxDevice::destroy_buffer(mesh.index_buffer);
+		}
+	}
+
+	m_model_cache.clear();
+
 }
 
 std::vector<char> AssetManager::read_all_bytes(String path)
@@ -83,11 +134,17 @@ std::vector<char> AssetManager::read_all_bytes_raw(String path)
 #endif
 }
 
-GPUImage AssetManager::load_image(String path, TextureType type)
+
+GPUImage AssetManager::load_texture(String path, TextureType type)
 {
 	QUE_PROFILE;
 	QUE_PROFILE_TAG("Image path", path.c_str());
 	
+	if (auto cached = try_cache_load(path, m_image_cache))
+	{
+		return *cached;
+	}
+
 	auto bytes = AssetManager::read_all_bytes(path);
 
 	stbi_set_flip_vertically_on_load(true);
@@ -117,6 +174,8 @@ GPUImage AssetManager::load_image(String path, TextureType type)
 		pixel_ptr = stbi_load_from_memory((stbi_uc*)bytes.data(), bytes.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	GPUImage img = GfxDevice::create_image(pixel_ptr, VkExtent2D{ (uint32_t)texWidth, (uint32_t)texHeight }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, false);
+
+	m_image_cache.emplace(path, std::make_shared<GPUImage>(img));
 
 	return img;
 }
@@ -148,10 +207,14 @@ Model AssetManager::load_model(Path path)
 {
 	QUE_PROFILE;
 
+	if (auto cached = try_cache_load(path.string(), m_model_cache))
+	{
+		return *cached;
+	}
+
 	const fs::path real_path = root_path / path;
 
 	Model mod;
-
 	mod.name = path.string();
 
 	Assimp::Importer imp;
@@ -165,7 +228,6 @@ Model AssetManager::load_model(Path path)
 
 	// create models
 	const aiScene* scene = imp.ReadFile(real_path.string(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
-
 
 	for (int m = 0; m < scene->mNumMeshes; m++)
 	{
@@ -247,6 +309,7 @@ Model AssetManager::load_model(Path path)
 		}
 	}
 
+	m_model_cache.emplace(path.string(), std::make_shared<Model>(mod));
 
 	return mod;
 }
@@ -254,6 +317,11 @@ Model AssetManager::load_model(Path path)
 Model AssetManager::load_model_json(Path path)
 {
 	QUE_PROFILE;
+
+	if (auto cached = try_cache_load(path.string(), m_model_cache))
+	{
+		return *cached;
+	}
 
 	const fs::path real_path = root_path / path;
 
@@ -311,6 +379,8 @@ Model AssetManager::load_model_json(Path path)
 			internal_mesh.material_index = mesh->mMaterialIndex;
 
 			meshes.push_back(internal_mesh);
+
+			
 		}
 
 		return meshes;
@@ -322,6 +392,8 @@ Model AssetManager::load_model_json(Path path)
 	auto desc_directory = real_path.parent_path().string();
 
 	model.meshes = loadMeshes(desc_directory + "/" + (String)desc["file"]);
+
+	m_model_cache.emplace(path.string(), std::make_shared<Model>(model));
 
 	return model;
 }

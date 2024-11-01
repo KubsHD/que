@@ -37,11 +37,11 @@ Game::Game()
 {
 	m_audio_system = std::make_unique<AudioSystem>();
 
-	AssetManager::Init(*m_audio_system.get());
 
 	platform = new OpenXRPlatform();
 	platform->init(m_registry);
 
+	AssetManager::Init(*m_audio_system, *platform->get_renderer());
 	PhysicsSystem::init_static();
 	m_physics_system = std::make_unique<PhysicsSystem>();
 
@@ -63,6 +63,7 @@ Game::Game()
 
 Game::~Game()
 {
+	AssetManager::Destroy();
 	platform->destroy();
 	delete platform;
 }
