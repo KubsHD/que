@@ -1,12 +1,12 @@
 #pragma once
 
-#include <common/GraphicsAPI.h>
-#include <common/GraphicsAPI_Vulkan.h>
-
 #include <memory>
 
+#include <gfx/rhi/gfx_device.h>
+
+class Renderer2;
 class AssetSystem;
 
 namespace pipeline {
-	GraphicsAPI::Pipeline create_sky_cube_render_pipeline(GraphicsAPI_Vulkan& gapi);
+	GPUPipeline create_sky_cube_render_pipeline(Renderer2& gapi);
 }

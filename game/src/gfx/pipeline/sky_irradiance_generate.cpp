@@ -3,47 +3,72 @@
 #include "sky_pipeline.h"
 
 #include <asset/mesh.h>
-#include <core/asset.h>
+#include <common/vk_initializers.h>
+
+#include <gfx/renderer2.h>
+
 namespace pipeline {
 
-	GraphicsAPI::Pipeline create_sky_irradiance_pipeline(GraphicsAPI_Vulkan& gapi)
+	GPUPipeline create_sky_irradiance_pipeline(Renderer2& ren)
 	{
-		std::vector<char> vertexSource = AssetSystem::Instance->read_all_bytes("shader/irradiance.vert.spv");
-		auto vs = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
+		PipelineBuilder pipelineBuilder;
 
-		std::vector<char> fragmentSource = AssetSystem::Instance->read_all_bytes("shader/irradiance.frag.spv");
-		auto ps = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::FRAGMENT, fragmentSource.data(), fragmentSource.size() });
+		GPUPipeline pl;
+
+		auto vs = PipelineBuilder::load_shader_module("shader/irradiance.vs_c", GfxDevice::device);
+		auto ps = PipelineBuilder::load_shader_module("shader/irradiance.ps_c", GfxDevice::device);
 
 		VkPushConstantRange range;
 		range.offset = 0;
 		range.size = sizeof(GPUEqui2CubeConstant);
-		range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		GraphicsAPI::PipelineCreateInfo pipelineCI;
+		DescriptorLayoutBuilder builder;
+		builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		VkDescriptorSetLayout set_layout = builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-		pipelineCI.shaders = { vs, ps };
-	/*	pipelineCI.vertexInputState.attributes = {
-			{0, 0, GraphicsAPI::VertexType::VEC3, 0, "POSITION"},
-			{1, 0, GraphicsAPI::VertexType::VEC3, offsetof(Vertex, nx), "NORMAL"},
-			{2, 0, GraphicsAPI::VertexType::VEC3, offsetof(Vertex, tx), "TANGENT"},
-			{3, 0, GraphicsAPI::VertexType::VEC3, offsetof(Vertex, btx), "BITANGENT"},
-			{4, 0, GraphicsAPI::VertexType::VEC2, offsetof(Vertex, u), "TEXCOORD"}
-		};*/
-		// stride VVVV ie. sizeof(Vertex)
-		pipelineCI.vertexInputState.bindings = { {0, 0, 14 * sizeof(float)} };
-		pipelineCI.inputAssemblyState = { GraphicsAPI::PrimitiveTopology::TRIANGLE_LIST, false };
-		pipelineCI.rasterisationState = { false, false, GraphicsAPI::PolygonMode::FILL,
-										GraphicsAPI::CullMode::NONE, GraphicsAPI::FrontFace::CLOCKWISE,
-										false, 0.0f, 0.0f, 0.0f, 1.0f };
-		pipelineCI.multisampleState = { 1, false, 1.0f, 0xFFFFFFFF, false, false };
-		pipelineCI.depthStencilState = { true, false, GraphicsAPI::CompareOp::LESS_OR_EQUAL, false, false, {}, {}, 0.0f, 1.0f };
-		pipelineCI.colorBlendState = { false, GraphicsAPI::LogicOp::NO_OP, {{true, GraphicsAPI::BlendFactor::SRC_ALPHA, GraphicsAPI::BlendFactor::ONE_MINUS_SRC_ALPHA, GraphicsAPI::BlendOp::ADD, GraphicsAPI::BlendFactor::ONE, GraphicsAPI::BlendFactor::ZERO, GraphicsAPI::BlendOp::ADD, (GraphicsAPI::ColorComponentBit)15}}, {0.0f, 0.0f, 0.0f, 0.0f} };
-		pipelineCI.colorFormats = { VK_FORMAT_R16G16B16A16_SFLOAT };
-		pipelineCI.depthFormat = 0;
-		pipelineCI.layout = { {0, 0, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::BUFFER, GraphicsAPI::DescriptorInfo::Stage::VERTEX},
-							  {0, 1, nullptr, nullptr, GraphicsAPI::DescriptorInfo::Type::IMAGE, GraphicsAPI::DescriptorInfo::Stage::FRAGMENT} };
-		pipelineCI.pushConstantRange = range;
+		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 
-		return gapi.CreatePipeline(pipelineCI);
+		pipeline_layout_info.pPushConstantRanges = &range;
+		pipeline_layout_info.pushConstantRangeCount = 1;
+
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = &set_layout;
+
+
+		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &pl.layout));
+
+		//use the triangle layout we created
+		pipelineBuilder.pipeline_layout = pl.layout;
+		pipelineBuilder.set_shaders(vs, ps);
+		pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+		pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+		pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+		pipelineBuilder.set_multisampling_none();
+		pipelineBuilder.disable_blending();
+		pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_LESS);
+		pipelineBuilder.set_color_attachment_format(ren.color_format);
+		pipelineBuilder.set_depth_format(ren.depth_format);
+
+		// referencing this directly crashes vkCreateGraphicsPipelines in release mode
+		auto bdata = Vertex2::get_binding_description();
+		pipelineBuilder.vertex_input_info.pVertexBindingDescriptions = &bdata;
+		pipelineBuilder.vertex_input_info.vertexBindingDescriptionCount = 1;
+
+		pipelineBuilder.vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(Vertex2::get_attributes_descriptions().size());
+
+		// referencing this directly crashes vkCreateGraphicsPipelines in release mode
+		auto data = Vertex2::get_attributes_descriptions();
+		pipelineBuilder.vertex_input_info.pVertexAttributeDescriptions = data.data();
+
+
+		//finally build the pipeline
+		pl.pipeline = pipelineBuilder.build_pipeline(GfxDevice::device);
+
+		//clean structures
+		vkDestroyShaderModule(GfxDevice::device, vs, nullptr);
+		vkDestroyShaderModule(GfxDevice::device, ps, nullptr);
+
+		return pl;
 	}
 }

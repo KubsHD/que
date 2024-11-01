@@ -1,12 +1,11 @@
 #pragma once
 
-#include <common/GraphicsAPI.h>
-#include <common/GraphicsAPI_Vulkan.h>
 
+#include <gfx/pipeline/builder.h>
 #include <memory>
 
-class AssetSystem;
+class Renderer2;
 
 namespace pipeline {
-	GraphicsAPI::Pipeline create_sky_irradiance_pipeline(GraphicsAPI_Vulkan& gapi);
+	GPUPipeline create_sky_irradiance_pipeline(Renderer2& gapi);
 }

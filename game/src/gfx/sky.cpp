@@ -2,7 +2,6 @@
 
 
 #include "sky.h"
-#include <core/asset.h>
 #include <common/vk_initializers.h>
 #include <gfx/rhi/vk_image.h>
 
@@ -11,8 +10,13 @@
 #include <glm/ext/matrix_transform.hpp>
 
 #include <gfx/buffers.h>
+
 #include "pipeline/sky_irradiance_generate.h"
+#include "pipeline/sky_cube_render_pipeline.h"
+#include "pipeline/sky_pipeline.h"
+
 #include <core/profiler.h>
+#include <asset/asset_manager.h>
 
 
 namespace gfx {
@@ -24,7 +28,7 @@ namespace gfx {
 		VkImageView cubemapViews[6];
 		VkFramebuffer framebuffers[6];
 
-		s.skyImage = AssetSystem::load_image(hdriPath, TT_HDRI);
+		s.skyImage = AssetManager::load_texture(hdriPath, TT_HDRI);
 
 		// 1. create skybox cubemap image
 		VkImageCreateInfo imageCreateInfo = vkinit::image_create_info(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, { 512,512,1 });
@@ -447,17 +451,21 @@ namespace gfx {
 
 	}
 
-	Sky gfx::sky::create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, GraphicsAPI::Pipeline sky_render_pipeline)
+	Sky gfx::sky::create_sky(Renderer2& ren, String hdriPath, String cube)
 	{
 		QUE_PROFILE;
 
         Sky s{};
 
-		GraphicsAPI::Pipeline sky_irradiance_pipeline = pipeline::create_sky_irradiance_pipeline(gapi);
+		s.sky_cube_render_pipeline = pipeline::create_sky_cube_render_pipeline(ren);
+		auto sip = pipeline::create_sky_irradiance_pipeline(ren);
 
-		load_sky_texture_and_create_cubemap(gapi, hdriPath, s, cube, sky_render_pipeline);
-		generate_irradiance_map(gapi, s, cube, sky_irradiance_pipeline);
+		/*load_sky_texture_and_create_cubemap(gapi, hdriPath, s, cube, sky_render_pipeline);
+		generate_irradiance_map(gapi, s, cube, sky_irradiance_pipeline);*/
        
+		vkDestroyPipelineLayout(GfxDevice::device, sip.layout, nullptr);
+		vkDestroyPipeline(GfxDevice::device, sip.pipeline, nullptr);
+
         return s;
 	}
 

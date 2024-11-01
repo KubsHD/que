@@ -24,6 +24,11 @@ struct GPUImage {
 	VkExtent2D size;
 };
 
+struct GPUPipeline {
+	VkPipeline pipeline;
+	VkPipelineLayout layout;
+};
+
 class GfxDevice {
 public:
 

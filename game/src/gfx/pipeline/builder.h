@@ -4,10 +4,7 @@
 
 #include <vulkan/vulkan.h>
 
-struct GPUPipeline {
-	VkPipeline pipeline;
-	VkPipelineLayout layout;
-};
+struct GPUPipeline;
 
 struct MaterialInstance {
 	GPUPipeline* pipeline;

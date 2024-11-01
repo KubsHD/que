@@ -14,6 +14,7 @@
 #include <core/components/components.h>
 #include <game/components/mesh_component.h>
 #include <core/profiler.h>
+#include "sky.h"
 
 Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg)
 {
@@ -56,6 +57,7 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	create_pipelines();
 
+	sky = gfx::sky::create_sky(*this, "apartment.hdr", "cube.gltf");
 
 	std::vector<Vertex2> rect_vertices;
 	rect_vertices.resize(4);

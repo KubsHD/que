@@ -1,20 +1,23 @@
 #pragma once
 
-#include <common/GraphicsAPI_Vulkan.h>
 #include <core/types.h>
+#include <gfx/rhi/gfx_device.h>
 
 struct Model;
+class Renderer2;
 
 namespace gfx {
 	struct Sky {
-		GraphicsAPI::Image skyImage;
-		// cube probably
-		GraphicsAPI::Image skyCubemap;
+		GPUPipeline sky_render_pipeline;
+		GPUPipeline sky_cube_render_pipeline;
 
-		GraphicsAPI::Image skyIrradiance;
+		GPUImage skyImage;
+		// cube probably
+		GPUImage skyCubemap;
+		GPUImage skyIrradiance;
 	};
 
 	namespace sky {
-		Sky create_sky(GraphicsAPI_Vulkan& gapi, String hdriPath, Model cube, GraphicsAPI::Pipeline sky_render_pipeline);
+		Sky create_sky(Renderer2& gapi, String hdriPath, String cube);
 	}
 }

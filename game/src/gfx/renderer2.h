@@ -11,8 +11,10 @@
 #include "rhi/gfx_swapchain.h"
 #include "buffers.h"
 #include "mat/mat_unlit.h"
+#include "sky.h"
 
 class MeshComponent;
+
 
 struct FrameData {
 	VkCommandPool command_pool;
@@ -57,6 +59,8 @@ private:
 
 	VkQueue m_queue;
 	uint32_t m_queue_family;
+
+	gfx::Sky sky;
 
 	// depth stuff
 	GPUImage depth_image;

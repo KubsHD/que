@@ -1,4 +1,5 @@
 #include "common.hlsli"
+#include "input.hlsli"
 
 struct VSOutput {
     float4 position : SV_POSITION;

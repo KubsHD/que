@@ -227,13 +227,13 @@ void Renderer::create_engine_resources()
 	m_instanceData = m_graphicsAPI->CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(gfx::InstanceData) * 1024, nullptr });
 
 	m_pipeline = pipeline::create_mesh_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
-	m_sky_render_pipeline = pipeline::create_sky_cube_render_pipeline(*m_graphicsAPI);
+	/*m_sky_render_pipeline = pipeline::create_sky_cube_render_pipeline(*m_graphicsAPI);*/
 	m_unlit_pipeline = pipeline::create_unlit_mesh_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 
 	skybox_cube = AssetSystem::load_model("data/cube.gltf");
 
 	m_sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
-	m_sky = gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, m_sky_render_pipeline);
+	//m_sky = gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, m_sky_render_pipeline);
 
 	auto device = m_graphicsAPI->GetDevice();
 

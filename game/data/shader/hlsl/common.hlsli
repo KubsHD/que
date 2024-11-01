@@ -14,6 +14,8 @@ struct GPUDrawPushConstants {
 	row_major float4x4 model;
 };
 
+
+
 // vk::binding(x,y)
 // where x is the binding slot
 // and y is the descriptor set index
@@ -22,11 +24,3 @@ struct GPUDrawPushConstants {
 [[vk::binding(0,0)]]
 ConstantBuffer<SceneData> Scene;
 
-struct VertexInput
-{
-    [[vk::location(0)]] float3 position : POSITION;
-    [[vk::location(1)]] float3 normal : NORMAL;
-    [[vk::location(2)]] float3 tangent : TANGENT;
-    [[vk::location(3)]] float3 bitangent : BITANGENT;
-    [[vk::location(4)]] float2 texCoord : TEXCOORD;
-};
