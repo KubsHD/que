@@ -17,11 +17,11 @@ VS_OUTPUT vs_main(VertexInput input, uint VertexIndex: SV_VertexID) {
 
     float4x4 rotView = Scene.view;
 
-    rotView._m03_m13_m23_m33 = 0.0f;
-    float4 clipPos = mul(Scene.proj, mul(rotView, float4(output.pos_raw, 1.0)));
-    float4 pos = mul(Scene.viewProj, mul(pc.model, float4(input.position, 1.0f)));
+    //rotView._m03_m13_m23_m33 = 0.0f;
+    //float4 clipPos = mul(Scene.proj, mul(rotView, float4(output.pos_raw, 1.0)));
+    float4 pos = mul(mul(float4(input.position, 1.0f), pc.model), Scene.viewProj);
 
-    output.pos = pos.xyww;
+    output.pos = pos.xyzw;
 
     return output;
 }
@@ -44,7 +44,6 @@ float2 SampleSphericalMap(float3 v)
 }
 
 float4 ps_main(VS_OUTPUT input) : SV_Target {
-    float3 envColor = tex1.Sample(tex1_sm, input.pos).rgb;
-
+    float3 envColor = tex1.Sample(tex1_sm, input.pos_raw).rgb;
 	return float4(envColor, 1.0f);
 }

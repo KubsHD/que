@@ -34,7 +34,6 @@ namespace pipeline {
 		pipeline_layout_info.setLayoutCount = 1;
 		pipeline_layout_info.pSetLayouts = &set_layout;
 
-
 		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &pl.layout));
 
 		//use the triangle layout we created

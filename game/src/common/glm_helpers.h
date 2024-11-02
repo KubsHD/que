@@ -45,7 +45,7 @@ namespace glm {
 	}
 
 	// https://github.com/tdbe/openxr-vulkan-project-fundamentals/blob/d4d3d9ccf70b2c3b685c4eea4df4f755c59c29bf/src/Util.cpp
-	inline glm::mat4 to_glm_projection(const XrFovf& fov, float nearZ = 0.01f, float farZ = 100.0f) {
+	inline glm::mat4 to_glm_projection(const XrFovf& fov, float nearZ = 0.01f, float farZ = 1000.0f) {
 		const float l = glm::tan(fov.angleLeft);
 		const float r = glm::tan(fov.angleRight);
 		const float d = glm::tan(fov.angleDown);

@@ -1,19 +1,20 @@
 #include "pch.h"
 
-#include "mat_unlit.h"
+#include "mat_sky.h"
+
+#include <common/vk_initializers.h>
 
 #include <gfx/renderer2.h>
-#include <gfx/rhi/gfx_device.h>
 #include <gfx/pipeline/builder.h>
-#include <common/vk_initializers.h>
+#include <gfx/rhi/gfx_device.h>
 #include <gfx/rhi/vk_helper.h>
 
-void MAT_Unlit::create(Renderer2* ren)
+void MAT_Sky::create(Renderer2* ren)
 {
 	PipelineBuilder pipelineBuilder;
 
-	auto vs = PipelineBuilder::load_shader_module("shader/unlit.vs_c", GfxDevice::device);
-	auto ps = PipelineBuilder::load_shader_module("shader/unlit.ps_c", GfxDevice::device);
+	auto vs = PipelineBuilder::load_shader_module("shader/sky.vs_c", GfxDevice::device);
+	auto ps = PipelineBuilder::load_shader_module("shader/sky.ps_c", GfxDevice::device);
 
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
@@ -53,9 +54,7 @@ void MAT_Unlit::create(Renderer2* ren)
 	pipelineBuilder.set_color_attachment_format(ren->color_format);
 	pipelineBuilder.set_depth_format(ren->depth_format);
 
-
 	pipelineBuilder.vertex_input_info.vertexBindingDescriptionCount = 1;
-
 
 	// referencing this directly crashes vkCreateGraphicsPipelines in release mode
 	auto bdata = Vertex2::get_binding_description();
@@ -80,12 +79,12 @@ void MAT_Unlit::create(Renderer2* ren)
 	});
 }
 
-void MAT_Unlit::clear(VkDevice device)
+void MAT_Sky::clear(VkDevice device)
 {
 	vkDestroyDescriptorSetLayout(device, this->material_layout, nullptr);
 }
 
-MaterialInstance MAT_Unlit::write(VkDevice device, const Resoruces& res, DescriptorAllocator* allocator)
+MaterialInstance MAT_Sky::write(VkDevice device, const Resoruces& res, DescriptorAllocator* allocator)
 {
 	MaterialInstance instance;
 
@@ -93,9 +92,7 @@ MaterialInstance MAT_Unlit::write(VkDevice device, const Resoruces& res, Descrip
 	instance.material_set = allocator->allocate(device, this->material_layout);
 
 	DescriptorWriter writer;
-
-	writer.write_image(0, res.diffuse.view, res.diffuse_sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
+	writer.write_image(0, res.sky_cubemap.view, res.sky_cubemap_sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	writer.update_set(device, instance.material_set);
 
 	return instance;

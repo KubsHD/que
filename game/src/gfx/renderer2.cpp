@@ -76,7 +76,11 @@ Renderer2::~Renderer2()
 
 void Renderer2::load_default_resources()
 {
-	sky = gfx::create_sky(*this, "apartment.hdr", "cube.gltf");
+	sky.create(*this, "apartment.hdr", "cube.gltf");
+
+	main_deletion_queue.push_function([&]() {
+		sky.clear(GfxDevice::device);
+	});
 }
 
 int _frameNumber = 0;
@@ -103,6 +107,9 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	);
 
 	m_scene_data_cpu.viewProj = projection * viewMatrix;
+	m_scene_data_cpu.view = viewMatrix;
+	m_scene_data_cpu.proj = projection;
+
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -246,6 +253,8 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 			vkCmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0);
 		}
 	};
+
+	sky.draw(*this, cmd);
 
 }
 

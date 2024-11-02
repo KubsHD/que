@@ -1,12 +1,11 @@
 #pragma once
 
-#include <common/GraphicsAPI.h>
-#include <common/GraphicsAPI_Vulkan.h>
 
-#include <memory>
+#include "sky_types.h"
 
+class Renderer2;
 class AssetSystem;
 
 namespace pipeline {
-	GraphicsAPI::Pipeline create_sky_pipeline(GraphicsAPI_Vulkan& gapi, VkFormat drawImageFormat, VkFormat depthImageFormat);
+	SkyIntermiedatePipeline create_sky_pipeline(Renderer2& ren);
 }

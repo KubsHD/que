@@ -229,7 +229,7 @@ void Renderer::create_engine_resources()
 
 	skybox_cube = AssetSystem::load_model("data/cube.gltf");
 
-	m_sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
+	//m_sky_pipeline = pipeline::create_sky_pipeline(*m_graphicsAPI, (VkFormat)m_colorSwapchainInfos[0].swapchainFormat, (VkFormat)m_depthSwapchainInfos[0].swapchainFormat);
 	//m_sky = gfx::sky::create_sky(*m_graphicsAPI, "data/apartment.hdr", skybox_cube, m_sky_render_pipeline);
 
 	auto device = m_graphicsAPI->GetDevice();

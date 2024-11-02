@@ -63,6 +63,8 @@ namespace gfx {
 		GfxDevice::set_debug_name(s.skyCubemap.image, "sky cubemap");
 		GfxDevice::set_debug_name(s.skyCubemap.view, "sky cubemap view");
 
+
+		
 		// change image layout for rendering
 
 		GfxDevice::immediate_submit([&](VkCommandBuffer cmd) {
@@ -99,10 +101,6 @@ namespace gfx {
 		   glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
 		};
 
-		VkSampler sampler;
-		VkSamplerCreateInfo sinfo = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-		VULKAN_CHECK_NOMSG(vkCreateSampler(GfxDevice::device, &sinfo, nullptr, &sampler));
-
 		GfxDevice::immediate_submit([&](VkCommandBuffer cmd) {
 			GfxDevice::set_debug_name(cmd, "equi2cube cmd");
 
@@ -114,7 +112,7 @@ namespace gfx {
 
 			for (int i = 0; i < 6; i++)
 			{
-				VkRenderingAttachmentInfo color_attachment = vkinit::attachment_info(s.skyCubemap.view, &clearValues, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				VkRenderingAttachmentInfo color_attachment = vkinit::attachment_info(cubemapViews[i], &clearValues, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 				VkRenderingInfo renderInfo = vkinit::rendering_info({ 512, 512 }, &color_attachment, nullptr);
 
@@ -165,7 +163,10 @@ namespace gfx {
 			vkutil::transition_image(cmd, s.skyCubemap.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		});
 
-
+		for (int i = 0; i < 6; i++)
+		{
+			vkDestroyImageView(GfxDevice::device, cubemapViews[i], nullptr);
+		}
     }
 
 	void generate_irradiance_map(GraphicsAPI_Vulkan& gapi, Sky& s, Model cube, GraphicsAPI::Pipeline sky_render_pipeline)
@@ -382,25 +383,58 @@ namespace gfx {
 
 	}
 
-	Sky gfx::create_sky(Renderer2& ren, String hdriPath, String cube)
+	void Sky::create(Renderer2& ren, String hdriPath, String cube)
 	{
 		QUE_PROFILE;
 		
-		Sky s{};
+		this->mat_sky.create(&ren);
 
-		auto cube_model = AssetManager::load_model(cube);
-
-		s.sky_cube_render_pipeline = pipeline::create_sky_cube_render_pipeline(ren);
+		this->skybox_cube = AssetManager::load_model(cube);
+		auto sky_cube_render_pipeline = pipeline::create_sky_cube_render_pipeline(ren);
+		load_sky_texture_and_create_cubemap(ren, hdriPath, *this, this->skybox_cube, sky_cube_render_pipeline);
 
 		//auto sip = pipeline::create_sky_irradiance_pipeline(ren);
-
-		load_sky_texture_and_create_cubemap(ren, hdriPath, s, cube_model, s.sky_cube_render_pipeline);
 		/*generate_irradiance_map(gapi, s, cube, sky_irradiance_pipeline); */
-       
-		//vkDestroyPipelineLayout(GfxDevice::device, sip.layout, nullptr);
-		//vkDestroyPipeline(GfxDevice::device, sip.pipeline, nullptr);
 
-        return s;
+		MAT_Sky::Resoruces res;
+		res.sky_cubemap = this->skyCubemap;
+		res.sky_cubemap_sampler = ren.default_sampler_linear;
+		
+		this->mat_sky_instance = this->mat_sky.write(GfxDevice::device, res, &ren.global_descriptor_allocator);
+
+		sky_cube_render_pipeline.clear(GfxDevice::device);
+	}
+
+	void Sky::clear(VkDevice device)
+	{
+		this->mat_sky.clear(GfxDevice::device);
+
+		vmaDestroyImage(GfxDevice::allocator, this->skyCubemap.image, this->skyCubemap.allocation);
+		vkDestroyImageView(GfxDevice::device, this->skyCubemap.view, nullptr);
+
+		//vmaDestroyImage(GfxDevice::allocator, this->skyIrradiance.image, this->skyIrradiance.allocation);
+		//vkDestroyImageView(GfxDevice::device, this->skyIrradiance.view, nullptr);
+
+	}
+
+	void Sky::draw(Renderer2& ren, VkCommandBuffer cmd)
+	{
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_sky_instance.pipeline->pipeline);
+
+		GPUDrawPushConstants pushConst;
+		pushConst.model = glm::mat4(1.0f);
+		pushConst.model = glm::scale(pushConst.model, glm::vec3(20.0f, 20.0f, 20.0f));
+
+		vkCmdPushConstants(cmd, mat_sky_instance.pipeline->layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUDrawPushConstants), &pushConst);
+
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_sky_instance.pipeline->layout, 0, 1, &ren.scene_data_set, 0, nullptr);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_sky_instance.pipeline->layout, 1, 1, &mat_sky_instance.material_set, 0, nullptr);
+
+		VkDeviceSize offsets = { 0 };
+
+		vkCmdBindVertexBuffers(cmd, 0, 1, &skybox_cube.meshes[0].vertex_buffer.buffer, &offsets);
+		vkCmdBindIndexBuffer(cmd, skybox_cube.meshes[0].index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdDrawIndexed(cmd, skybox_cube.meshes[0].index_count, 1, 0, 0, 0);
 	}
 
 }

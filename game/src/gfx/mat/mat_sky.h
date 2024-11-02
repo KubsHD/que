@@ -8,13 +8,13 @@ class Renderer2;
 class DescriptorAllocator;
 
 
-struct MAT_Unlit {
+struct MAT_Sky {
 	GPUPipeline pipeline;
 	VkDescriptorSetLayout material_layout;
 
 	struct Resoruces {
-		GPUImage diffuse;
-		VkSampler diffuse_sampler;
+		GPUImage sky_cubemap;
+		VkSampler sky_cubemap_sampler;
 	};
 
 	void create(Renderer2* ren);

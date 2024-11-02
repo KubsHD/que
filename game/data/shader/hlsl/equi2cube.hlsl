@@ -17,8 +17,8 @@ VS_OUTPUT vs_main(VertexInput input, uint VertexIndex: SV_VertexID) {
     VS_OUTPUT output;
 
     output.local_position = input.position;
-    float4 pos = mul(pc_sd.viewProj, float4(input.position, 1.0f));
-    output.pos = pos.xyww;
+    float4 pos = mul(float4(input.position, 1.0f), pc_sd.viewProj);
+    output.pos = pos.xyzw;
 
     return output;
 }

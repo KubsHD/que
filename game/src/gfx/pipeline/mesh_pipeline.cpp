@@ -11,7 +11,6 @@ namespace pipeline
 	GraphicsAPI::Pipeline create_mesh_pipeline(GraphicsAPI_Vulkan& gapi, VkFormat drawImageFormat, VkFormat depthImageFormat)
 	{
 		QUE_PROFILE;
-
 		std::vector<char> vertexSource = AssetSystem::Instance->read_all_bytes("shader/mesh.vert.spv");
 		auto vs = gapi.CreateShader({ GraphicsAPI::ShaderCreateInfo::Type::VERTEX, vertexSource.data(), vertexSource.size() });
 
