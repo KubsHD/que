@@ -35,8 +35,8 @@ for f in files:
 
 	# compile the shader
 
-	r1 = subprocess.run([dxc_path, "-spirv", "-T", "vs_6_0", "-E", "vs_main", full_path, "-Fo", vs_output_path])
-	r2 = subprocess.run([dxc_path, "-spirv", "-T", "ps_6_0", "-E", "ps_main", full_path, "-Fo", ps_output_path])
+	r1 = subprocess.run([dxc_path, "-spirv", "-T", "vs_6_0", "-E", "vs_main", "-D", "COMPILE_VS", full_path, "-Fo", vs_output_path])
+	r2 = subprocess.run([dxc_path, "-spirv", "-T", "ps_6_0", "-E", "ps_main", "-D", "COMPILE_PS", full_path, "-Fo", ps_output_path])
 	
 	if (r1.returncode == 0 and r2.returncode == 0):
 		print("Compiled " + f + " to " + output_path)
