@@ -8,7 +8,7 @@
 #include <core/physics.h>
 #include <gfx/buffers.h>
 #include <gfx/sky/sky.h>
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 #include <app.h>
 
 class MeshComponent;

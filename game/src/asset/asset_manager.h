@@ -3,13 +3,14 @@
 #include <core/types.h>
 #include <gfx/rhi/gfx_device.h>
 #include <core/audio.h>
-#include "mesh.h"
+#include <gfx/mesh.h>
 #include <assimp/scene.h>
 
 class Renderer2;
 
 class AssetManager {
 public:
+	static void PreInit();
 	static void Init(AudioSystem& asys, Renderer2& ren);
 	static void Destroy();
 
@@ -23,6 +24,8 @@ public:
 	static Model load_model_json(Path path);
 
 	static nlohmann::json read_json(String path);
+
+	static fs::path get_asset_dir();
 private:
 	static GPUImage AssetManager::try_to_load_texture_type(const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path);
 	static std::unordered_map<std::string, std::shared_ptr<Sound>> m_sound_cache;

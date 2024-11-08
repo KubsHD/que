@@ -22,3 +22,7 @@
 4. Open solution:
    - `que_vs2022_agde.sln` for running on Quest
    - `que_vs2022_win64.sln` for running on Windows
+
+## Additional resources
+
+- [Sky cubemap generation tool](https://matheowis.github.io/HDRI-to-CubeMap/)

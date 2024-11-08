@@ -22,6 +22,11 @@ void App_Main();
 #include "LivePP/API/x64/LPP_API_x64_CPP.h"
 #endif
 
+#include <codecvt>
+#include <asset/file/shader_bundle.h>
+#include <asset/resource_compiler.h>
+#include <asset/asset_manager.h>
+
 std::unique_ptr<crashpad::CrashReportDatabase> database;
 
 bool start_crash_handler()
@@ -89,7 +94,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	auto crashpadok = start_crash_handler();
 #endif
 
-	App_Main();
+	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
+
+	AssetManager::PreInit();
+
+	ResourceCompiler::Compile(AssetManager::get_asset_dir(), ".cache");
+	//App_Main();
 
 #if (_DEBUG && LIVEPP_ENABLED && 0)
 	if (lpp::LppIsValidDefaultAgent(&lppAgent))
@@ -107,7 +117,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 void App_Main()
 {
-	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
 	LOG_INFO("Que MAIN");
 
 	Game* game = new Game();

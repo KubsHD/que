@@ -1,5 +1,5 @@
 #include <core/types.h>
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 
 namespace core {
 	namespace physics {

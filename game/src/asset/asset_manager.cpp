@@ -40,11 +40,8 @@ std::shared_ptr<T> try_cache_load(String path, std::unordered_map<std::string, s
 
 
 
-void AssetManager::Init(AudioSystem& asys, Renderer2& ren)
+void AssetManager::PreInit()
 {
-	m_audio_system_reference = &asys;
-	m_renderer_reference = &ren;
-
 	cache_path = ".cache/";
 
 #if _DEBUG
@@ -61,7 +58,7 @@ void AssetManager::Init(AudioSystem& asys, Renderer2& ren)
 	while (!fs::exists(test_path))
 	{
 		root_path = root_path.parent_path();
-		
+
 		test_path = root_path;
 		test_path.append(".gitignore");
 	}
@@ -73,6 +70,12 @@ void AssetManager::Init(AudioSystem& asys, Renderer2& ren)
 #else
 	root_path = "data/";
 #endif
+}
+
+void AssetManager::Init(AudioSystem& asys, Renderer2& ren)
+{
+	m_audio_system_reference = &asys;
+	m_renderer_reference = &ren;
 }
 
 void AssetManager::Destroy()
@@ -453,4 +456,9 @@ nlohmann::json AssetManager::read_json(String path)
 {
 	auto bytes = AssetManager::read_all_bytes(path);
 	return nlohmann::json::parse(bytes.begin(), bytes.end());
+}
+
+fs::path AssetManager::get_asset_dir()
+{
+	return root_path;
 }

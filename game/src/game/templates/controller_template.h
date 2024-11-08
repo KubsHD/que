@@ -2,7 +2,7 @@
 
 #include <core/physics.h>
 #include <core/ecs.h>
-#include <asset/model.h>
+#include <gfx/mesh.h>
 #include <game/components/player_component.h>
 
 namespace game {

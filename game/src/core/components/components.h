@@ -3,7 +3,7 @@
 
 #include <core/types.h>
 
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Body/Body.h>
 

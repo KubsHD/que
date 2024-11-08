@@ -2,7 +2,7 @@
 
 #include "sky_pipeline.h"
 
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 #include <core/profiler.h>
 #include <gfx/rhi/vk_descriptor.h>
 #include <common/vk_initializers.h>

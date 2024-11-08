@@ -2,7 +2,7 @@
 
 #include "sky_cube_render_pipeline.h"
 
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 #include <core/profiler.h>
 
 #include <gfx/renderer2.h>

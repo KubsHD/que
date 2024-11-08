@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using System.Net.Http.Headers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Que
 {
@@ -67,6 +68,10 @@ namespace Que
 
             conf.Options.Add(Options.Agde.Compiler.CppLanguageStandard.Cpp17);
 
+            conf.Defines.Add("FMT_HEADER_ONLY=1");
+
+
+
             if (target.Platform == Platform.win64)
             {
                 conf.Defines.Add("XR_USE_PLATFORM_WIN32");
@@ -85,11 +90,17 @@ namespace Que
 
             // vulkan common
             conf.IncludePaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Include");
+            conf.LibraryPaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Lib");
 
             // tracy include
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps/tracy/public"));
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps"));
             conf.IncludePaths.Add(Path.Combine(Globals.RootDirectory, @"deps/entt/single_include"));
+
+            // copy dxil
+            conf.LibraryFiles.Add("dxcompiler.lib");
+            var dxcPath = Environment.GetEnvironmentVariable("VULKAN_SDK") + "\\Bin\\dxcompiler.dll";
+            conf.TargetCopyFiles.Add(dxcPath);
 
             conf.VcxprojUserFile = new Configuration.VcxprojUserFileSettings
             {
@@ -117,6 +128,7 @@ namespace Que
             conf.AddPublicDependency<SDL>(target);
             conf.AddPublicDependency<Fmod>(target);
             conf.AddPublicDependency<Crashpad>(target);
+            conf.AddPublicDependency<Nvtt>(target);
 
             //conf.AddPublicDependency<EASTLProject>(target);
 

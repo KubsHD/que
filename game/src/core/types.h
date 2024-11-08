@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <memory.h>
 #include <glm/glm.hpp>
 
 enum GraphicsAPI_Type : uint8_t {
@@ -38,3 +39,6 @@ using Quat = glm::quat;
 namespace fs = std::filesystem;
 
 using Path = fs::path;
+
+template<typename T>
+using ref = std::shared_ptr<T>;

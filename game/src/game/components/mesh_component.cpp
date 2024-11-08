@@ -2,7 +2,7 @@
 
 #include "mesh_component.h"
 
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 #include <gfx/renderer2.h>
 
 

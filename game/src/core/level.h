@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/types.h>
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 
 struct Object {
 	Model* model;

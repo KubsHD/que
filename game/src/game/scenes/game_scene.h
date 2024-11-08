@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/ecs.h>
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 #include <core/audio.h>
 
 class GameScene : public Scene {

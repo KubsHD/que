@@ -2,7 +2,7 @@
 
 #include "mesh_pipeline.h"
 
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 #include <core/asset.h>
 #include <core/profiler.h>
 

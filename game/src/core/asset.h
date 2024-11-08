@@ -7,7 +7,7 @@
 #endif
 
 #include <vector>
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 #include <core/audio.h>
 
 #include <common/GraphicsAPI.h>

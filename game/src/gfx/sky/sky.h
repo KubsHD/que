@@ -4,7 +4,7 @@
 #include <gfx/rhi/gfx_device.h>
 #include <gfx/mat/mat_sky.h>
 
-#include <asset/mesh.h>
+#include <gfx/mesh.h>
 
 #include "sky_types.h"
 
