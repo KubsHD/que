@@ -9,6 +9,8 @@
 #include <game/templates/block_template.h>
 #include <game/templates/controller_template.h>
 
+#include <gfx/renderer2.h>
+
 #include <game/components/interactable/speaker_interactable.h>
 
 void GameScene::init()
@@ -18,8 +20,10 @@ void GameScene::init()
 	level_model = engine.asset->load_model("level/testlevel.gltf");
 	skybox_cube = engine.asset->load_model("cube.gltf");
 	controller =  engine.asset->load_model_json("models/meta/model_controller_left.model");
-	skybox_image =engine.asset->load_texture("apartment.hdr", TT_HDRI);
 	test_cube =   engine.asset->load_model_json("models/blocks/brick/Cube.model");
+
+	//auto test = engine.asset->load_texture_c("level/wood_planks_diff_2k", TT_DIFFUSE);
+	//GfxDevice::destroy_image(test);
 
 	engine.audio->play_sound(*bgm);
 

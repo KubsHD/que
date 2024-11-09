@@ -23,7 +23,6 @@ private:
 	Model controller;
 
 	Model skybox_cube;
-	GPUImage skybox_image;
 	GPUImage blank_texture;
 
 	Model test_cube;
