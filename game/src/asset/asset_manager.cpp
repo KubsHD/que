@@ -1,13 +1,21 @@
 #include "pch.h"
 
 #include "asset_manager.h"
+
 #include <common/DebugOutput.h>
 #include <core/profiler.h>
+
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
+
 #include <gfx/vertex.h>
 #include <gfx/renderer2.h>
+
+#include <asset/file/texture.h>
+
+#define DDSKTX_IMPLEMENT
+#include <lib/dds-ktx.h>
 
 fs::path root_path;
 
@@ -108,6 +116,10 @@ void AssetManager::Destroy()
 
 std::vector<char> AssetManager::read_all_bytes(String path)
 {
+	if (fs::exists(cache_path / fs::path(path)))
+		return read_all_bytes_raw((cache_path / fs::path(path)).string());
+
+
 	fs::path real_path = root_path / path;
 	return read_all_bytes_raw(real_path.string());
 }
@@ -154,6 +166,35 @@ GPUImage AssetManager::try_to_load_texture_type(const aiScene* scene, aiMaterial
 	// TODO: embedded texture support
 
 	return m_renderer_reference->texture_checker;
+}
+
+GPUImage AssetManager::load_texture_c(String path, TextureType type)
+{
+	QUE_PROFILE;
+
+	auto bytes = AssetManager::read_all_bytes(path + ".tex_c");
+
+	C_Texture tex;
+	tex.read(bytes);
+
+	VkFormat format;
+
+	// https://www.reddit.com/r/vulkan/comments/wksa4z/strange_issue_with_normal_maps_in_pbr_shader/
+	if (type == TT_DIFFUSE)
+		format = VK_FORMAT_BC7_SRGB_BLOCK;
+	else if (type == TT_NORMAL)
+		format = format = VK_FORMAT_BC5_UNORM_BLOCK;
+	
+	assert(format != VK_FORMAT_UNDEFINED);
+
+	ddsktx_texture_info info;
+	ddsktx_parse(&info, tex.dds_blob, tex.blob_size);
+
+	GPUImage img = GfxDevice::create_image(VkExtent2D{ (uint32_t)info.width, (uint32_t)info.height }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, false);
+
+	GfxDevice::upload_image(img, tex.dds_blob, tex.blob_size);
+
+	return GPUImage();
 }
 
 GPUImage AssetManager::load_texture(String path, TextureType type)

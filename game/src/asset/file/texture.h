@@ -22,4 +22,5 @@ struct C_Texture {
 	void* dds_blob;
 
 	void serialize(std::ofstream& out);
+	void read(std::vector<char> bytes);
 };

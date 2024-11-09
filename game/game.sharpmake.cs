@@ -163,7 +163,7 @@ namespace Que
 
             var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
 
-            conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
+            //conf.EventPostBuild.Add($"if not exist $(OutDir)data mkdir $(OutDir)data");
 
             var dataPath = Path.Combine(realProjectPath, "data");
             var targetPath = Path.Combine(ResolveString(conf.TargetPath, conf, target), "data");
@@ -174,10 +174,10 @@ namespace Que
                 conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
             else
             {
-                if (!Util.CreateSymbolicLink(targetPath, dataPath, true))
-                    Debug.Assert(false);
+                //if (!Util.CreateSymbolicLink(targetPath, dataPath, true))
+                //    Debug.Assert(false);
 
-                conf.VcxprojUserFile.LocalDebuggerCommandArguments = "--shader_compile";
+                conf.VcxprojUserFile.LocalDebuggerCommandArguments = "sc";
             }
 
             // shader pipeline

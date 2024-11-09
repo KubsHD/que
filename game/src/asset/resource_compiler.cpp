@@ -219,7 +219,6 @@ void compile_shaders(std::vector<fs::path> paths)
 	bundle.serialize(out);
 }
 
-nvtt::Context context;
 
 struct NvttBlob : public nvtt::OutputHandler
 {
@@ -264,6 +263,9 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 {
 	QUE_PROFILE;
 
+	nvtt::Context context;
+	context.enableCudaAcceleration(true);
+
 	ref<NvttBlob> blob = std::make_shared<NvttBlob>();
 
 	nvtt::Surface image;
@@ -281,44 +283,48 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 	return blob;
 }
 
+void compile_texture_worker(fs::path source_path, fs::path source_asset_path, fs::path cache_path)
+{
+	std::ifstream asset(source_path, std::ios::binary);
+	std::string str((std::istreambuf_iterator<char>(asset)), std::istreambuf_iterator<char>());
+
+
+	fs::path asset_relative_path = source_asset_path.lexically_relative(source_path);
+	fs::create_directories(cache_path / asset_relative_path.parent_path());
+
+	asset_relative_path.replace_extension("tex_c");
+
+	C_Texture ct{};
+
+	auto hash = get_file_hash(str);
+
+	if (!check_if_requires_recompilation(hash, cache_path / asset_relative_path))
+		return;
+
+	std::strcpy(ct.header.hash, hash.c_str());
+
+
+	auto tex = compile_texture(source_asset_path, cache_path / asset_relative_path);
+
+	ct.dds_blob = malloc(tex->size);
+	ct.blob_size = tex->size;
+	memcpy(ct.dds_blob, tex->data, tex->size);
+
+	std::ofstream out(cache_path / asset_relative_path, std::ios::binary);
+	ct.serialize(out);
+}
+
 void compile_textures(fs::path source_path, std::vector<fs::path> paths)
 {
 	QUE_PROFILE;
 
-	context.enableCudaAcceleration(true);
 
 
 	fs::path cache_path = ".cache";
 
 	for (const auto& path : paths)
 	{
-		std::ifstream asset(source_path, std::ios::binary);
-		std::string str((std::istreambuf_iterator<char>(asset)), std::istreambuf_iterator<char>());
-
-
-		fs::path asset_relative_path = path.lexically_relative(source_path);
-		fs::create_directories(cache_path / asset_relative_path.parent_path());
-
-		asset_relative_path.replace_extension("tex_c");
-
-		C_Texture ct{};
-		
-		auto hash = get_file_hash(str);
-
-		if (!check_if_requires_recompilation(hash, cache_path / asset_relative_path))
-			continue;
-
-		std::strcpy(ct.header.hash, hash.c_str());
-
-
-		auto tex = compile_texture(path, cache_path / asset_relative_path);
-
-		ct.dds_blob = malloc(tex->size);
-		ct.blob_size = tex->size;
-		memcpy(ct.dds_blob, tex->data, tex->size);
-
-		std::ofstream out(cache_path / asset_relative_path, std::ios::binary);
-		ct.serialize(out);
+		compile_texture_worker(source_path, path, cache_path);
 	}
 }
 
