@@ -20,6 +20,7 @@
 #include <asset/asset_manager.h>
 
 #include <nvtt/nvtt.h>
+#include <core/profiler.h>
 
 using namespace Microsoft::WRL;
 
@@ -39,8 +40,27 @@ ComPtr<IDxcUtils> pUtils;
 ComPtr<IDxcCompiler3> pCompiler;
 ComPtr<IDxcIncludeHandler> pIncludeHandler;
 
+
+bool check_if_requires_recompilation(std::string& source_file_hash, fs::path compiled_file_path)
+{
+	QUE_PROFILE;
+
+	if (!fs::exists(compiled_file_path))
+		return true;
+
+	std::ifstream compiled_file(compiled_file_path, std::ios::binary);
+
+	asset_header header;
+	header.read(compiled_file);
+
+	return header.hash != source_file_hash;
+}
+
+
 IDxcBlob* compile_shader(fs::path entry, ShaderType type)
 {
+	QUE_PROFILE;
+
 	std::ifstream file(entry);
 	std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
@@ -96,8 +116,20 @@ IDxcBlob* compile_shader(fs::path entry, ShaderType type)
 	return outputBlob;
 }
 
+std::string get_file_hash(std::string data)
+{
+	QUE_PROFILE;
+
+	Chocobo1::MD5 md5;
+	md5.addData(data.data(), data.size());
+	md5.finalize();
+	return md5.toString();
+}
+
 void compile_shaders(std::vector<fs::path> paths)
 {
+	QUE_PROFILE;
+
 	fs::path shader_cache_path = ".cache/shaders";
 	fs::create_directory(shader_cache_path);
 
@@ -107,32 +139,66 @@ void compile_shaders(std::vector<fs::path> paths)
 
 	for (const auto& entry : paths)
 	{
+		QUE_PROFILE_SECTION("Shader Compile");
+		QUE_PROFILE_TAG("Shader: ", entry.string().c_str());
+
+		std::ifstream file(entry);
+		std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+		
+		auto hash = get_file_hash(str);
+
+		// only need to check vs since they share source md5
+		if (!check_if_requires_recompilation(hash, shader_cache_path / (entry.stem().string() + ".vs_c")))
+			continue;
+
 		auto vs = compile_shader(entry, ShaderType::ST_VERTEX);
 		auto ps = compile_shader(entry, ShaderType::ST_PIXEL);
 
-		Chocobo1::MD5 md5;
 		
-		std::ifstream file(entry);
-		std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+		{
+			std::ifstream file(entry);
+			std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-		md5.addData(str.data(), str.size());
-		md5.finalize();
+			auto hash = get_file_hash(str);
 
-		C_Shader shader{};
-		shader.type = ShaderType::ST_VERTEX;
-		shader.size = vs->GetBufferSize();
-		shader.blob = vs->GetBufferPointer();
+			C_Shader shader{};
+			shader.type = ShaderType::ST_VERTEX;
+			shader.size = vs->GetBufferSize();
+			shader.blob = vs->GetBufferPointer();
 
-		std::strcpy(shader.header.hash, md5.toString().c_str());
+			std::strcpy(shader.header.hash, hash.c_str());
 
-		std::ofstream out(shader_cache_path / (entry.stem().string() + ".vs_c"), std::ios::binary);
-		shader.serialize(out);
-		out.close();
-		md5.reset();
+			std::ofstream out(shader_cache_path / (entry.stem().string() + ".vs_c"), std::ios::binary);
+			shader.serialize(out);
+			out.close();
+		}
+
+
+		// ps
+
+		{
+			std::ifstream file(entry);
+			std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+			auto hash = get_file_hash(str);
+
+			C_Shader shader{};
+			shader.type = ShaderType::ST_PIXEL;
+			shader.size = ps->GetBufferSize();
+			shader.blob = ps->GetBufferPointer();
+
+			std::strcpy(shader.header.hash, hash.c_str());
+
+			std::ofstream out(shader_cache_path / (entry.stem().string() + ".ps_c"), std::ios::binary);
+			shader.serialize(out);
+			out.close();
+		}
 
 		vs->Release();
 		ps->Release();
 	}
+
+	return;
 
 	ShaderBundle bundle{};
 	bundle.init();
@@ -157,11 +223,13 @@ nvtt::Context context;
 
 struct NvttBlob : public nvtt::OutputHandler
 {
+	// 148 is the size of dds dxt10 header
+
 	NvttBlob()
 	{
 		write_location = 0;
-		data = nullptr;
-		size = 0;
+		data = (std::byte*)malloc(148);
+		size = 148;
 	}
 
 	~NvttBlob()
@@ -186,15 +254,16 @@ struct NvttBlob : public nvtt::OutputHandler
 
 	virtual void beginImage(int size, int width, int height, int depth, int face, int miplevel) override
 	{
-		write_location = 0;
-		data = new std::byte[size];
-		this->size = size;
+		this->size += size;
+		data = (std::byte*)realloc(this->data, this->size);
 	}
 
 };
 
 ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 {
+	QUE_PROFILE;
+
 	ref<NvttBlob> blob = std::make_shared<NvttBlob>();
 
 	nvtt::Surface image;
@@ -207,12 +276,15 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 	nvtt::CompressionOptions compressionOptions;
 	compressionOptions.setFormat(nvtt::Format_BC7);
 
+	context.outputHeader(image, 1, compressionOptions, outputOptions);
 	context.compress(image, 0, 0, compressionOptions, outputOptions);
 	return blob;
 }
 
 void compile_textures(fs::path source_path, std::vector<fs::path> paths)
 {
+	QUE_PROFILE;
+
 	context.enableCudaAcceleration(true);
 
 
@@ -220,20 +292,23 @@ void compile_textures(fs::path source_path, std::vector<fs::path> paths)
 
 	for (const auto& path : paths)
 	{
+		std::ifstream asset(source_path, std::ios::binary);
+		std::string str((std::istreambuf_iterator<char>(asset)), std::istreambuf_iterator<char>());
+
+
 		fs::path asset_relative_path = path.lexically_relative(source_path);
 		fs::create_directories(cache_path / asset_relative_path.parent_path());
 
 		asset_relative_path.replace_extension("tex_c");
 
-		std::ifstream asset(source_path, std::ios::binary);
-		std::string str((std::istreambuf_iterator<char>(asset)), std::istreambuf_iterator<char>());
-
 		C_Texture ct{};
 		
-		Chocobo1::MD5 md5;
-		md5.addData(str.data(), str.size());
-		md5.finalize();
-		std::strcpy(ct.header.hash, md5.toString().c_str());
+		auto hash = get_file_hash(str);
+
+		if (!check_if_requires_recompilation(hash, cache_path / asset_relative_path))
+			continue;
+
+		std::strcpy(ct.header.hash, hash.c_str());
 
 
 		auto tex = compile_texture(path, cache_path / asset_relative_path);
@@ -257,6 +332,7 @@ std::string ws2s(const std::wstring& wstr)
 
 void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 {
+	QUE_PROFILE;
 
 	// Get the command-line string
 	LPWSTR commandLine = GetCommandLineW();
@@ -279,11 +355,11 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 
 	if (args[1] == "sc")
 	{
-		std::filesystem::path source_dir = args[2];
+		std::filesystem::path shader_dir = source_data_path / "shader/hlsl";
 		std::vector<fs::path> paths;
 		std::vector<fs::path> texture_paths;
 
-		for (const auto& entry : std::filesystem::directory_iterator(source_dir))
+		for (const auto& entry : std::filesystem::directory_iterator(shader_dir))
 		{
 			if (entry.is_regular_file())
 			{

@@ -4,8 +4,9 @@
 #include "base_asset.h"
 
 enum class TextureFormat {
+	// desktop
 	TF_BC7,
-	TF_BC7n,
+	TF_BC5,
 };
 
 struct C_Texture {

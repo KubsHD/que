@@ -99,7 +99,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	AssetManager::PreInit();
 
 	ResourceCompiler::Compile(AssetManager::get_asset_dir(), ".cache");
-	//App_Main();
+	App_Main();
 
 #if (_DEBUG && LIVEPP_ENABLED && 0)
 	if (lpp::LppIsValidDefaultAgent(&lppAgent))

@@ -34,3 +34,11 @@ VSOutput vs_main(VertexInput input, uint vertexIndex: SV_VertexID) {
 }
 
 #endif
+
+#if COMPILE_PS
+
+float4 ps_main(): SV_Target {
+    return float4(1.0, 0.0, 0.0, 1.0);
+}
+
+#endif
