@@ -255,13 +255,13 @@ void compile_texture_worker(fs::path source_path, fs::path source_asset_path, fs
 	ct.serialize(out);
 }
 
-void compile_textures(fs::path source_path, std::vector<fs::path> paths)
+void compile_textures(fs::path source_path, std::vector<fs::path> paths, fs::path output_path)
 {
 	QUE_PROFILE;
 
 
 
-	fs::path cache_path = ".cache";
+	fs::path cache_path = output_path;
 
 	for (const auto& path : paths)
 	{
@@ -340,8 +340,8 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 			}
 		}
 
-		compile_shaders(paths);
-		compile_textures(source_data_path, texture_paths);
-		compile_skies(source_data_path, skies_path);
+		//compile_shaders(paths);
+		compile_textures(source_data_path, texture_paths, output_dir);
+		compile_skies(source_data_path, skies_path, output_dir);
 	}
 }

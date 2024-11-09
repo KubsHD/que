@@ -116,9 +116,10 @@ void AssetManager::Destroy()
 
 std::vector<char> AssetManager::read_all_bytes(String path)
 {
+#if _DEBUG
 	if (fs::exists(cache_path / fs::path(path)))
 		return read_all_bytes_raw((cache_path / fs::path(path)).string());
-
+#endif
 
 	fs::path real_path = root_path / path;
 	return read_all_bytes_raw(real_path.string());

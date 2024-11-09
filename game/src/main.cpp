@@ -98,7 +98,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	AssetManager::PreInit();
 
+#if _DEBUG
 	ResourceCompiler::Compile(AssetManager::get_asset_dir(), ".cache");
+#else
+	ResourceCompiler::Compile("..\\..\\..\\..\\..\\game\\data", "data");
+#endif
+
 	App_Main();
 
 #if (_DEBUG && LIVEPP_ENABLED && 0)
