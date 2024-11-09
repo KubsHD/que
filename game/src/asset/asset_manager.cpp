@@ -172,7 +172,7 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 {
 	QUE_PROFILE;
 
-	auto bytes = AssetManager::read_all_bytes(path + ".tex_c");
+	auto bytes = AssetManager::read_all_bytes(path);
 
 	C_Texture tex;
 	tex.read(bytes);
@@ -190,11 +190,14 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 	ddsktx_texture_info info;
 	ddsktx_parse(&info, tex.dds_blob, tex.blob_size);
 
+	ddsktx_sub_data sub_data;
+	ddsktx_get_sub(&info, &sub_data, tex.dds_blob, tex.blob_size, 0, 0, 0);
+
 	GPUImage img = GfxDevice::create_image(VkExtent2D{ (uint32_t)info.width, (uint32_t)info.height }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, false);
 
-	GfxDevice::upload_image(img, tex.dds_blob, tex.blob_size);
+	GfxDevice::upload_image(img, &sub_data.buff, sub_data.size_bytes);
 
-	return GPUImage();
+	return img;
 }
 
 GPUImage AssetManager::load_texture(String path, TextureType type)

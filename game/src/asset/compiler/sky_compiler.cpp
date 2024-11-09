@@ -41,7 +41,7 @@ void compile_skies(fs::path source_data_path, std::vector<fs::path> paths)
 			NvttBlob blob;
 
 			nvtt::CompressionOptions compression_options;
-			compression_options.setFormat(nvtt::Format_DXT1);
+			compression_options.setFormat(nvtt::Format_BC6S);
 
 			nvtt::OutputOptions output_options;
 			output_options.setOutputHandler(&blob);

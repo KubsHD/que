@@ -71,7 +71,7 @@ public:
 
 	static GPUImage create_image(VkExtent2D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
 	static GPUImage create_image(void* data, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
-	static void upload_image(GPUImage image, void* data, int size, bool mipmapped = false);
+	static void upload_image(GPUImage image, void* data, int size, bool mipmapped = false, int layer = 0);
 	static void destroy_image(GPUImage image);
 
 	static GPUBuffer create_buffer(int size, VkBufferUsageFlags usage_flags, VmaMemoryUsage mem_usage);

@@ -76,11 +76,12 @@ Renderer2::~Renderer2()
 
 void Renderer2::load_default_resources()
 {
-	sky.create(*this, "apartment.hdr", "cube.gltf");
+	sky.create(*this, "outdoor.sky_c", "cube.gltf");
 
 	main_deletion_queue.push_function([&]() {
 		sky.clear(GfxDevice::device);
 	});
+
 }
 
 int _frameNumber = 0;

@@ -20,6 +20,8 @@
 #include <gfx/rhi/vk_helper.h>
 #include <gfx/rhi/vk_descriptor.h>
 #include <gfx/renderer2.h>
+#include <asset/file/texture.h>
+#include <lib/dds-ktx.h>
 
 
 namespace gfx {
@@ -168,6 +170,63 @@ namespace gfx {
 			vkDestroyImageView(GfxDevice::device, cubemapViews[i], nullptr);
 		}
     }
+
+	void load_compiled_sky_texture(Renderer2& ren, String cskyPath, Sky& s)
+	{
+
+		// 1. create skybox cubemap image
+		VkImageCreateInfo imageCreateInfo = vkinit::image_create_info(VK_FORMAT_BC6H_SFLOAT_BLOCK, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { 2048,2048,1 });
+		imageCreateInfo.mipLevels = 1;
+		// Cube faces count as array layers in Vulkan
+		imageCreateInfo.arrayLayers = 6;
+		// This flag is required for cube map images
+		imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+		VmaAllocationCreateInfo vai{};
+		vai.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
+
+		VULKAN_CHECK_NOMSG(vmaCreateImage(GfxDevice::allocator, &imageCreateInfo, &vai, &s.skyCubemap.image, &s.skyCubemap.allocation, nullptr));
+
+		// create cubemap view
+		VkImageViewCreateInfo sky_cubemap_view_info = {};
+		sky_cubemap_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		sky_cubemap_view_info.pNext = nullptr;
+		sky_cubemap_view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		sky_cubemap_view_info.image = s.skyCubemap.image;
+		sky_cubemap_view_info.format = VK_FORMAT_BC6H_SFLOAT_BLOCK;
+		sky_cubemap_view_info.subresourceRange.baseMipLevel = 0;
+		sky_cubemap_view_info.subresourceRange.levelCount = 1;
+		sky_cubemap_view_info.subresourceRange.baseArrayLayer = 0;
+		sky_cubemap_view_info.subresourceRange.layerCount = 6;
+		sky_cubemap_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		VULKAN_CHECK_NOMSG(vkCreateImageView(GfxDevice::device, &sky_cubemap_view_info, nullptr, &s.skyCubemap.view));
+
+
+		auto imageData = AssetManager::read_all_bytes(cskyPath);
+		C_Texture tex;
+		tex.read(imageData);
+
+		ddsktx_texture_info info;
+		ddsktx_parse(&info, tex.dds_blob, tex.blob_size);
+
+		s.skyCubemap.size.width = info.width;
+		s.skyCubemap.size.height = info.height;
+
+		ddsktx_sub_data sub_data;
+		ddsktx_get_sub(&info, &sub_data, tex.dds_blob, tex.blob_size, 0, 0, 0);
+
+
+		assert((info.flags & DDSKTX_TEXTURE_FLAG_CUBEMAP) != 0);
+
+		for (int face = 0; face < DDSKTX_CUBE_FACE_COUNT; face++) {
+            ddsktx_sub_data sub_data;
+            ddsktx_get_sub(&info, &sub_data, tex.dds_blob, tex.blob_size, 0, face, 0);
+
+			GfxDevice::upload_image(s.skyCubemap, (void*)sub_data.buff, sub_data.size_bytes, false, face);
+        }
+
+		delete tex.dds_blob;
+	}
 
 	void generate_irradiance_map(GraphicsAPI_Vulkan& gapi, Sky& s, Model cube, GraphicsAPI::Pipeline sky_render_pipeline)
 	{
@@ -391,7 +450,8 @@ namespace gfx {
 
 		this->skybox_cube = AssetManager::load_model(cube);
 		auto sky_cube_render_pipeline = pipeline::create_sky_cube_render_pipeline(ren);
-		load_sky_texture_and_create_cubemap(ren, hdriPath, *this, this->skybox_cube, sky_cube_render_pipeline);
+		//load_sky_texture_and_create_cubemap(ren, hdriPath, *this, this->skybox_cube, sky_cube_render_pipeline);
+		load_compiled_sky_texture(ren, hdriPath, *this);
 
 		//auto sip = pipeline::create_sky_irradiance_pipeline(ren);
 		/*generate_irradiance_map(gapi, s, cube, sky_irradiance_pipeline); */
