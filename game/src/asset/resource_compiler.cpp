@@ -21,6 +21,9 @@
 
 #include <nvtt/nvtt.h>
 #include <core/profiler.h>
+#include "compiler/sky_compiler.h"
+#include "compiler/nvtt_blob_output.h"
+#include "util.h"
 
 using namespace Microsoft::WRL;
 
@@ -41,20 +44,6 @@ ComPtr<IDxcCompiler3> pCompiler;
 ComPtr<IDxcIncludeHandler> pIncludeHandler;
 
 
-bool check_if_requires_recompilation(std::string& source_file_hash, fs::path compiled_file_path)
-{
-	QUE_PROFILE;
-
-	if (!fs::exists(compiled_file_path))
-		return true;
-
-	std::ifstream compiled_file(compiled_file_path, std::ios::binary);
-
-	asset_header header;
-	header.read(compiled_file);
-
-	return header.hash != source_file_hash;
-}
 
 
 IDxcBlob* compile_shader(fs::path entry, ShaderType type)
@@ -114,16 +103,6 @@ IDxcBlob* compile_shader(fs::path entry, ShaderType type)
 	hr = pCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&outputBlob), nullptr);
 
 	return outputBlob;
-}
-
-std::string get_file_hash(std::string data)
-{
-	QUE_PROFILE;
-
-	Chocobo1::MD5 md5;
-	md5.addData(data.data(), data.size());
-	md5.finalize();
-	return md5.toString();
 }
 
 void compile_shaders(std::vector<fs::path> paths)
@@ -220,44 +199,6 @@ void compile_shaders(std::vector<fs::path> paths)
 }
 
 
-struct NvttBlob : public nvtt::OutputHandler
-{
-	// 148 is the size of dds dxt10 header
-
-	NvttBlob()
-	{
-		write_location = 0;
-		data = (std::byte*)malloc(148);
-		size = 148;
-	}
-
-	~NvttBlob()
-	{
-		delete[] data;
-	}
-
-	bool writeData(const void* data, int size) override
-	{
-		memcpy(this->data + write_location, data, size);
-		write_location += size;
-		return true;
-	}
-
-	void endImage() override
-	{
-	}
-
-	int write_location;
-	std::byte* data;
-	int size;
-
-	virtual void beginImage(int size, int width, int height, int depth, int face, int miplevel) override
-	{
-		this->size += size;
-		data = (std::byte*)realloc(this->data, this->size);
-	}
-
-};
 
 ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 {
@@ -364,6 +305,7 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 		std::filesystem::path shader_dir = source_data_path / "shader/hlsl";
 		std::vector<fs::path> paths;
 		std::vector<fs::path> texture_paths;
+		std::vector<fs::path> skies_path;
 
 		for (const auto& entry : std::filesystem::directory_iterator(shader_dir))
 		{
@@ -390,10 +332,16 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 				{
 					texture_paths.push_back(path);
 				}
+
+				if (ext == ".sky")
+				{
+					skies_path.push_back(path);
+				}
 			}
 		}
 
 		compile_shaders(paths);
 		compile_textures(source_data_path, texture_paths);
+		compile_skies(source_data_path, skies_path);
 	}
 }
