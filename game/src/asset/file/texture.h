@@ -10,6 +10,11 @@ enum class TextureFormat {
 };
 
 struct C_Texture {
+	~C_Texture()
+	{
+		free(dds_blob);
+	}
+
 	asset_header header;
 	
 	uint32_t width;

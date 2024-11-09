@@ -224,8 +224,6 @@ namespace gfx {
 
 			GfxDevice::upload_image(s.skyCubemap, (void*)sub_data.buff, sub_data.size_bytes, false, face);
         }
-
-		delete tex.dds_blob;
 	}
 
 	void generate_irradiance_map(GraphicsAPI_Vulkan& gapi, Sky& s, Model cube, GraphicsAPI::Pipeline sky_render_pipeline)
