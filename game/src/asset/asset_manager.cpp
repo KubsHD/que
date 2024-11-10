@@ -162,7 +162,7 @@ GPUImage AssetManager::try_to_load_texture_type(const aiScene* scene, aiMaterial
 	//load texture with stb
 	if (!tex && path.length > 0)
 	{
-		return load_texture(root_path + "/" + std::string(path.C_Str()), type == aiTextureType_NORMALS ? TT_NORMAL : TT_DIFFUSE);
+		return load_texture_c(root_path + "/" + std::string(path.C_Str()), type == aiTextureType_NORMALS ? TT_NORMAL : TT_DIFFUSE);
 	}
 	// TODO: embedded texture support
 
@@ -173,7 +173,14 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 {
 	QUE_PROFILE;
 
-	auto bytes = AssetManager::read_all_bytes(path);
+	if (auto cached = try_cache_load(path, m_image_cache))
+	{
+		return *cached;
+	}
+
+	auto new_path = fs::path(path).replace_extension(".tex_c");
+
+	auto bytes = AssetManager::read_all_bytes(new_path.string());
 
 	C_Texture tex;
 	tex.read(bytes);
@@ -196,7 +203,9 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 
 	GPUImage img = GfxDevice::create_image(VkExtent2D{ (uint32_t)info.width, (uint32_t)info.height }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, false);
 
-	GfxDevice::upload_image(img, &sub_data.buff, sub_data.size_bytes);
+	GfxDevice::upload_image(img, (void*)sub_data.buff, sub_data.size_bytes);
+
+	m_image_cache.emplace(path, std::make_shared<GPUImage>(img));
 
 	return img;
 }
@@ -446,7 +455,7 @@ Model AssetManager::load_model_json(Path path)
 			if (shader_type == "lit")
 			{
 				MAT_Unlit::Resoruces rs;
-				rs.diffuse = load_texture(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+				rs.diffuse = load_texture_c(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
 				rs.diffuse_sampler = m_renderer_reference->default_sampler_linear;
 
 				auto inst = m_renderer_reference->mat_unlit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
@@ -476,7 +485,7 @@ Model AssetManager::load_model_json(Path path)
 			//m.emission = m_api->tex_placeholder;
 
 			MAT_Unlit::Resoruces rs;
-			rs.diffuse = load_texture(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+			rs.diffuse = load_texture_c(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
 			rs.diffuse_sampler = m_renderer_reference->default_sampler_linear;
 
 			auto inst = m_renderer_reference->mat_unlit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);

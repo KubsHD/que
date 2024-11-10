@@ -211,6 +211,7 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 
 	nvtt::Surface image;
 	image.load(path.string().c_str());
+	image.flipY();
 
 	nvtt::OutputOptions outputOptions;
 	outputOptions.setContainer(nvtt::Container::Container_DDS10);
@@ -307,6 +308,8 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 		std::vector<fs::path> texture_paths;
 		std::vector<fs::path> skies_path;
 
+		std::vector<fs::path> copy_paths;
+
 		for (const auto& entry : std::filesystem::directory_iterator(shader_dir))
 		{
 			if (entry.is_regular_file())
@@ -323,6 +326,7 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(source_data_path))
 		{
+
 			if (entry.is_regular_file())
 			{
 				auto path = entry.path();
@@ -331,17 +335,29 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 				if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp")
 				{
 					texture_paths.push_back(path);
+					continue;
 				}
 
 				if (ext == ".sky")
 				{
 					skies_path.push_back(path);
+					continue;
 				}
+
+				copy_paths.push_back(path);
 			}
 		}
 
 		//compile_shaders(paths);
 		compile_textures(source_data_path, texture_paths, output_dir);
 		compile_skies(source_data_path, skies_path, output_dir);
+
+		for (const auto& path : copy_paths)
+		{
+			auto asset_relative_path = path.lexically_relative(source_data_path);
+			auto output_path = output_dir / asset_relative_path;
+			fs::create_directories(output_path.parent_path());
+			fs::copy_file(path, output_path, fs::copy_options::overwrite_existing);
+		}
 	}
 }

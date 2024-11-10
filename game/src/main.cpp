@@ -101,7 +101,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #if _DEBUG
 	ResourceCompiler::Compile(AssetManager::get_asset_dir(), ".cache");
 #else
-	ResourceCompiler::Compile("..\\..\\..\\..\\..\\game\\data", "data");
+	if (!fs::exists("data"))
+		ResourceCompiler::Compile("..\\..\\..\\..\\..\\game\\data", "data");
 #endif
 
 	App_Main();
