@@ -213,6 +213,8 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 	image.load(path.string().c_str());
 	image.flipY();
 
+	int mipCount = image.countMipmaps();
+
 	nvtt::OutputOptions outputOptions;
 	outputOptions.setContainer(nvtt::Container::Container_DDS10);
 	outputOptions.setOutputHandler(blob.get());
@@ -220,8 +222,25 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 	nvtt::CompressionOptions compressionOptions;
 	compressionOptions.setFormat(nvtt::Format_BC7);
 
-	context.outputHeader(image, 1, compressionOptions, outputOptions);
-	context.compress(image, 0, 0, compressionOptions, outputOptions);
+	context.outputHeader(image, mipCount, compressionOptions, outputOptions);
+	
+	for (int mip = 0; mip < mipCount; mip++)
+	{
+		if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
+			abort();
+
+		if (mip == mipCount - 1)
+			break;
+
+		image.toLinearFromSrgb();
+		image.premultiplyAlpha();
+
+		image.buildNextMipmap(nvtt::MipmapFilter_Box);
+
+		image.demultiplyAlpha();
+		image.toSrgb();
+	}	
+
 	return blob;
 }
 

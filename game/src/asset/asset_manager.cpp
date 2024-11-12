@@ -198,12 +198,15 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 	ddsktx_texture_info info;
 	ddsktx_parse(&info, tex.dds_blob, tex.blob_size);
 
-	ddsktx_sub_data sub_data;
-	ddsktx_get_sub(&info, &sub_data, tex.dds_blob, tex.blob_size, 0, 0, 0);
+	GPUImage img = GfxDevice::create_image(VkExtent2D{ (uint32_t)info.width, (uint32_t)info.height }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, true);
 
-	GPUImage img = GfxDevice::create_image(VkExtent2D{ (uint32_t)info.width, (uint32_t)info.height }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, false);
+	for (int i = 0; i < info.num_mips; i++)
+	{
+		ddsktx_sub_data sub_data;
+		ddsktx_get_sub(&info, &sub_data, tex.dds_blob, tex.blob_size, 0, 0, i);
 
-	GfxDevice::upload_image(img, (void*)sub_data.buff, sub_data.size_bytes);
+		GfxDevice::upload_image(img, (void*)sub_data.buff, sub_data.size_bytes, false, 0, i);
+	}
 
 	m_image_cache.emplace(path, std::make_shared<GPUImage>(img));
 

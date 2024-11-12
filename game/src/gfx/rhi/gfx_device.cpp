@@ -459,7 +459,7 @@ GPUImage GfxDevice::create_image(void* data, VkExtent2D size, VkFormat format, V
 	return img;
 }
 
-void GfxDevice::upload_image(GPUImage image, void* data, int size, bool mipmapped, int layer)
+void GfxDevice::upload_image(GPUImage image, void* data, int size, bool mipmapped, int layer, int mipLevel)
 {
 	GPUBuffer staging = create_buffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
@@ -469,11 +469,19 @@ void GfxDevice::upload_image(GPUImage image, void* data, int size, bool mipmappe
 
 		VkBufferImageCopy copy{};
 
-		copy.imageExtent = { image.size.width, image.size.height, 1 };
+		VkExtent2D size = image.size;
+
+		for (int i = 0; i < mipLevel; i++)
+		{
+			size.width /= 2;
+			size.height /= 2;
+		}
+
+		copy.imageExtent = { size.width, size.height, 1 };
 		
 		copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		copy.imageSubresource.layerCount = 1;
-		copy.imageSubresource.mipLevel = 0;
+		copy.imageSubresource.mipLevel = mipLevel;
 		copy.imageSubresource.baseArrayLayer = layer;
 
 		copy.bufferOffset = 0;
