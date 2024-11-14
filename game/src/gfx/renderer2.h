@@ -12,6 +12,7 @@
 #include "buffers.h"
 #include "mat/mat_unlit.h"
 #include "sky/sky.h"
+#include "shadow_renderer.h"
 
 class MeshComponent;
 
@@ -61,8 +62,6 @@ private:
 	VkQueue m_queue;
 	uint32_t m_queue_family;
 
-
-	// depth stuff
 	GPUImage depth_image;
 
     FrameData frame;
@@ -73,6 +72,7 @@ private:
 	void create_pipelines();
 	void create_default_textures();
 
+	ShadowRenderer m_shadow_renderer;
 public:
 	// desc
 	DescriptorAllocator global_descriptor_allocator;

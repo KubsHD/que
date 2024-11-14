@@ -57,7 +57,7 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	create_pipelines();
 
-
+	m_shadow_renderer.create(*this);
 
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_image(depth_image);
@@ -67,6 +67,8 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 Renderer2::~Renderer2()
 {
 	main_deletion_queue.execute();
+
+	m_shadow_renderer.destroy();
 
 	vkDestroyFence(GfxDevice::device, frame.main_fence, nullptr);
 	vkDestroySemaphore(GfxDevice::device, frame.swapchain_semaphore, nullptr);
@@ -113,6 +115,7 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
+
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
@@ -126,7 +129,10 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkExtent2D _windowExtent = {swp.width, swp.height };
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
+	m_shadow_renderer.render(cmd, m_reg);
+	
 	vkCmdBeginRendering(cmd, &render_info);
+
 
 	//set dynamic viewport and scissor
 	VkViewport viewport = {};
@@ -146,7 +152,6 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	scissor.extent.height = swp.height;
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
-
 
 	draw_internal(cmd);
 
@@ -254,6 +259,8 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 			vkCmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0);
 		}
 	};
+
+
 
 	sky.draw(*this, cmd);
 
