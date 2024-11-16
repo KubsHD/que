@@ -5,7 +5,7 @@
 
 #include <cmath>
 
-void vkutil::transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout, int mipLevel)
+void vkutil::transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout, int mipLevel, bool depth)
 {
 	VkImageMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -22,6 +22,12 @@ void vkutil::transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout 
 	barrier.image = image;
 
 	VkImageAspectFlags aspectMask = (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	if (depth)
+	{
+		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+
 	barrier.subresourceRange = vkinit::image_subresource_range(aspectMask);
 
 	if (mipLevel > -1)

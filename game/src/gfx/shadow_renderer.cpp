@@ -8,17 +8,20 @@
 #include <core/components/components.h>
 #include <core/systems/base_system.h>
 #include "light.h"
+#include "rhi/vk_image.h"
 
 void ShadowRenderer::create(Renderer2& ren)
 {
 	shadow_map = GfxDevice::create_image(VkExtent2D{ 512,512 }, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	dir_light_sm_pipeline = pipeline::create_dir_light_pipeline(ren);
+
+	GfxDevice::set_debug_name(shadow_map.image, "shadow_map");
 }
 
 void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 {
 	DirectionalLight dl;
-	dl.direction = glm::vec3(0.0f, 0.5f, 0.5f);
+	dl.direction = glm::vec3(0.5f, 0.5f, 0.5f);
 
 	VkClearValue clearValue;
 	clearValue = { { 0.0f, 0.0f, 0.0f, 1.0f } };
@@ -59,6 +62,7 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 
 	GPUDrawPushConstants pc;
 
+	light_mtx = lightProjection * lightView;
 
 
 	auto modelsToRender = reg.view<core_transform_component, core_mesh_component>();
@@ -84,6 +88,9 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 
 
 	vkCmdEndRendering(cmd);
+
+	//transition the shadow map image for sampling
+	vkutil::transition_image(cmd, shadow_map.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, -1, true);
 }
 
 void ShadowRenderer::destroy()

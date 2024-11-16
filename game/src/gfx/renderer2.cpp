@@ -52,12 +52,13 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	depth_image = GfxDevice::create_image(VkExtent2D{(uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height},VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
+	m_shadow_renderer.create(*this);
+
 	create_default_textures();
 	create_global_descriptors();
 
 	create_pipelines();
 
-	m_shadow_renderer.create(*this);
 
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_image(depth_image);
@@ -112,9 +113,9 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	m_scene_data_cpu.viewProj = projection * viewMatrix;
 	m_scene_data_cpu.view = viewMatrix;
 	m_scene_data_cpu.proj = projection;
+	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
 
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
-
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
@@ -220,15 +221,13 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 	{
 		DescriptorWriter writer;
 		writer.write_buffer(0, m_scene_data_gpu.buffer, sizeof(gfx::SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		writer.write_image(1, m_shadow_renderer.shadow_map.view, this->default_sampler_linear, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		writer.update_set(GfxDevice::device, scene_data_set);
 	}
 
 
 	GPUDrawPushConstants pc;
 	VkDeviceSize offset = 0;
-
-
-	
 
 	auto modelsToRender = m_reg.view<core_transform_component, core_mesh_component>();
 	for (const auto&& [e, tc, mc] : modelsToRender.each())
@@ -294,6 +293,7 @@ void Renderer2::create_global_descriptors()
 	{
 		DescriptorLayoutBuilder builder;
 		builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		scene_data_set_layout = builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 	}
 

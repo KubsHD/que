@@ -14,6 +14,7 @@ struct ShadowRenderer {
 
 	void destroy();
 
+	glm::mat4 light_mtx;
 
 
 	GPUImage shadow_map;

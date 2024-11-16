@@ -94,5 +94,4 @@ public:
 
 	// materials
 	MAT_Unlit mat_unlit;
-
 };

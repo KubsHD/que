@@ -2,6 +2,7 @@ struct SceneData {
 	row_major float4x4 viewProj;
 	row_major float4x4 view;
 	row_major float4x4 proj;
+	row_major float4x4 lightMtx;
 	float3 camPos;
 };
 

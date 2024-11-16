@@ -8,6 +8,7 @@ namespace gfx {
 		glm::mat4 viewProj;
 		glm::mat4 view;
 		glm::mat4 proj;
+		glm::mat4 lightMtx;
 		glm::vec3 camPos;
 	};
 
