@@ -53,7 +53,6 @@ void MAT_Unlit::create(Renderer2* ren)
 	pipelineBuilder.set_color_attachment_format(ren->color_format);
 	pipelineBuilder.set_depth_format(ren->depth_format);
 
-
 	pipelineBuilder.vertex_input_info.vertexBindingDescriptionCount = 1;
 
 

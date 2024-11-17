@@ -2,6 +2,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <openxr/openxr.h>
+
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/transform.hpp>

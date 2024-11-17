@@ -18,5 +18,7 @@ struct ShadowRenderer {
 
 
 	GPUImage shadow_map;
+	VkSampler shadow_map_sampler;
+
 	GPUPipeline dir_light_sm_pipeline;
 };

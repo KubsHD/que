@@ -23,6 +23,7 @@ GPUPipeline pipeline::create_dir_light_pipeline(Renderer2& ren)
 	pipeline_layout_info.pPushConstantRanges = &range;
 	pipeline_layout_info.pushConstantRangeCount = 1;
 
+
 	VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &pipeline.layout));
 
 	//use the triangle layout we created
@@ -33,18 +34,17 @@ GPUPipeline pipeline::create_dir_light_pipeline(Renderer2& ren)
 	builder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
 	builder.set_multisampling_none();
 	builder.disable_blending();
-	builder.enable_depthtest(true, VK_COMPARE_OP_LESS);
-	//	pipelineBuilder.disable_depthtest();
+	builder.enable_depthtest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
 		//connect the image format we will draw into, from draw image
-	builder.set_depth_format(ren.depth_format);
+	builder.set_depth_format(VK_FORMAT_D16_UNORM);
 
+	builder.rasterizer.depthBiasEnable = VK_TRUE;
 	builder.vertex_input_info.vertexBindingDescriptionCount = 1;
 
 	// referencing this directly crashes vkCreateGraphicsPipelines in release mode
 	auto bdata = Vertex2::get_binding_description();
 	builder.vertex_input_info.pVertexBindingDescriptions = &bdata;
-
 	builder.vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(Vertex2::get_attributes_descriptions().size());
 
 	// referencing this directly crashes vkCreateGraphicsPipelines in release mode

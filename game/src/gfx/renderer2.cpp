@@ -16,6 +16,10 @@
 #include <core/profiler.h>
 #include "sky/sky.h"
 
+#include <tracy/TracyVulkan.hpp>
+
+static tracy::VkCtx* ctx;
+
 Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg)
 {
 	QUE_PROFILE;
@@ -49,6 +53,8 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 	cmdAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
 	VULKAN_CHECK_NOMSG(vkAllocateCommandBuffers(GfxDevice::device, &cmdAllocInfo, &frame.main_command_buffer));
+
+	ctx = TracyVkContext(GfxDevice::physical_device, GfxDevice::device, m_queue, frame.main_command_buffer);
 
 	depth_image = GfxDevice::create_image(VkExtent2D{(uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height},VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
@@ -113,12 +119,11 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	m_scene_data_cpu.viewProj = projection * viewMatrix;
 	m_scene_data_cpu.view = viewMatrix;
 	m_scene_data_cpu.proj = projection;
-	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
-
-	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+	//TracyVkZone(ctx, cmd, "Render");
 
 	VkClearValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 120.f));
@@ -131,7 +136,10 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
 	m_shadow_renderer.render(cmd, m_reg);
-	
+	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
+
+	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
+
 	vkCmdBeginRendering(cmd, &render_info);
 
 
@@ -157,6 +165,8 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	draw_internal(cmd);
 
 	vkCmdEndRendering(cmd);
+
+	//TracyVkCollect(ctx, cmd);
 
 	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
 
@@ -221,7 +231,7 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 	{
 		DescriptorWriter writer;
 		writer.write_buffer(0, m_scene_data_gpu.buffer, sizeof(gfx::SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		writer.write_image(1, m_shadow_renderer.shadow_map.view, this->default_sampler_linear, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.write_image(1, m_shadow_renderer.shadow_map.view, m_shadow_renderer.shadow_map_sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		writer.update_set(GfxDevice::device, scene_data_set);
 	}
 

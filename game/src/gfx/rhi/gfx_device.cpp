@@ -422,7 +422,7 @@ GPUImage GfxDevice::create_image(VkExtent2D size, VkFormat format, VkImageUsageF
 	VkImageCreateInfo iinfo = vkinit::image_create_info(format, usage, { size.width, size.height, 1 });
 
 	VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
-	if (format == VK_FORMAT_D32_SFLOAT) {
+	if (format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D16_UNORM) {
 		aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
 	}
 
@@ -455,6 +455,7 @@ GPUImage GfxDevice::create_image(void* data, VkExtent2D size, VkFormat format, V
 		pixels *= sizeof(float);
 
 	upload_image(img, data, pixels, mipmapped);
+
 
 	return img;
 }

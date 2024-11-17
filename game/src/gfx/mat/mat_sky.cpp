@@ -48,7 +48,6 @@ void MAT_Sky::create(Renderer2* ren)
 	pipelineBuilder.set_multisampling_none();
 	pipelineBuilder.disable_blending();
 	pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_LESS);
-//	pipelineBuilder.disable_depthtest();
 
 	//connect the image format we will draw into, from draw image
 	pipelineBuilder.set_color_attachment_format(ren->color_format);
