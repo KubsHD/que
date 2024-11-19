@@ -13,6 +13,7 @@
 #include "mat/mat_unlit.h"
 #include "sky/sky.h"
 #include "shadow_renderer.h"
+#include "mat/mat_lit.h"
 
 class MeshComponent;
 
@@ -94,4 +95,5 @@ public:
 
 	// materials
 	MAT_Unlit mat_unlit;
+	MAT_Lit mat_lit;
 };

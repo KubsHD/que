@@ -37,8 +37,99 @@ VSOutput vs_main(VertexInput input, uint vertexIndex: SV_VertexID) {
 
 #if COMPILE_PS
 
-float4 ps_main(): SV_Target {
-    return float4(1.0, 0.0, 0.0, 1.0);
+[[vk::binding(0, 1)]]
+[[vk::combinedImageSampler]]
+Texture2D tex_diffuse : register(t1);
+[[vk::binding(0, 1)]]
+[[vk::combinedImageSampler]]
+SamplerState tex_diffuse_sm : register(s1);
+
+[[vk::binding(1, 1)]]
+[[vk::combinedImageSampler]]
+Texture2D tex_normal : register(t2);
+[[vk::binding(1, 1)]]
+[[vk::combinedImageSampler]]
+SamplerState tex_normal_sm : register(s2);
+
+[[vk::binding(2, 1)]]
+[[vk::combinedImageSampler]]
+Texture2D tex_orm : register(t3);
+[[vk::binding(2, 1)]]
+[[vk::combinedImageSampler]]
+SamplerState tex_orm_sm : register(s3);
+
+[[vk::binding(3, 1)]]
+[[vk::combinedImageSampler]]
+Texture2D tex_emission : register(t4);
+[[vk::binding(3, 1)]]
+[[vk::combinedImageSampler]]
+SamplerState tex_emission_sm : register(s4);
+
+float4 ps_main(VSOutput input): SV_Target {
+
+	// textures
+	float3 albedo = pow(tex_diffuse.Sample(tex_diffuse_sm, input.texCoord).rgb, float3(2.2,2.2,2.2));
+	float ao = tex_orm.Sample(tex_orm_sm, input.texCoord).x;
+	float roughness = tex_orm.Sample(tex_orm_sm, input.texCoord).y;
+	float metallic = tex_orm.Sample(tex_orm_sm, input.texCoord).z;
+
+	ao = 1.0f;
+	metallic = 0.9f;
+
+	float3 lightPos = float3( -0.2f, -1.0f, -0.3f);
+	float3 lightColor = float3(23.47, 21.31, 20.79);
+	
+	
+	float3 norm = tex_normal.Sample(tex_normal_sm, input.texCoord).xyz;
+	norm = (norm * 2.0 - 1.0);   
+	norm = normalize(mul(norm, input.TBN));
+	
+
+	//float3 norm = i_Normal;
+
+	float3 viewDir = normalize(Scene.camPos - input.worldPosition);
+
+	float3 F0 = float3(0.04, 0.04, 0.04); 
+	F0 = lerp(F0, albedo, metallic);
+
+	// start light calc
+	float3 lightDir = normalize(-lightPos); 
+	float3 h = normalize(viewDir + lightDir);
+
+	float distance = length(lightPos);
+	float attenuation = 1.0 / (distance * distance);
+	float3 radiance = lightColor;
+
+	float NDF = DistributionGGX(norm, h, roughness);
+	float G = GeometrySmith(norm, viewDir, lightDir, roughness);
+    float3 F    = fresnelSchlick(max(dot(h, viewDir), 0.0), F0);        
+
+	float3 kS = F;
+	float3 numerator = NDF * G * F;
+	float denominator = 4.0 * max(dot(norm, viewDir), 0.0) * max(dot(norm, lightDir), 0.0)  + 0.0001;
+	float3 specular     = numerator / denominator;  
+
+	float3 kD = float3(1.0, 1.0, 1.0) - kS;
+	kD *= 1.0 - metallic;
+
+    float NdotL = max(dot(norm, lightDir), 0.0);        
+    float3 Lo = (kD * albedo / PI + specular) * radiance * NdotL /* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/;
+
+	// post directional light
+	
+	kS = fresnelSchlick(max(dot(norm, viewDir), 0.0), F0);
+	kD = float3(1.0f, 1.0f, 1.0f) - kS;
+	kD *= 1.0 - metallic;
+	//float3 irradiance = tex_sky.Sample(tex_sky_sm, norm).rgb;
+	float3 diffuse =  albedo;
+	float3 ambient = (kD * diffuse) * ao;
+
+    float3 color = ambient + Lo;
+	
+    color = color / (color + float3(1.0, 1.0, 1.0));
+    color = pow(color, float3(1.0/2.2,1.0/2.2,1.0/2.2));  
+
+	return float4(color, 1.0f);
 }
 
 #endif

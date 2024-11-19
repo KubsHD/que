@@ -220,7 +220,6 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 		LOG_INFO(ext.extensionName);
 	}
 
-
 	// instance
 	vkb::InstanceBuilder builder;
 	builder.set_app_name("Que")

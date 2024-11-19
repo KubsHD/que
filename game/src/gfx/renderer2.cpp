@@ -119,6 +119,7 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	m_scene_data_cpu.viewProj = projection * viewMatrix;
 	m_scene_data_cpu.view = viewMatrix;
 	m_scene_data_cpu.proj = projection;
+	m_scene_data_cpu.camPos = glm::vec4(view.pose.position.x, view.pose.position.y, view.pose.position.z, 1.0f);
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
@@ -281,6 +282,7 @@ void Renderer2::create_pipelines()
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
 	mat_unlit.create(this);
+	mat_lit.create(this);
 
 
 	main_deletion_queue.push_function([&]() {
@@ -293,12 +295,12 @@ void Renderer2::create_global_descriptors()
 {
 	std::vector<DescriptorAllocator::PoolSizeRatio> sizes =
 	{
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 }
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 20 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 50 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 50 }
 	};
 
-	global_descriptor_allocator.init_pool(GfxDevice::device, 100, sizes);
+	global_descriptor_allocator.init_pool(GfxDevice::device, 1000, sizes);
 
 	{
 		DescriptorLayoutBuilder builder;
@@ -334,6 +336,10 @@ void Renderer2::create_default_textures()
 	GfxDevice::set_debug_name(texture_checker.image, "Checkerboard Texture");
 	
 
+	texture_black = GfxDevice::create_image(&black, VkExtent2D{ 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	GfxDevice::set_debug_name(texture_black.image, "Black Texture");
+
 
 	// samplers
 	VkSamplerCreateInfo sampl = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
@@ -352,5 +358,6 @@ void Renderer2::create_default_textures()
 		vkDestroySampler(GfxDevice::device, default_sampler_linear, nullptr);
 
 		GfxDevice::destroy_image(texture_checker);
+		GfxDevice::destroy_image(texture_black);
 	});
 }

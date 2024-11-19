@@ -10,9 +10,11 @@
 #include "light.h"
 #include "rhi/vk_image.h"
 
+VkExtent2D shadow_map_size = { 8192, 8192 };
+
 void ShadowRenderer::create(Renderer2& ren)
 {
-	shadow_map = GfxDevice::create_image(VkExtent2D{ 512,512 }, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	shadow_map = GfxDevice::create_image(shadow_map_size, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	dir_light_sm_pipeline = pipeline::create_dir_light_pipeline(ren);
 
 	// we need a seperate sampler to not repeat the shadow map when sampling 
@@ -39,6 +41,7 @@ void ShadowRenderer::create(Renderer2& ren)
 
 void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 {
+
 	DirectionalLight dl;
 	dl.direction = glm::vec3(2.0f, 5.0f, 1.0f);
 
@@ -48,7 +51,7 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 
 	depthAttachment.clearValue.depthStencil.depth = 1.f;
 
-	VkExtent2D _windowExtent = { 512, 512 };
+	VkExtent2D _windowExtent = shadow_map_size;
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, nullptr, &depthAttachment);
 
 	vkCmdBeginRendering(cmd, &render_info);
@@ -57,8 +60,8 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 	VkViewport viewport = {};
 	viewport.x = 0;
 	viewport.y = 0;
-	viewport.width = 512;
-	viewport.height = 512;
+	viewport.width = shadow_map_size.width;
+	viewport.height = shadow_map_size.height;
 	viewport.minDepth = 0.f;
 	viewport.maxDepth = 1.f;
 
@@ -67,15 +70,15 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 	VkRect2D scissor = {};
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	scissor.extent.width = 512;
-	scissor.extent.height = 512;
+	scissor.extent.width = shadow_map_size.width;
+	scissor.extent.height = shadow_map_size.height;
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 	VkDeviceSize offset = { 0 };
 
 	glm::mat4 lightProjection, lightView;
 	float near_plane = 0.1f, far_plane = 50.0f;
-	lightProjection = glm::perspective(glm::radians(90.0f), 1.0f, near_plane, far_plane);
+	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 
 	// https://www.reddit.com/r/vulkan/comments/y74ij3/why_is_it_that_i_need_to_invert_the_projection/
 	lightProjection[1][1] *= -1;

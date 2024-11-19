@@ -180,7 +180,16 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 
 	auto new_path = fs::path(path).replace_extension(".tex_c");
 
+#if _DEBUG
+	if (!fs::exists(cache_path / new_path))
+		return m_renderer_reference->texture_checker;
+#else
+	if (!fs::exists(root_path / new_path))
+		return m_renderer_reference->texture_black;
+#endif
+
 	auto bytes = AssetManager::read_all_bytes(new_path.string());
+
 
 	C_Texture tex;
 	tex.read(bytes);
@@ -191,7 +200,7 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 	if (type == TT_DIFFUSE)
 		format = VK_FORMAT_BC7_SRGB_BLOCK;
 	else if (type == TT_NORMAL)
-		format = format = VK_FORMAT_BC5_UNORM_BLOCK;
+		format = format = VK_FORMAT_BC7_SRGB_BLOCK;
 	
 	assert(format != VK_FORMAT_UNDEFINED);
 
@@ -457,11 +466,15 @@ Model AssetManager::load_model_json(Path path)
 			auto& shader_type = material["shader"];
 			if (shader_type == "lit")
 			{
-				MAT_Unlit::Resoruces rs;
+				MAT_Lit::Resoruces rs;
 				rs.diffuse = load_texture_c(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
-				rs.diffuse_sampler = m_renderer_reference->default_sampler_linear;
+				rs.normal = load_texture_c(desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+				rs.orm = load_texture_c(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+				rs.emission = m_renderer_reference->texture_black;
 
-				auto inst = m_renderer_reference->mat_unlit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
+				rs.sampler = m_renderer_reference->default_sampler_linear;
+
+				auto inst = m_renderer_reference->mat_lit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
 
 				model.materials2.emplace((int)material["id"], inst);
 			}
@@ -469,7 +482,7 @@ Model AssetManager::load_model_json(Path path)
 			{
 
 				MAT_Unlit::Resoruces rs;
-				rs.diffuse = m_renderer_reference->texture_checker;
+				rs.diffuse = m_renderer_reference->texture_black;
 				rs.diffuse_sampler = m_renderer_reference->default_sampler_linear;
 
 				auto inst = m_renderer_reference->mat_unlit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
