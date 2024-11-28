@@ -213,6 +213,13 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 	image.load(path.string().c_str());
 	image.flipY();
 
+	auto descriptor_path = path;
+	descriptor_path.replace_extension("tex");
+
+
+
+
+
 	int mipCount = image.countMipmaps();
 
 	nvtt::OutputOptions outputOptions;
@@ -221,6 +228,19 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 
 	nvtt::CompressionOptions compressionOptions;
 	compressionOptions.setFormat(nvtt::Format_BC7);
+
+	// if normal map use other settings
+	if (fs::exists(descriptor_path))
+	{
+		std::ifstream descriptor(descriptor_path);
+		std::string str((std::istreambuf_iterator<char>(descriptor)), std::istreambuf_iterator<char>());
+
+		if (str == "normal")
+		{
+			image.setNormalMap(true);
+			compressionOptions.setFormat(nvtt::Format_BC5);
+		}
+	}
 
 	context.outputHeader(image, mipCount, compressionOptions, outputOptions);
 	
@@ -278,7 +298,6 @@ void compile_texture_worker(fs::path source_path, fs::path source_asset_path, fs
 void compile_textures(fs::path source_path, std::vector<fs::path> paths, fs::path output_path)
 {
 	QUE_PROFILE;
-
 
 
 	fs::path cache_path = output_path;
@@ -345,7 +364,6 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(source_data_path))
 		{
-
 			if (entry.is_regular_file())
 			{
 				auto path = entry.path();
@@ -360,6 +378,11 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 				if (ext == ".sky")
 				{
 					skies_path.push_back(path);
+					continue;
+				}
+
+				if (ext == ".hdr" || ext == ".tex")
+				{
 					continue;
 				}
 

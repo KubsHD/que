@@ -19,6 +19,8 @@ GPUDrawPushConstants pc;
 
 VSOutput vs_main(VertexInput input, uint vertexIndex: SV_VertexID) {
     VSOutput vo;
+
+	vo.texCoord = input.texCoord;
     vo.localPosition = input.position;
     vo.normal = input.normal;
     vo.worldPosition = mul(float4(input.position, 1.0f), pc.model);
@@ -80,8 +82,7 @@ float4 ps_main(VSOutput input): SV_Target {
 	float3 lightColor = float3(23.47, 21.31, 20.79);
 	
 	
-	float3 norm = tex_normal.Sample(tex_normal_sm, input.texCoord).xyz;
-	norm = (norm * 2.0 - 1.0);   
+	float3 norm = UnpackNormalMap(tex_normal.Sample(tex_normal_sm, input.texCoord)).xyz;
 	norm = normalize(mul(norm, input.TBN));
 	
 

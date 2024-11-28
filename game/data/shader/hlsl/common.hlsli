@@ -25,3 +25,14 @@ struct GPUDrawPushConstants {
 [[vk::binding(0,0)]]
 ConstantBuffer<SceneData> Scene;
 
+// https://forums.unrealengine.com/t/the-math-behind-combining-bc5-normals/365189/2
+// reading bc5 compressed normal maps
+float4 UnpackNormalMap(float4 TextureSample)
+{
+
+    float2 NormalXY = TextureSample.rg;
+	
+    NormalXY = NormalXY * float2(2.0f, 2.0f) - float2(1.0f, 1.0f);
+    float NormalZ = sqrt(saturate(1.0f - dot(NormalXY, NormalXY)));
+    return float4(NormalXY.xy, NormalZ, 1.0f);
+}

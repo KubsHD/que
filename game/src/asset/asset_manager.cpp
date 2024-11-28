@@ -152,6 +152,7 @@ std::vector<char> AssetManager::read_all_bytes_raw(String path)
 #endif
 }
 
+
 GPUImage AssetManager::try_to_load_texture_type(const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path)
 {
 	aiString path;
@@ -190,7 +191,6 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 
 	auto bytes = AssetManager::read_all_bytes(new_path.string());
 
-
 	C_Texture tex;
 	tex.read(bytes);
 
@@ -200,12 +200,14 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 	if (type == TT_DIFFUSE)
 		format = VK_FORMAT_BC7_SRGB_BLOCK;
 	else if (type == TT_NORMAL)
-		format = format = VK_FORMAT_BC7_SRGB_BLOCK;
+		format = VK_FORMAT_BC5_UNORM_BLOCK;
 	
 	assert(format != VK_FORMAT_UNDEFINED);
 
 	ddsktx_texture_info info;
-	ddsktx_parse(&info, tex.dds_blob, tex.blob_size);
+
+	if (!ddsktx_parse(&info, tex.dds_blob, tex.blob_size))
+		abort();
 
 	GPUImage img = GfxDevice::create_image(VkExtent2D{ (uint32_t)info.width, (uint32_t)info.height }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, true);
 
@@ -400,7 +402,6 @@ Model AssetManager::load_model_json(Path path)
 			imp.SetIOHandler(ioSystem);
 		}
 #endif
-
 		auto real_path = (root_path / modelPath);
 
 		const aiScene* scene = imp.ReadFile(real_path.string(), aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
@@ -500,11 +501,15 @@ Model AssetManager::load_model_json(Path path)
 			//m.orm = load_image(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
 			//m.emission = m_api->tex_placeholder;
 
-			MAT_Unlit::Resoruces rs;
+			MAT_Lit::Resoruces rs;
 			rs.diffuse = load_texture_c(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
-			rs.diffuse_sampler = m_renderer_reference->default_sampler_linear;
+			rs.normal = load_texture_c(desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+			rs.orm = load_texture_c(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+			rs.emission = m_renderer_reference->texture_black;
 
-			auto inst = m_renderer_reference->mat_unlit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
+			rs.sampler = m_renderer_reference->default_sampler_linear;
+
+			auto inst = m_renderer_reference->mat_lit.write(GfxDevice::device, rs, &m_renderer_reference->global_descriptor_allocator);
 
 			model.materials2.emplace((int)material["id"], inst);
 		}
