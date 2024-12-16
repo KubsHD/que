@@ -7,6 +7,6 @@
 
 namespace game {
 	namespace tmpl {
-		void create_controller(Scene& scn, Model& controller, int index, PlayerComponent* pc);
+		void create_controller(Scene& scn, int index, PlayerComponent* pc);
 	}
 }

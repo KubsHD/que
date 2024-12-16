@@ -1,7 +1,7 @@
 #include "input.hlsli"
 #include "common.hlsli"
 #include "pbr.hlsli"
-
+#include "shadows.hlsli"
 
 struct VSOutput {
     float4 position : SV_Position;
@@ -10,6 +10,7 @@ struct VSOutput {
     float3 normal : NORMAL;
     float3 worldPosition: POSITION1;
     float3x3 TBN : TEXCOORD1;
+    float4 fragPosLightSpace : TEXCOORD2;
 };
 
 #if COMPILE_VS
@@ -24,6 +25,8 @@ VSOutput vs_main(VertexInput input, uint vertexIndex: SV_VertexID) {
     vo.localPosition = input.position;
     vo.normal = input.normal;
     vo.worldPosition = mul(float4(input.position, 1.0f), pc.model);
+
+    vo.fragPosLightSpace = mul(mul(mul(float4(input.position, 1.0f),pc.model), Scene.lightMtx), transpose(biasMat));
 
     vo.position = mul(float4(vo.worldPosition, 1.0f), Scene.viewProj);
     
@@ -126,6 +129,9 @@ float4 ps_main(VSOutput input): SV_Target {
 	float3 ambient = (kD * diffuse) * ao;
 
     float3 color = ambient + Lo;
+
+    float shadow = ShadowCalculation(input.fragPosLightSpace);
+	color *= shadow;
 	
     color = color / (color + float3(1.0, 1.0, 1.0));
     color = pow(color, float3(1.0/2.2,1.0/2.2,1.0/2.2));  

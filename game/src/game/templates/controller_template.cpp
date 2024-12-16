@@ -9,7 +9,10 @@
 #include <game/components/player/player_pickup_component.h>
 #include <game/components/player/player_interact_component.h>
 
-void game::tmpl::create_controller(Scene& scn, Model& controller, int index, PlayerComponent* pc)
+// todo: refactor to shader_ptrs later or bindless
+static Model c_model;
+
+void game::tmpl::create_controller(Scene& scn, int index, PlayerComponent* pc)
 {
 	const auto controller1 = scn.create(std::string("controller_") + std::to_string(index));
 	JPH::BodyCreationSettings c_settings(
@@ -18,8 +21,10 @@ void game::tmpl::create_controller(Scene& scn, Model& controller, int index, Pla
 		JPH::Quat::sIdentity(),
 		JPH::EMotionType::Kinematic,
 		Layers::MOVING);
+
+	c_model = g_engine.asset->load_model_json("models/meta/model_controller_left.model");
 	
-	controller1->add<MeshComponent>(MeshComponent(&controller));
+	controller1->add<MeshComponent>(MeshComponent(&c_model));
 	controller1->scale = Vec3(0.01f);
 
 	controller1->add<ControllerComponent>(ControllerComponent(index, pc));

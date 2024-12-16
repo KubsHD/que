@@ -11,6 +11,7 @@
 #include <entt/entt.hpp>
 
 #include <core/editor/editor_platform.h>
+#include <game/scenes/dev_scene.h>
 
 template<typename T>
 void Game::change_scene()
@@ -61,13 +62,10 @@ Game::Game()
 	g_engine.physics = m_physics_system.get();
 	g_engine.reg = &m_registry;
 	g_engine.input = platform->input.get();
-
-	// todo: to refactor all below
-
 	g_engine.asset = new AssetManager();
 	g_engine.render = platform->get_renderer();
 
-	change_scene<GameScene>();
+	change_scene<DevScene>();
 }
 
 Game::~Game()

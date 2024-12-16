@@ -94,7 +94,7 @@ Renderer2::~Renderer2()
 
 void Renderer2::load_default_resources()
 {
-	sky.create(*this, "outdoor.sky_c", "cube.gltf");
+	sky.create(*this, "pure_sky.sky_c", "cube.gltf");
 
 	main_deletion_queue.push_function([&]() {
 		sky.clear(GfxDevice::device);
