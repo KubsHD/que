@@ -25,7 +25,7 @@ void ShadowRenderer::create(Renderer2& ren)
 	sampl.magFilter = VK_FILTER_LINEAR;
 	sampl.minFilter = VK_FILTER_LINEAR;
 	sampl.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	sampl.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	sampl.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	sampl.addressModeV = sampl.addressModeU;
 	sampl.addressModeW = sampl.addressModeU;
 	sampl.mipLodBias = 0.0f;
@@ -36,10 +36,10 @@ void ShadowRenderer::create(Renderer2& ren)
 
 	vkCreateSampler(GfxDevice::device, &sampl, nullptr, &shadow_map_sampler);
 
-	GfxDevice::set_debug_name(shadow_map.image, "shadow_map");
+	GfxDevice::set_debug_name(shadow_map.image, "directionaL_light_shadow_map");
 }
 
-void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
+void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg, glm::vec3 cam_pos)
 {
 
 	DirectionalLight dl;
@@ -48,7 +48,6 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 	VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(shadow_map.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	VkClearValue clearValues[2];
-
 	depthAttachment.clearValue.depthStencil.depth = 1.f;
 
 	VkExtent2D _windowExtent = shadow_map_size;
@@ -76,14 +75,17 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 	VkDeviceSize offset = { 0 };
 
+
 	glm::mat4 lightProjection, lightView;
-	float near_plane = 0.1f, far_plane = 50.0f;
-	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+
+
+	
+	lightProjection = glm::ortho(-frustum_size, frustum_size, -frustum_size, frustum_size, near_plane, far_plane);
 
 	// https://www.reddit.com/r/vulkan/comments/y74ij3/why_is_it_that_i_need_to_invert_the_projection/
 	lightProjection[1][1] *= -1;
 
-	lightView = glm::lookAt(glm::vec3(0.5f, 2, 2), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+	lightView = glm::lookAt(glm::vec3(0.5f, dl_height, 2), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 
 	GPUDrawPushConstants pc;
 	light_mtx = lightProjection * lightView;
@@ -115,6 +117,19 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg)
 
 	//transition the shadow map image for sampling
 	vkutil::transition_image(cmd, shadow_map.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, -1, true);
+}
+
+void ShadowRenderer::render_imgui()
+{
+	if (ImGui::Begin("Shadow Rendering"))
+	{
+		ImGui::SliderFloat("Near Plane", &near_plane, 0.001f, 10.0f);
+		ImGui::SliderFloat("Far Plane", &far_plane, 10.0f, 100.0f);
+		ImGui::SliderFloat("Frustum Size", &frustum_size, 1.0f, 100.0f);
+		ImGui::SliderFloat("Directional Light Height", &dl_height, 1.0f, 30.0f);
+		ImGui::End();
+	}
+
 }
 
 void ShadowRenderer::destroy()

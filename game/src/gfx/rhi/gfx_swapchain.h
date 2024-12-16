@@ -29,12 +29,19 @@ private:
 };
 
 struct Swapchain {
+	// only used in vr mode
 	XrSwapchain swapchain = XR_NULL_HANDLE;
+	std::vector<XrSwapchainImageVulkanKHR> swapchainImageHandles;
+
+	// only used in non-vr mode
+	VkSwapchainKHR swapchainVk;
+	std::vector<VkImage> swapchainImagesVk;
+
+	// common
 	VkFormat swapchainFormat = VK_FORMAT_MAX_ENUM;
 
 	int width;
 	int height;
 
 	std::vector<VkImageView> swapchainImages;
-	std::vector<XrSwapchainImageVulkanKHR> swapchainImageHandles;
 };

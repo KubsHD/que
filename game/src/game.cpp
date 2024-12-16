@@ -10,6 +10,8 @@
 #include <asset/asset_manager.h>
 #include <entt/entt.hpp>
 
+#include <core/editor/editor_platform.h>
+
 template<typename T>
 void Game::change_scene()
 {
@@ -32,6 +34,10 @@ void Game::change_scene()
 
 	m_current_player_component = m_current_scene->get_first_component_of_type<PlayerComponent>();
 }
+
+
+bool g_game_running = true;
+EditorPlatform* ed_platform;
 
 Game::Game()
 {
@@ -74,9 +80,12 @@ Game::~Game()
 void Game::run()
 {
 	while (platform->is_running) {
-		platform->poll();
-		update();
-		platform->render();
+		if (g_game_running)
+		{
+			platform->poll();
+			update();
+			platform->render();
+		}
 	}
 
 }

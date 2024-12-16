@@ -48,6 +48,9 @@ float ShadowCalculation(float4 fragPosLightSpace)
 {
 	float4 shadowCoord = fragPosLightSpace / fragPosLightSpace.w;
 
+	if (shadowCoord.z > 1.0)
+		return 0.0;
+
     float shadow = 1.0;
 	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 )
 	{
@@ -57,6 +60,7 @@ float ShadowCalculation(float4 fragPosLightSpace)
 			shadow = 0.1;
 		}
 	}
+
 	return shadow;
 }
 

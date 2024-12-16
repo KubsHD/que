@@ -50,6 +50,8 @@ std::shared_ptr<T> try_cache_load(String path, std::unordered_map<std::string, s
 
 void AssetManager::PreInit()
 {
+	QUE_PROFILE;
+
 	cache_path = ".cache/";
 
 #if _DEBUG
@@ -183,10 +185,16 @@ GPUImage AssetManager::load_texture_c(String path, TextureType type)
 
 #if _DEBUG
 	if (!fs::exists(cache_path / new_path))
-		return m_renderer_reference->texture_checker;
+		if (type == TT_NORMAL)
+			return m_renderer_reference->texture_normal;
+		else
+			return m_renderer_reference->texture_checker;
 #else
 	if (!fs::exists(root_path / new_path))
-		return m_renderer_reference->texture_black;
+		if (type == TT_NORMAL)
+			return m_renderer_reference->texture_normal;
+		else
+			return m_renderer_reference->texture_checker;
 #endif
 
 	auto bytes = AssetManager::read_all_bytes(new_path.string());

@@ -141,6 +141,8 @@ XrGraphicsBindingVulkanKHR GfxDevice::create_xr_graphics_binding()
 
 void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 {
+	volkInitialize();
+
 	auto system_info_ret = vkb::SystemInfo::get_system_info();
 	if (!system_info_ret) {
 		printf("%s\n", system_info_ret.error().message().c_str());
@@ -172,19 +174,32 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 
 	auto inst_ret = builder.build();
 
+
 	if (!inst_ret) {
 		std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";
 		abort();
 	}
+	
+	volkLoadInstance(inst_ret.value());
 
 	vkb_internal::instance = inst_ret.value();
 	instance = inst_ret.value().instance;
+
+	VkPhysicalDeviceFeatures features{};
+	features.samplerAnisotropy = true;
+
+	VkPhysicalDeviceVulkan13Features features13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+	features13.dynamicRendering = true;
+	features13.synchronization2 = true;
 
 	// physical device
 	vkb::PhysicalDeviceSelector selector{ vkb_internal::instance };
 	auto phys_ret = selector/*.set_surface(surface)*/
 		.defer_surface_initialization()
-		.set_minimum_version(1, 1) // require a vulkan 1.1 capable device
+		.defer_surface_initialization()
+		.set_required_features(features)
+		.set_required_features_13(features13)
+		.set_minimum_version(1, 3)
 		.select();
 	if (!phys_ret) {
 		std::cerr << "Failed to select Vulkan Physical Device. Error: " << phys_ret.error().message() << "\n";
@@ -203,10 +218,14 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 	}
 	vkb_internal::device = dev_ret.value();
 	device = dev_ret.value().device;
+
+	InitCommon();
 }
 
 void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 {
+	volkInitialize();
+
 	auto system_info_ret = vkb::SystemInfo::get_system_info();
 	if (!system_info_ret) {
 		printf("%s\n", system_info_ret.error().message().c_str());
@@ -243,6 +262,8 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 		std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";
 		abort();
 	}
+
+	volkLoadInstance(inst_ret.value());
 
 	vkb_internal::instance = inst_ret.value();
 	instance = inst_ret.value().instance;
@@ -304,6 +325,27 @@ void GfxDevice::InitCommon()
 	allocatorCI.physicalDevice = physical_device;
 	allocatorCI.device = device;
 	allocatorCI.instance = instance;
+
+	VmaVulkanFunctions vma_vulkan_func{};
+	vma_vulkan_func.vkAllocateMemory = vkAllocateMemory;
+	vma_vulkan_func.vkBindBufferMemory = vkBindBufferMemory;
+	vma_vulkan_func.vkBindImageMemory = vkBindImageMemory;
+	vma_vulkan_func.vkCreateBuffer = vkCreateBuffer;
+	vma_vulkan_func.vkCreateImage = vkCreateImage;
+	vma_vulkan_func.vkDestroyBuffer = vkDestroyBuffer;
+	vma_vulkan_func.vkDestroyImage = vkDestroyImage;
+	vma_vulkan_func.vkFlushMappedMemoryRanges = vkFlushMappedMemoryRanges;
+	vma_vulkan_func.vkFreeMemory = vkFreeMemory;
+	vma_vulkan_func.vkGetBufferMemoryRequirements = vkGetBufferMemoryRequirements;
+	vma_vulkan_func.vkGetImageMemoryRequirements = vkGetImageMemoryRequirements;
+	vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
+	vma_vulkan_func.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
+	vma_vulkan_func.vkInvalidateMappedMemoryRanges = vkInvalidateMappedMemoryRanges;
+	vma_vulkan_func.vkMapMemory = vkMapMemory;
+	vma_vulkan_func.vkUnmapMemory = vkUnmapMemory;
+	vma_vulkan_func.vkCmdCopyBuffer = vkCmdCopyBuffer;
+
+	allocatorCI.pVulkanFunctions = &vma_vulkan_func;
 
 	VULKAN_CHECK(vmaCreateAllocator(&allocatorCI, &allocator), "Failed to create VMA allocator.");
 

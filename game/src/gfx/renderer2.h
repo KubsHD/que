@@ -15,6 +15,7 @@
 #include "shadow_renderer.h"
 #include "mat/mat_lit.h"
 
+struct DebugRenderer;
 class MeshComponent;
 
 
@@ -56,7 +57,10 @@ public:
 
 	VkFormat color_format;
 	VkFormat depth_format;
+
 	gfx::Sky sky;
+
+	DebugRenderer* debug;
 private:
 	void draw_internal(VkCommandBuffer cmd);
 
@@ -89,6 +93,7 @@ public:
 	GPUImage texture_white;
 	GPUImage texture_black;
 	GPUImage texture_checker;
+	GPUImage texture_normal;
 
 	VkSampler default_sampler_linear;
 	VkSampler default_sampler_nearest;

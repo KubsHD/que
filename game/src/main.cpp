@@ -26,6 +26,8 @@ void App_Main();
 #include <asset/file/shader_bundle.h>
 #include <asset/resource_compiler.h>
 #include <asset/asset_manager.h>
+#include <NGFX_Injection.h>
+#include <core/profiler.h>
 
 std::unique_ptr<crashpad::CrashReportDatabase> database;
 
@@ -68,31 +70,108 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #if defined(XR_OS_WINDOWS) && defined(_DEBUG)
 
-	//std::wstring commandLineStr(GetCommandLineW());
+	std::wstring commandLineStr(GetCommandLineW());
 
-	//std::wstring arg = L"--shader_compile";
-	//if (commandLineStr.find(arg) != std::wstring::npos)
-	//{
-	//	STARTUPINFO si{};
-	//	PROCESS_INFORMATION pi{};
+	std::wstring arg = L"-sc";
+	if (commandLineStr.find(arg) != std::wstring::npos)
+	{
+		STARTUPINFO si{};
+		PROCESS_INFORMATION pi{};
 
-	//	OutputDebugString("Compiling shaders...");
-	//	if (!CreateProcess(NULL, ".\\shader\\shader_compile.bat", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
-	//	{
-	//		OutputDebugString("ERROR COMPILING SHADERS");
-	//	}
-	//	WaitForSingleObject(pi.hProcess, INFINITE);
+		OutputDebugString("Compiling shaders...");
+		if (!CreateProcess(NULL, "python c:\dev\git\que\game\scripts\compile_shaders.py c:\dev\git\que\game\data\shader\hlsl C:\dev\git\que\projects\Game\output\win64\Debug\shader", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+		{
+			OutputDebugString("ERROR COMPILING SHADERS");
+		}
+		WaitForSingleObject(pi.hProcess, INFINITE);
 
-	//	CloseHandle(pi.hProcess);
-	//	CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
 
-	//	OutputDebugString(" Done!\n");
-	//}
+		OutputDebugString(" Done!\n");
+	}
+
+	// inject ngfx
+
+	arg = L"-ngfx";
+	if (commandLineStr.find(arg) != std::wstring::npos)
+	{
+		QUE_PROFILE_SECTION("NGFX Injection");
+
+			uint32_t numInstallations = 0;
+		auto result = NGFX_Injection_EnumerateInstallations(&numInstallations, nullptr);
+		if (numInstallations == 0 || NGFX_INJECTION_RESULT_OK != result)
+		{
+			std::wstringstream stream;
+			stream << L"Could not find any Nsight Graphics installations to inject: " << result << "\n";
+			stream << L"Please install Nsight Graphics to enable programmatic injection.";
+		}
+
+		std::vector<NGFX_Injection_InstallationInfo> installations(numInstallations);
+		result = NGFX_Injection_EnumerateInstallations(&numInstallations, installations.data());
+		if (numInstallations == 0 || NGFX_INJECTION_RESULT_OK != result)
+		{
+			std::wstringstream stream;
+			stream << L"Could not find any Nsight Graphics installations to inject: " << result << "\n";
+			stream << L"Please install Nsight Graphics to enable programmatic injection.";
+		}
+
+		// 2) We have at least one Nsight Graphics installation, find which
+		// activities are available using the latest installation.
+		const NGFX_Injection_InstallationInfo& installation = installations.back();
+
+		// 3) Retrieve the count of activities so we can initialize our activity data to the correct size
+		uint32_t numActivities = 0;
+		result = NGFX_Injection_EnumerateActivities(&installation, &numActivities, nullptr);
+		if (numActivities == 0 || NGFX_INJECTION_RESULT_OK != result)
+		{
+			std::wstringstream stream;
+			stream << L"Could not find any activities in Nsight Graphics installation: " << result << "\n";
+			stream << L"Please install Nsight Graphics to enable programmatic injection.";
+		}
+
+		// With the count of activities available, query their description
+		std::vector<NGFX_Injection_Activity> activities(numActivities);
+		result = NGFX_Injection_EnumerateActivities(&installation, &numActivities, activities.data());
+		if (NGFX_INJECTION_RESULT_OK != result)
+		{
+			std::wstringstream stream;
+			stream << L"NGFX_Injection_EnumerateActivities failed with" << result;
+		}
+
+		// 4) We have valid activities. From here, we choose an activity.
+		// In this sample, we use "Frame Debugger" activity
+		const NGFX_Injection_Activity* pActivityToInject = nullptr;
+		for (const NGFX_Injection_Activity& activity : activities)
+		{
+			if (activity.type == NGFX_INJECTION_ACTIVITY_FRAME_DEBUGGER)
+			{
+				pActivityToInject = &activity;
+				break;
+			}
+		}
+
+		if (!pActivityToInject) {
+			std::wstringstream stream;
+			stream << L"Frame Debugger activity is not available" << result;
+		}
+
+		// 5) With the activity identified, Inject into the process, setup for the
+		// Frame Debugger activity
+		result = NGFX_Injection_InjectToProcess(&installation, pActivityToInject);
+		if (NGFX_INJECTION_RESULT_OK != result)
+		{
+			std::wstringstream stream;
+			stream << L"NGFX_Injection_InjectToProcess failed with" << result;
+		}
+	}
+
 #endif
 
 #if defined(XR_OS_WINDOWS) && !defined(_DEBUG)
 	auto crashpadok = start_crash_handler();
 #endif
+
 
 	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
 
@@ -120,15 +199,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <game.h>
+#include <editor.h>
 
 void App_Main()
 {
 	LOG_INFO("Que MAIN");
 
-	Game* game = new Game();
-	game->run();
+	// check if game is run with -ed flag
+	bool run_editor = false;
+	for (int i = 0; i < __argc; i++)
+	{
+		if (strcmp(__argv[i], "-ed") == 0)
+		{
+			run_editor = true;
+			break;
+		}
+	}
 
-	delete game;
+	if (run_editor)
+	{
+		Editor editor;
+		editor.run();
+	}
+	else
+	{
+		Game game;
+		game.run();
+	}
 
 	return;
 }

@@ -129,6 +129,7 @@ namespace Que
             conf.AddPublicDependency<Fmod>(target);
             conf.AddPublicDependency<Crashpad>(target);
             conf.AddPublicDependency<Nvtt>(target);
+            conf.AddPublicDependency<Ngsdk>(target);
 
             //conf.AddPublicDependency<EASTLProject>(target);
 
@@ -154,7 +155,7 @@ namespace Que
 
             conf.LibraryPaths.Add(Environment.GetEnvironmentVariable("VULKAN_SDK") + @"\Lib");
 
-            conf.LibraryFiles.Add("vulkan-1.lib");
+            //conf.LibraryFiles.Add("vulkan-1.lib");
             conf.LibraryFiles.Add("Rpcrt4.lib");
 
             conf.Options.Add(Options.Vc.Compiler.RTTI.Enable);

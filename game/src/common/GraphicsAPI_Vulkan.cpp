@@ -406,7 +406,7 @@ void *GraphicsAPI_Vulkan::CreateDesktopSwapchain(const SwapchainCreateInfo &swap
     surfaceCI.flags = 0;
     surfaceCI.hinstance = GetModuleHandle(nullptr);
     surfaceCI.hwnd = (HWND)swapchainCI.windowHandle;
-    VULKAN_CHECK(vkCreateWin32SurfaceKHR(instance, &surfaceCI, nullptr, &surface), "Failed to create Device.");
+    //VULKAN_CHECK(vkCreateWin32SurfaceKHR(instance, &surfaceCI, nullptr, &surface), "Failed to create Device.");
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)
     VkAndroidSurfaceCreateInfoKHR surfaceCI;
     surfaceCI.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;

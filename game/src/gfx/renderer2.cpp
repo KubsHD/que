@@ -16,6 +16,10 @@
 #include <core/profiler.h>
 #include "sky/sky.h"
 
+#include <NGFX_Injection.h>
+
+#include "debug_renderer.h"
+
 #include <tracy/TracyVulkan.hpp>
 
 static tracy::VkCtx* ctx;
@@ -65,6 +69,9 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	create_pipelines();
 
+	debug = new DebugRenderer();
+
+	debug->init(this);
 
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_image(depth_image);
@@ -74,6 +81,8 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 Renderer2::~Renderer2()
 {
 	main_deletion_queue.execute();
+
+	delete debug;
 
 	m_shadow_renderer.destroy();
 
@@ -102,6 +111,8 @@ void Renderer2::register_mesh(const MeshComponent* mc)
 
 void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 {
+	ImGui::NewFrame();
+
 	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
 	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
 
@@ -136,7 +147,9 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkExtent2D _windowExtent = {swp.width, swp.height };
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
-	m_shadow_renderer.render(cmd, m_reg);
+	m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
+	m_shadow_renderer.render_imgui();
+
 	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
 
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
@@ -182,6 +195,8 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VULKAN_CHECK_NOMSG(vkQueueSubmit2(m_queue, 1, &submitInfo, frame.main_fence));
 
 	_frameNumber++;
+
+	ImGui::Render();
 }
 
 GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices)
@@ -271,9 +286,9 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 	};
 
 
+	debug->render(cmd);
 
 	sky.draw(*this, cmd);
-
 }
 
 void Renderer2::create_pipelines()
@@ -325,6 +340,8 @@ void Renderer2::create_default_textures()
 	// https://vkguide.dev/docs/new_chapter_4/textures/
 	uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
 	uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+	uint32_t normal = glm::packUnorm4x8(glm::vec4(0.5, 0.5, 1, 1));
+
 	std::array<uint32_t, 16 * 16 > pixels; //for 16x16 checkerboard texture
 	for (int x = 0; x < 16; x++) {
 		for (int y = 0; y < 16; y++) {
@@ -340,6 +357,8 @@ void Renderer2::create_default_textures()
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 	GfxDevice::set_debug_name(texture_black.image, "Black Texture");
 
+	texture_normal = GfxDevice::create_image(&normal, VkExtent2D{ 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	// samplers
 	VkSamplerCreateInfo sampl = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
@@ -359,5 +378,6 @@ void Renderer2::create_default_textures()
 
 		GfxDevice::destroy_image(texture_checker);
 		GfxDevice::destroy_image(texture_black);
+		GfxDevice::destroy_image(texture_normal);
 	});
 }
