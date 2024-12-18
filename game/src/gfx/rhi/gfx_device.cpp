@@ -243,10 +243,10 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 	vkb::InstanceBuilder builder;
 	builder.set_app_name("Que")
 		.request_validation_layers()
-		.set_debug_callback(debugCallback)
+		.require_api_version(1, 3)
+		.set_debug_callback(debugCallback);
 #if _DEBUG
 #endif
-		.desire_api_version(1, 3);
 
 	auto exts = Xr::GetVulkanInstanceExtensions();
 
@@ -262,6 +262,11 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 		std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";
 		abort();
 	}
+
+	// print vulkan version
+	uint32_t apiVersion = 0;
+	vkEnumerateInstanceVersion(&apiVersion);
+	LOG_INFO("Vulkan API Version: " << VK_VERSION_MAJOR(apiVersion) << "." << VK_VERSION_MINOR(apiVersion) << "." << VK_VERSION_PATCH(apiVersion));
 
 	volkLoadInstance(inst_ret.value());
 
@@ -282,6 +287,11 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 		.set_required_features(features)
 		.set_required_features_13(features13)
 		.set_minimum_version(1, 3)
+
+		// THIS FIXES CRASH UNDER STEAMVR
+		.add_desired_extension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME)
+		// -----------------------------------
+
 		.select();
 	if (!phys_ret) {
 		std::cerr << "Failed to select Vulkan Physical Device. Error: " << phys_ret.error().message() << "\n";
@@ -290,6 +300,8 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 	physical_device = phys_ret.value().physical_device;
 
 	VkPhysicalDevice pd = Xr::GetVulkanGraphicsDevice(instance);
+
+	
 
 	assert(pd == physical_device);
 

@@ -13,11 +13,20 @@
 
 #include <game/components/interactable/speaker_interactable.h>
 
+static Model level_model;
+
+
 void DevScene::init()
 {
 	
 	const auto player = create("player");
 	auto pc = player->add<PlayerComponent>();
+
+	level_model = engine.asset->load_model("level/testlevel.gltf");
+
+	const auto entity = create("test");
+	entity->position = glm::vec3(0, -1, 0);
+	entity->add<MeshComponent>(MeshComponent(&level_model));
 
 	// controllers
 	game::tmpl::create_controller(*this, 0, pc);

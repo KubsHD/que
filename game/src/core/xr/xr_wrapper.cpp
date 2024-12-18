@@ -10,8 +10,8 @@ XrInstance Xr::instance;
 XrSystemId Xr::systemId;
 
 
-PFN_xrGetVulkanGraphicsDeviceKHR Xr::xrGetVulkanGraphicsDeviceKHR;
-PFN_xrGetVulkanGraphicsRequirementsKHR Xr::xrGetVulkanGraphicsRequirementsKHR;
+PFN_xrGetVulkanGraphicsDevice2KHR Xr::xrGetVulkanGraphicsDevice2KHR;
+PFN_xrGetVulkanGraphicsRequirements2KHR Xr::xrGetVulkanGraphicsRequirements2KHR;
 PFN_xrGetVulkanInstanceExtensionsKHR Xr::xrGetVulkanInstanceExtensionsKHR;
 PFN_xrGetVulkanDeviceExtensionsKHR Xr::xrGetVulkanDeviceExtensionsKHR;
 
@@ -22,9 +22,9 @@ void Xr::Destroy()
 
 static const std::vector<char*> layerNames;
 static const char* const extensionNames[] = {
-	"XR_KHR_vulkan_enable",
-	"XR_KHR_vulkan_enable2",
-	"XR_EXT_debug_utils"
+	XR_KHR_VULKAN_ENABLE_EXTENSION_NAME,
+	XR_EXT_DEBUG_UTILS_EXTENSION_NAME,
+	XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME
 };
 
 
@@ -55,6 +55,8 @@ void Xr::Init()
 	createInfo.enabledExtensionNames = extensionNames;
 	OPENXR_CHECK_PORTABLE(instance, xrCreateInstance(&createInfo, &instance), "Failed to create Instance.");
 
+
+
 	// Get the XrSystemId from the instance and the supplied XrFormFactor.
 	XrSystemProperties m_xrSystemProperties = { XR_TYPE_SYSTEM_PROPERTIES };
 	XrSystemGetInfo systemGI{ XR_TYPE_SYSTEM_GET_INFO };
@@ -71,17 +73,29 @@ void Xr::Init()
 VkPhysicalDevice Xr::GetVulkanGraphicsDevice(VkInstance vkInstance)
 {
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	xrGetVulkanGraphicsDeviceKHR(instance, systemId, vkInstance, &physicalDevice);
+
+	XrVulkanGraphicsDeviceGetInfoKHR deviceInfo{};
+	deviceInfo.type = XR_TYPE_VULKAN_GRAPHICS_DEVICE_GET_INFO_KHR;
+	deviceInfo.next = nullptr;
+	deviceInfo.systemId = systemId;
+	deviceInfo.vulkanInstance = vkInstance;
+
+
+	OPENXR_CHECK_PORTABLE(Xr::instance, xrGetVulkanGraphicsDevice2KHR(Xr::instance, &deviceInfo, &physicalDevice), "Failed to get physical device");
 
 	return physicalDevice;
 }
 
 void Xr::GetVulkanGraphicsRequirements()
 {
-	XrGraphicsRequirementsVulkanKHR graphicsRequirements{};
+	XrGraphicsRequirementsVulkan2KHR graphicsRequirements{};
 	graphicsRequirements.type = XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR;
 
-	xrGetVulkanGraphicsRequirementsKHR(instance, systemId, &graphicsRequirements);
+	OPENXR_CHECK_PORTABLE(Xr::instance, xrGetVulkanGraphicsRequirements2KHR(instance, systemId, &graphicsRequirements), "Failed to get gfx req");
+
+	LOG_INFO("min api version: " << XR_VERSION_MAJOR(graphicsRequirements.minApiVersionSupported) << "." << XR_VERSION_MINOR(graphicsRequirements.minApiVersionSupported));
+	LOG_INFO("max api version: " << XR_VERSION_MAJOR(graphicsRequirements.maxApiVersionSupported) << "." << XR_VERSION_MINOR(graphicsRequirements.maxApiVersionSupported));
+
 }
 
 const std::vector<std::string> Xr::GetVulkanInstanceExtensions()
@@ -103,11 +117,11 @@ const std::vector<std::string> Xr::GetVulkanInstanceExtensions()
 
 void Xr::LoadPFN_XrFunctions()
 {
-	OPENXR_CHECK_PORTABLE(instance, xrGetInstanceProcAddr(instance, "xrGetVulkanGraphicsRequirementsKHR", (PFN_xrVoidFunction*)&xrGetVulkanGraphicsRequirementsKHR), "Failed to get InstanceProcAddr for xrGetVulkanGraphicsRequirementsKHR.");
+	OPENXR_CHECK_PORTABLE(instance, xrGetInstanceProcAddr(instance, "xrGetVulkanGraphicsRequirements2KHR", (PFN_xrVoidFunction*)&xrGetVulkanGraphicsRequirements2KHR), "Failed to get InstanceProcAddr for xrGetVulkanGraphicsRequirementsKHR.");
 	
 	OPENXR_CHECK_PORTABLE(instance, xrGetInstanceProcAddr(instance, "xrGetVulkanDeviceExtensionsKHR", (PFN_xrVoidFunction*)&xrGetVulkanDeviceExtensionsKHR), "Failed to get InstanceProcAddr for xrGetVulkanDeviceExtensionsKHR.");
 
 	OPENXR_CHECK_PORTABLE(instance, xrGetInstanceProcAddr(instance, "xrGetVulkanInstanceExtensionsKHR", (PFN_xrVoidFunction*)&xrGetVulkanInstanceExtensionsKHR), "Failed to get InstanceProcAddr for xrGetVulkanInstanceExtensionsKHR.");
 
-	OPENXR_CHECK_PORTABLE(instance, xrGetInstanceProcAddr(instance, "xrGetVulkanGraphicsDeviceKHR", (PFN_xrVoidFunction*)&xrGetVulkanGraphicsDeviceKHR), "Failed to get InstanceProcAddr for xrGetVulkanGraphicsDeviceKHR.");
+	OPENXR_CHECK_PORTABLE(instance, xrGetInstanceProcAddr(instance, "xrGetVulkanGraphicsDevice2KHR", (PFN_xrVoidFunction*)&xrGetVulkanGraphicsDevice2KHR), "Failed to get InstanceProcAddr for xrGetVulkanGraphicsDeviceKHR.");
 }
