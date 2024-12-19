@@ -47,9 +47,7 @@ struct core_mesh_component {
 	Model* model;
 };
 
-struct scriptable_component {
-	std::filesystem::path script;
-};
+
 
 struct controller_component {
 	int index = 0;
@@ -87,3 +85,7 @@ struct game_state_component {
 	bool is_game_over;
 };
 
+struct core_camera_component {
+	glm::vec3 position;
+	glm::vec3 rotation;
+};

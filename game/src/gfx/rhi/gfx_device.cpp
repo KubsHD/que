@@ -58,8 +58,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 	void* pUserData) {
 
-	// ignore unused vertex shader input warning
-	if (pCallbackData->messageIdNumber == 101294395)
+	//	 ignore unused vertex shader input warning		steamvr ignorable validation error
+	if (pCallbackData->messageIdNumber == 101294395 || pCallbackData->messageIdNumber == 1303270965)
 		return VK_FALSE;
 
 	std::cerr << "ERROR: VALIDATION: " << pCallbackData->pMessage << std::endl;
@@ -243,8 +243,8 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 	vkb::InstanceBuilder builder;
 	builder.set_app_name("Que")
 		.request_validation_layers()
-		.require_api_version(1, 3)
-		.set_debug_callback(debugCallback);
+		.set_debug_callback(debugCallback)
+		.require_api_version(1, 3);
 #if _DEBUG
 #endif
 

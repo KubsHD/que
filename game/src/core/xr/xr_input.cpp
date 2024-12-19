@@ -223,10 +223,16 @@ std::vector<float> XrInput::get_grab_state()
 glm::vec2 XrInput::get_movement_input()
 {
 	XrVector2f vel = m_movementActionState.currentState;
+
 	return glm::to_glm(vel);
 }
 
 bool XrInput::get_interaction_button_down()
 {
 	return m_interactionState.changedSinceLastSync && m_interactionState.currentState;
+}
+
+bool XrInput::get_interaction_button()
+{
+	return m_interactionState.currentState;
 }

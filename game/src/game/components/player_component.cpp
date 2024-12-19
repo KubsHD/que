@@ -2,10 +2,12 @@
 
 #include "player_component.h"
 #include <common/glm_helpers.h>
+#include <entt/entt.hpp>
+
+#include <gfx/renderer2.h>
 
 void PlayerComponent::init()
 {
-
 }
 
 void PlayerComponent::update()
@@ -17,5 +19,7 @@ void PlayerComponent::update()
 
 
 	entity->position = entity->position + (vel.y * forward * m_speed) + vel.x * right * m_speed;
+
+	g_engine.render->set_camera_position(entity->position);
 }
 

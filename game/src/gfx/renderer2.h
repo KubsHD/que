@@ -61,6 +61,10 @@ public:
 	gfx::Sky sky;
 
 	DebugRenderer* debug;
+
+
+	// camera
+	void set_camera_position(glm::vec3 pos);
 private:
 	void draw_internal(VkCommandBuffer cmd);
 
@@ -78,6 +82,8 @@ private:
 	void create_default_textures();
 
 	ShadowRenderer m_shadow_renderer;
+
+	glm::vec3 m_camera_position;
 public:
 	// desc
 	DescriptorAllocator global_descriptor_allocator;

@@ -31,7 +31,7 @@ void ControllerComponent::update()
 	rot = glm::rotate(rot, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
 
-	this->entity->position = target_pos;
+	this->entity->position = m_pc->entity->position + target_pos;
 	this->entity->rotation = rot;
 
 

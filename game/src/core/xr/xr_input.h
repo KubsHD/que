@@ -37,6 +37,9 @@ public:
 	glm::vec2 get_movement_input();
 
 	bool get_interaction_button_down();
+	bool get_interaction_button();
+
+
 private:
 	XrInstance m_xrInstance;
 	XrSession* m_session;

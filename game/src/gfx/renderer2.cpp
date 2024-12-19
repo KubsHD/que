@@ -13,8 +13,11 @@
 
 #include <core/components/components.h>
 #include <game/components/mesh_component.h>
+#include <game/components/player_component.h>
 #include <core/profiler.h>
 #include "sky/sky.h"
+
+
 
 #include <NGFX_Injection.h>
 
@@ -109,6 +112,11 @@ void Renderer2::register_mesh(const MeshComponent* mc)
 	m_reg.emplace<core_mesh_component>(mc->entity->internal_entity, mc->get_model());
 }
 
+void Renderer2::set_camera_position(glm::vec3 pos)
+{
+	m_camera_position = pos;
+}
+
 void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 {
 	ImGui::NewFrame();
@@ -121,16 +129,19 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	glm::mat4 projection = glm::to_glm_projection(view.fov);
 
+	auto camera_position = glm::vec4(m_camera_position, 0.0f) + glm::vec4(view.pose.position.x, view.pose.position.y, view.pose.position.z, 1.0f);
+
 	// https://gitlab.com/amini-allight/openxr-tutorial/-/blob/master/examples/part-9/openxr_example.cpp?ref_type=heads#L1434
 	glm::mat4 viewMatrix = glm::inverse(
-		glm::translate(glm::mat4(1.0f), glm::vec3(view.pose.position.x, view.pose.position.y, view.pose.position.z))
+		glm::translate(glm::mat4(1.0f), glm::vec3(camera_position))
 		* glm::mat4_cast(glm::quat(view.pose.orientation.w, view.pose.orientation.x, view.pose.orientation.y, view.pose.orientation.z))
 	);
 
 	m_scene_data_cpu.viewProj = projection * viewMatrix;
 	m_scene_data_cpu.view = viewMatrix;
 	m_scene_data_cpu.proj = projection;
-	m_scene_data_cpu.camPos = glm::vec4(view.pose.position.x, view.pose.position.y, view.pose.position.z, 1.0f);
+
+	m_scene_data_cpu.camPos = camera_position;
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
