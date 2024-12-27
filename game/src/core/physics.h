@@ -103,6 +103,8 @@ namespace JPH {
 	glm::vec3 to_glm(JPH::Vec3 vec);
 	JPH::Vec3 to_jph(glm::vec3 vec);
 	JPH::Quat to_jph(glm::quat q);
+
+	class CharacterVirtual;
 }
 
 class PhysicsSystem {
@@ -130,6 +132,8 @@ public:
 	JPH::EMotionType get_body_type(JPH::BodyID bodyId);
 	glm::vec3 obj_pos;
 
+	JPH::PhysicsSystem* get_system() { return &m_system; }
+
 private:
 	JPH::PhysicsSystem m_system;
 	std::unique_ptr<JPH::TempAllocatorImpl> m_allocator;
@@ -149,4 +153,5 @@ private:
 	MyBodyActivationListener body_activation_listener;
 public:
 	void set_motion_type(JPH::BodyID id, JPH::EMotionType param2);
+	void update_character_virtual(JPH::CharacterVirtual* m_internal_cc);
 };

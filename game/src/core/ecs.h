@@ -39,6 +39,10 @@ public: \
 #define INSPECT(TYPE, NAME) \
 TYPE NAME; \
 
+#define REQUIRE_COMPONENT(NAME) \
+assert(entity->get<NAME>() != nullptr); \
+
+
 
 
 /// <summary>

@@ -27,9 +27,9 @@ void game::tmpl::create_controller(Scene& scn, int index, PlayerComponent* pc)
 	controller1->add<MeshComponent>(MeshComponent(&c_model));
 	controller1->scale = Vec3(0.01f);
 
-	controller1->add<ControllerComponent>(ControllerComponent(index, pc));
+	auto cc = controller1->add<ControllerComponent>(ControllerComponent(index, pc));
 	controller1->add<PlayerPickupComponent>();
-	controller1->add<PlayerInteractComponent>();
+	controller1->add<PlayerInteractComponent>(PlayerInteractComponent(cc));
 
 	//reg.emplace<transform_component>(controller1, glm::vec3{ 0.0f,5.0f,0.0f }, glm::quat(1, 0, 0, 0), glm::vec3{ 0.5f, 0.5f, 0.5f });
 	////reg.emplace<physics_component>(controller1, m_physics_system->spawn_body(c_settings, JPH::Vec3(0.7f, -1.0f, 0.1f)));

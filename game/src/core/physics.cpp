@@ -6,6 +6,7 @@
 
 #include <jolt/Physics/StateRecorderImpl.h>
 #include "profiler.h"
+#include <Jolt/Physics/Character/CharacterVirtual.h>
 
 JPH::StateRecorderImpl impl;
 
@@ -221,6 +222,17 @@ void PhysicsSystem::set_motion_type(JPH::BodyID id, JPH::EMotionType param2)
 {
 	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
 	body_interface.SetMotionType(id, param2, JPH::EActivation::Activate);
+}
+
+void PhysicsSystem::update_character_virtual(JPH::CharacterVirtual* m_internal_cc)
+{
+	m_internal_cc->Update(cDeltaTime,
+		m_system.GetGravity(),
+		m_system.GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
+		m_system.GetDefaultLayerFilter(Layers::MOVING),
+		{},
+		{},
+		*m_allocator);
 }
 
 void PhysicsSystem::init_static()

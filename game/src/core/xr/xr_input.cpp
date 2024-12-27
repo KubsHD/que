@@ -90,14 +90,19 @@ void XrInput::suggest_bindings()
 		};
 
 	bool any_ok = false;
-	any_ok |= SuggestBindings("/interaction_profiles/oculus/touch_controller", { {m_palmPoseAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/grip/pose")},
-																			  {m_palmPoseAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/grip/pose")},
-																			  {m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/left/output/haptic")},
-																			  {m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/right/output/haptic")},
-																				{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/squeeze/value")},
-																				{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/squeeze/value")},
-																				{m_movementAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/thumbstick")},
-																				{m_interactionAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/a/click")},
+	any_ok |= SuggestBindings("/interaction_profiles/oculus/touch_controller", 
+		{ 
+		
+			{m_palmPoseAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/grip/pose")},
+			{m_palmPoseAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/grip/pose")},
+			{m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/left/output/haptic")},
+			{m_buzzAction, CreateXrPath(m_xrInstance, "/user/hand/right/output/haptic")},
+			{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/squeeze/value")},
+			{m_grabCubeAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/squeeze/value")},
+			{m_movementAction, CreateXrPath(m_xrInstance, "/user/hand/left/input/thumbstick")},
+
+			{m_interactionAction, CreateXrPath(m_xrInstance, "/user/hand/right/input/a/click")},
+
 
 		});
 }
@@ -236,3 +241,25 @@ bool XrInput::get_interaction_button()
 {
 	return m_interactionState.currentState;
 }
+
+bool XrInput::get_interaction_button_up()
+{
+	return m_interactionState.changedSinceLastSync && !m_interactionState.currentState;
+}
+
+
+bool XrInput::get_grab_button_down(ControllerType type)
+{
+	return m_grabState[type].changedSinceLastSync && m_grabState[type].currentState;
+}
+
+bool XrInput::get_grab_button(ControllerType type)
+{
+	return m_grabState[type].currentState;
+}
+
+bool XrInput::get_grab_button_up(ControllerType type)
+{
+	return m_grabState[type].changedSinceLastSync && !m_grabState[type].currentState;
+}
+

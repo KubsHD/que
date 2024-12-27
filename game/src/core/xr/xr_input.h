@@ -4,6 +4,11 @@
 
 #include <core/types.h>
 
+enum ControllerType {
+	LEFT = 0,
+	RIGHT = 1,
+};
+
 enum class ControllerButton {
 	A,
 	B,
@@ -38,8 +43,11 @@ public:
 
 	bool get_interaction_button_down();
 	bool get_interaction_button();
+	bool get_interaction_button_up();
 
-
+	bool get_grab_button_down(ControllerType type);
+	bool get_grab_button(ControllerType type);
+	bool get_grab_button_up(ControllerType type);
 private:
 	XrInstance m_xrInstance;
 	XrSession* m_session;
@@ -76,4 +84,7 @@ private:
 	XrPosef m_handPose[2] = {
 		{{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1}},
 		{{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1}} };
+
+	// last grab state
+	float m_lastGrabState[2] = { 0, 0 };
 };

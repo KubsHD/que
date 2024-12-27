@@ -81,8 +81,13 @@ void Game::run()
 		if (g_game_running)
 		{
 			platform->poll();
+
+			ImGui::NewFrame();
+
 			update();
 			platform->render();
+
+			ImGui::Render();
 		}
 	}
 
@@ -101,6 +106,15 @@ void Game::update()
 		m_audio_system->update(m_current_player_component->entity->position);
 	else
 		m_audio_system->update(glm::vec3(0, 0, 0));
+
+
+	if (ImGui::Begin("ECS Debug", nullptr))
+	{
+		if (m_current_scene)
+			m_current_scene->draw_imgui();
+
+	}
+	ImGui::End();
 }
 
 void Game::init_imgui()

@@ -15,6 +15,9 @@ Entity* Scene::create(String name, Entity* parent)
 	ent->id = ID::get_uuid();
 	ent->parent = nullptr;
 
+	ent->position = Vec3(0);
+	ent->rotation = Quat(0, 0, 0, 0);
+
 	ent->internal_entity = engine.reg->create();
 
 	engine.reg->emplace<core_transform_component>(ent->internal_entity, ent->position, ent->rotation, ent->scale);

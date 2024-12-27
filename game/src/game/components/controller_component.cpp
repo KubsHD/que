@@ -30,9 +30,11 @@ void ControllerComponent::update()
 	glm::quat rot = glm::rotate(xr_source_rotation, glm::radians(180.0f), glm::vec3(0, 1, 0));
 	rot = glm::rotate(rot, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
-
-	this->entity->position = m_pc->entity->position + target_pos;
-	this->entity->rotation = rot;
+	if (!m_frozen)
+	{
+		this->entity->position = m_pc->entity->position + target_pos;
+		this->entity->rotation = rot;
+	}
 
 
 	m_velocity = this->entity->position - last_pos;

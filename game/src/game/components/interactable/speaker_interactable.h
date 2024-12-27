@@ -10,7 +10,7 @@ DEFINE_COMPONENT_DERIVED(SpeakerInteractableComponent, InteractableComponent)
 public:
 
 	void init() override;
-	void on_interact() override;
+	void on_interact(ControllerComponent* cc) override;
 	void update() override;
 
 private:

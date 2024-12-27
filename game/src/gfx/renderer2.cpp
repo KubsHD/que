@@ -119,7 +119,6 @@ void Renderer2::set_camera_position(glm::vec3 pos)
 
 void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 {
-	ImGui::NewFrame();
 
 	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
 	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
@@ -207,7 +206,6 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	_frameNumber++;
 
-	ImGui::Render();
 }
 
 GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices)

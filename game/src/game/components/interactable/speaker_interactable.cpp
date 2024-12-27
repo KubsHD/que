@@ -2,7 +2,7 @@
 
 #include "speaker_interactable.h"
 
-void SpeakerInteractableComponent::on_interact()
+void SpeakerInteractableComponent::on_interact(ControllerComponent* cc)
 {
 	g_engine.audio->play_sound(m_sound);
 }

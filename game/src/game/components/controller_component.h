@@ -13,10 +13,17 @@ DEFINE_COMPONENT(ControllerComponent)
 
 	Vec3 get_velocity() { return m_velocity; }
 
+	inline void set_frozen(bool frozen)
+	{
+		m_frozen = frozen;
+	}
+
 	int index;
 private:
 	Vec3 last_pos;
 
 	Vec3 m_velocity;
 	PlayerComponent* m_pc;
+
+	bool m_frozen = false;
 };
