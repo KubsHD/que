@@ -33,7 +33,7 @@ void PlayerClimbManager::update()
 	{
 		for (auto& cc : m_controllers_attached_to_ledge)
 		{
-uu			m_player_offset += cc->get_velocity() * 1/60;
+			m_player_offset += cc->get_velocity() * 1/60;
 		}
 
 		m_prev_player_offset = m_player_offset;
