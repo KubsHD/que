@@ -19,6 +19,7 @@ void ControllerComponent::init()
 void ControllerComponent::update()
 {
 
+
 	const auto& poses = g_engine.input->get_controller_poses();
 	auto pose = poses[index];
 
@@ -32,13 +33,18 @@ void ControllerComponent::update()
 
 	if (!m_frozen)
 	{
-		this->entity->position = m_pc->entity->position + target_pos;
+		this->entity->position = m_pc->entity->position + Vec3(0,m_pc->viewHeightM,0) + target_pos;
 		this->entity->rotation = rot;
 	}
 
 
-	m_velocity = this->entity->position - last_pos;
-	last_pos = entity->position;
+	// velocity is how much the controller wants to move 
+	// this frame
+
+	//							always add player position since pose is in local space!
+	m_velocity = last_pos - (m_pc->entity->position + Vec3(0,m_pc->viewHeightM,0) + glm::to_glm(pose.position));
+	last_pos = this->entity->position;
 	// print vel
 	//LOG_INFO("vel: " + std::to_string(m_velocity.x) + " " + std::to_string(m_velocity.y) + " " + std::to_string(m_velocity.z));
 }
+

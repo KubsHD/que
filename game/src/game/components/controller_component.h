@@ -5,7 +5,10 @@
 class Component;
 class PlayerComponent;
 
-DEFINE_COMPONENT(ControllerComponent)
+
+class ControllerComponent : public Component {
+	DEFINE_COMPONENT_BODY(ControllerComponent)
+
 	ControllerComponent(int index, PlayerComponent* pc);
 
 	void init() override;
@@ -20,9 +23,9 @@ DEFINE_COMPONENT(ControllerComponent)
 
 	int index;
 private:
-	Vec3 last_pos;
+	Vec3 last_pos = Vec3(0, 0, 0);
 
-	Vec3 m_velocity;
+	Vec3 m_velocity = Vec3(0, 0, 0);
 	PlayerComponent* m_pc;
 
 	bool m_frozen = false;

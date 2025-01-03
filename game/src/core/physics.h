@@ -127,6 +127,8 @@ public:
 
 	void add_velocity(JPH::BodyID bid, glm::vec3 vel);
 
+	glm::vec3 get_gravity();
+
 	std::vector<JPH::Body*> overlap_sphere(glm::vec3 point, float radius);
 
 	JPH::EMotionType get_body_type(JPH::BodyID bodyId);

@@ -2,6 +2,8 @@
 
 #include <core/ecs.h>
 
+#include <Jolt/Physics/Character/CharacterVirtual.h>
+
 class Component;
 
 namespace JPH
@@ -9,11 +11,33 @@ namespace JPH
 	class CharacterVirtual;
 }
 
-DEFINE_COMPONENT(CharacterController)
+class CharacterController : public Component, public JPH::CharacterContactListener {
+	DEFINE_COMPONENT_BODY(CharacterController)
 	void init() override;
 	void update() override;
 	void set_gravity(bool active);
 	bool kinematic = false;
+	void move(Vec3 force);
+
+	void draw_inspector() override;
+
 private:
+	Vec3 m_velocity = Vec3(0, 0, 0);
+
 	JPH::CharacterVirtual* m_internal_cc = nullptr;
+	bool m_kineamtic = false;
+public:
+	void set_kinematic(bool is_kinematic);
+
+	void OnAdjustBodyVelocity(const JPH::CharacterVirtual* inCharacter, const JPH::Body& inBody2, JPH::Vec3& ioLinearVelocity, JPH::Vec3& ioAngularVelocity) override;
+
+
+	bool OnContactValidate(const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2) override;
+
+
+	void OnContactAdded(const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::RVec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings) override;
+
+
+	void OnContactSolve(const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::RVec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::Vec3Arg inContactVelocity, const JPH::PhysicsMaterial* inContactMaterial, JPH::Vec3Arg inCharacterVelocity, JPH::Vec3& ioNewCharacterVelocity) override;
+
 };

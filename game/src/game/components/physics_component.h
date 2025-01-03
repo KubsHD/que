@@ -7,6 +7,8 @@ class Component;
 DEFINE_COMPONENT(PhysicsComponent)
 	PhysicsComponent(JPH::BodyCreationSettings bodySettings);
 
+	PhysicsComponent(Mesh& mesh, JPH::BodyCreationSettings bodySettings = {});
+
 	void init() override;
 	void update() override;
 

@@ -16,7 +16,7 @@ Entity* Scene::create(String name, Entity* parent)
 	ent->parent = nullptr;
 
 	ent->position = Vec3(0);
-	ent->rotation = Quat(0, 0, 0, 0);
+	ent->rotation = glm::quat_identity<float, glm::defaultp>();
 
 	ent->internal_entity = engine.reg->create();
 
@@ -140,7 +140,11 @@ static void draw_entity(Entity* ent)
 		{
 			for (auto compo : ent->get_components())
 			{
-				ImGui::Text("%s", compo->get_class_name());
+				if (ImGui::TreeNodeEx(compo->get_class_name(), ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					compo->draw_inspector();
+					ImGui::TreePop();
+				}
 
 				//	////draw_component(compo);
 				//	//auto cls = compo->get_class();

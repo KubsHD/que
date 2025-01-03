@@ -29,9 +29,19 @@ public: \
 	RTTI_COMPONENT_NAME(NAME) \
 	NAME() = default; \
 
+#define DEFINE_COMPONENT_BODY(NAME) \
+public: \
+	RTTI_COMPONENT_NAME(NAME) \
+	NAME() = default; \
+
 
 #define DEFINE_COMPONENT_DERIVED(NAME, BASE) \
 class NAME : public BASE { \
+public: \
+	RTTI_COMPONENT_NAME(NAME) \
+	NAME() = default; \
+
+#define DEFINE_COMPONENT_DERIVED_BODY(NAME, BASE) \
 public: \
 	RTTI_COMPONENT_NAME(NAME) \
 	NAME() = default; \
@@ -79,6 +89,8 @@ public:
 	/// Update the component
 	/// </summary>
 	virtual void update() = 0;
+
+	virtual void draw_inspector() {};
 
 	virtual void destroy();
 };

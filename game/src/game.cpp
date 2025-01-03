@@ -83,6 +83,8 @@ void Game::run()
 			platform->poll();
 
 			ImGui::NewFrame();
+			
+			ImGui::ShowDemoWindow();
 
 			update();
 			platform->render();

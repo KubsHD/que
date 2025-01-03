@@ -192,6 +192,11 @@ void PhysicsSystem::add_velocity(JPH::BodyID bid, glm::vec3 vel)
 	body_interface.AddForce(bid, JPH::to_jph(vel));
 }
 
+glm::vec3 PhysicsSystem::get_gravity()
+{
+	return JPH::to_glm(m_system.GetGravity());
+}
+
 std::vector<JPH::Body*> PhysicsSystem::overlap_sphere(glm::vec3 point, float radius)
 {
 	auto& bpq = m_system.GetBroadPhaseQuery();
