@@ -10,7 +10,8 @@
 #include <game/components/player/player_interact_component.h>
 
 // todo: refactor to shader_ptrs later or bindless
-static Model c_model;
+static Model c_model1;
+static Model c_model2;
 
 void game::tmpl::create_controller(Scene& scn, int index, PlayerComponent* pc)
 {
@@ -22,9 +23,17 @@ void game::tmpl::create_controller(Scene& scn, int index, PlayerComponent* pc)
 		JPH::EMotionType::Kinematic,
 		Layers::MOVING);
 
-	c_model = g_engine.asset->load_model_json("models/meta/model_controller_left.model");
+	if (index == 0)
+	{
+		c_model1 = g_engine.asset->load_model_json("models/meta/model_controller_left.model");
+		controller1->add<MeshComponent>(MeshComponent(&c_model1));
+	}
+	else
+	{
+		c_model2 = g_engine.asset->load_model_json("models/meta/model_controller_right.model");
+		controller1->add<MeshComponent>(MeshComponent(&c_model2));
+	}
 	
-	controller1->add<MeshComponent>(MeshComponent(&c_model));
 	controller1->scale = Vec3(0.01f);
 
 	auto cc = controller1->add<ControllerComponent>(ControllerComponent(index, pc));

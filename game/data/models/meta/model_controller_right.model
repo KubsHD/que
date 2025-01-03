@@ -1,0 +1,11 @@
+{
+    "file": "MetaQuestTouchPlus_Right.fbx",
+    "materials": [
+        {
+            "id": 0,
+            "diffuse": "MetaQuestTouchPlus_Right_BaseColor.png",
+            "normal": "MetaQuestTouchPlus_Normals.png",
+            "orm": "MetaQuestTouchPlus_ORM.png"
+        }
+    ]
+}
