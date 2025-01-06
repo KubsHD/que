@@ -132,9 +132,9 @@ static void draw_entity(Entity* ent)
 	if (ImGui::TreeNode(ent->id.c_str(), "%s : %s", ent->name.c_str(), ent->id.c_str()))
 	{
 		// draw position and rotation
-		ImGui::Text("Position: %f %f %f", ent->position.x, ent->position.y, ent->position.z);
-		ImGui::Text("Rotation: %f %f %f %f", ent->rotation.x, ent->rotation.y, ent->rotation.z, ent->rotation.w);
-		ImGui::Text("Scale: %f %f %f", ent->scale.x, ent->scale.y, ent->scale.z);
+		ImGui::DragFloat3("Position", &ent->position.x, 0.001f);
+		ImGui::DragFloat4("Rotation", &ent->rotation.x, 0.001f);
+		ImGui::DragFloat3("Scale", &ent->scale.x, 0.001f);
 
 		if (ImGui::TreeNode("Components"))
 		{

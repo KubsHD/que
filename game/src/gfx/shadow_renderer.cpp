@@ -9,6 +9,7 @@
 #include <core/systems/base_system.h>
 #include "light.h"
 #include "rhi/vk_image.h"
+#include <tracy/TracyVulkan.hpp>
 
 VkExtent2D shadow_map_size = { 8192, 8192 };
 
@@ -39,8 +40,11 @@ void ShadowRenderer::create(Renderer2& ren)
 	GfxDevice::set_debug_name(shadow_map.image, "directionaL_light_shadow_map");
 }
 
+extern tracy::VkCtx* ctx;
+
 void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg, glm::vec3 cam_pos)
 {
+	TracyVkZone(ctx, cmd, "Shadow Rendering");
 
 	DirectionalLight dl;
 	dl.direction = glm::vec3(2.0f, 5.0f, 1.0f);

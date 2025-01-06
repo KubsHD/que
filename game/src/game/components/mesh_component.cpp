@@ -8,6 +8,7 @@
 
 MeshComponent::MeshComponent(Model* model) : m_model(model)
 {
+	assert(model != nullptr);
 }
 
 void MeshComponent::init()

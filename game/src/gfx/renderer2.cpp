@@ -25,7 +25,7 @@
 
 #include <tracy/TracyVulkan.hpp>
 
-static tracy::VkCtx* ctx;
+tracy::VkCtx* ctx;
 
 Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg)
 {
@@ -145,7 +145,7 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-	//TracyVkZone(ctx, cmd, "Render");
+	TracyVkZone(ctx, cmd, "Render");
 
 	VkClearValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 120.f));
@@ -190,7 +190,7 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	vkCmdEndRendering(cmd);
 
-	//TracyVkCollect(ctx, cmd);
+	TracyVkCollect(ctx, cmd);
 
 	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
 

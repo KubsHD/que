@@ -132,5 +132,5 @@ void Game::init_imgui()
 	ImGui::StyleColorsDark();
 
 	NetImgui::Startup();
-	NetImgui::ConnectFromApp("que");
+	NetImgui::ConnectFromApp("que", 8810);
 }

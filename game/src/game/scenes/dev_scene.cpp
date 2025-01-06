@@ -18,8 +18,9 @@
 #include <game/components/player/player_climb_manager_component.h>
 
 #include <game/components/physics_component.h>
+#include <core/level.h>
 
-static Model level_model;
+static Level level;
 
 void DevScene::init()
 {
@@ -27,23 +28,12 @@ void DevScene::init()
 	const auto player = create("player");
 	player->position = glm::vec3(0, 5, 0);
 
-
 	auto cc = player->add<CharacterController>();
 	auto pc = player->add<PlayerComponent>(PlayerComponent(cc));
 	player->add<PlayerClimbManager>();
 
-	level_model = engine.asset->load_model("level/testlevel.gltf");
-
-
-	const auto entity = create("test");
-	entity->position = glm::vec3(0, -1, 0);
-	entity->add<MeshComponent>(MeshComponent(&level_model));
-
 	const auto floor = create("floor");
 	floor->position = glm::vec3(0, -1, 0);
-
-
-
 
 	JPH::BoxShapeSettings floor_shape_settings(JPH::Vec3(100.0f, 1.0f, 100.0f));
 
@@ -67,6 +57,8 @@ void DevScene::init()
 	{
 		game::tmpl::create_climbable_ledge(Vec3(i + 0.4f, 0.8f + i * 0.15f, 0.0f), *this, pc);
 	}
+
+	level = core::load_level("level/demo/demo.level", this);
 }
 
 void DevScene::update()

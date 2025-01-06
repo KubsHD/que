@@ -326,6 +326,7 @@ Model AssetManager::load_model(Path path)
 	// create models
 	const aiScene* scene = imp.ReadFile(real_path.string(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
 
+
 	for (int m = 0; m < scene->mNumMeshes; m++)
 	{
 		std::vector<Vertex2> vertices;
@@ -333,6 +334,7 @@ Model AssetManager::load_model(Path path)
 
 		Mesh internal_mesh;
 		auto mesh = scene->mMeshes[m];
+
 
 		for (size_t i = 0; i < mesh->mNumVertices; i++) {
 			vertices.push_back({

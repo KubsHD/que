@@ -26,7 +26,7 @@ void PlayerComponent::update()
 	Vec3 move_dir = (vel.x * right * m_speed) + (vel.y * forward * m_speed);
 	move_dir.y = 0;
 
-	LOG_INFO("vel: " + std::to_string(move_dir.x) + " " + std::to_string(move_dir.y) + " " + std::to_string(move_dir.z));
+	//LOG_INFO("vel: " + std::to_string(move_dir.x) + " " + std::to_string(move_dir.y) + " " + std::to_string(move_dir.z));
 
 	m_cc->move(move_dir);
 
