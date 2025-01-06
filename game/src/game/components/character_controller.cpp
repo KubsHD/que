@@ -27,7 +27,10 @@ void CharacterController::update()
 	{
 		auto vel = (Vec3(0, 1, 0) * g_engine.physics->get_gravity()) * 1 / 60;
 
-		m_velocity += vel;
+		if (m_internal_cc->GetGroundState() != JPH::CharacterBase::EGroundState::OnGround)
+			m_velocity += vel;
+
+
 
 		m_internal_cc->SetLinearVelocity(JPH::to_jph(m_velocity));
 		g_engine.physics->update_character_virtual(m_internal_cc);

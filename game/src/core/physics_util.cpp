@@ -9,14 +9,14 @@
 #include <common/serialization.h>
 #include <asset/asset_manager.h>
 
-JPH::RefConst<JPH::Shape> core::physics::create_mesh_shape(Mesh m)
+JPH::RefConst<JPH::Shape> core::physics::create_mesh_shape(Mesh m, Vec3 scale)
 {
 	JPH::VertexList vertices;
 	JPH::IndexedTriangleList indices;
 
 	for (auto vtx : m.vertices)
 	{
-		vertices.push_back({ vtx.x, vtx.y, vtx.z });
+		vertices.push_back({ vtx.x * scale.x, vtx.y * scale.y, vtx.z * scale.z });
 	}
 
 	for (int i = 0; i < m.indices.size(); i+=3)

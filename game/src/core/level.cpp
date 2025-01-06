@@ -4,7 +4,11 @@
 #include "asset.h"
 
 #include <game/components/mesh_component.h>
+#include <game/components/physics_component.h>
+
+#include <core/physics_util.h>
 #include <common/serialization.h>
+#include <game/templates/climbable_ledge_template.h>
 
 Level core::load_level(String path, Scene* scene)
 {
@@ -45,7 +49,32 @@ Level core::load_level(String path, Scene* scene)
 
 		e->add<MeshComponent>(MeshComponent(&lvl.objects.back().model));
 
+		// create mesh collider
+
+		if (!obj["col"])
+			continue;
+
+		auto shape = physics::create_mesh_shape(lvl.objects.back().model.meshes[0], o.scale);
+
+		JPH::BodyCreationSettings settings(
+			shape,
+			JPH::to_jph(o.pos),
+			JPH::to_jph(o.rot),
+			JPH::EMotionType::Static,
+			Layers::NON_MOVING);
+
+		e->add<PhysicsComponent>(settings);
     }
+
+	for (auto& ent : file["entities"])
+	{
+		auto ent_name = ent["name"].get<String>();
+
+		if (ent_name._Starts_with("grabbable"))
+		{
+			game::tmpl::create_climbable_ledge(ser::vec3_deserialize(ent["position"]), *scene, nullptr);
+		}
+	}
 
     return lvl;
 }
