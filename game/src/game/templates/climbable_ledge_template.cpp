@@ -7,15 +7,10 @@
 #include <game/components/interactable/climbable_ledge_interactable.h>
 #include <game/components/physics_component.h>
 
-static Model model;
 
-void game::tmpl::create_climbable_ledge(Vec3 position, Scene& scn, PlayerComponent* pc)
+Entity* game::tmpl::create_climbable_ledge(Vec3 position, Scene& scn, PlayerComponent* pc)
 {
 	auto ent = scn.create("ledge");
-
-	model = g_engine.asset->load_model("cube.gltf");
-
-	ent->add<MeshComponent>(MeshComponent(&model));
 
 	JPH::BoxShapeSettings floor_shape_settings(JPH::Vec3(0.2f, 0.2f, 0.2f));
 
@@ -35,4 +30,6 @@ void game::tmpl::create_climbable_ledge(Vec3 position, Scene& scn, PlayerCompone
 	ent->scale = Vec3(0.01f);
 	ent->position = position;
 	ent->add<ClimbableLedgeInteractable>();
+
+	return ent;
 }

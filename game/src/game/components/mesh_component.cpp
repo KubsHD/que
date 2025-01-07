@@ -22,3 +22,8 @@ void MeshComponent::init()
 void MeshComponent::update()
 {
 }
+
+void MeshComponent::destroy()
+{
+	entity->scene->engine.render->unregister_mesh(this);
+}

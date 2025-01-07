@@ -136,17 +136,20 @@ void PhysicsSystem::update(float dt, entt::registry& reg)
 
 	m_system.Update(cDeltaTime, 1, m_allocator.get(), &m_job_system);
 
-
+	draw_debug();
 }
 
 JPH::BodyID PhysicsSystem::spawn_body(JPH::BodyCreationSettings settings, JPH::Vec3 initial_velocity /*= JPH::Vec3(0, 0, 0)*/)
 {
+
+
 	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
 
 	auto id = body_interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
 	body_interface.AddLinearVelocity(id, initial_velocity);
 
 	m_bodies.push_back(id);
+
 
 	
 
@@ -221,6 +224,13 @@ JPH::EMotionType PhysicsSystem::get_body_type(JPH::BodyID bodyId)
 	JPH::BodyInterface& body_interface = m_system.GetBodyInterface();
 
 	return body_interface.GetMotionType(bodyId);
+}
+
+void PhysicsSystem::draw_debug()
+{
+	JPH::BodyManager::DrawSettings settings{};
+
+	m_system.DrawBodies(settings, &m_debug_renderer);
 }
 
 void PhysicsSystem::set_motion_type(JPH::BodyID id, JPH::EMotionType param2)
@@ -379,5 +389,5 @@ JPH::Vec3 JPH::to_jph(glm::vec3 vec)
 
 JPH::Quat JPH::to_jph(glm::quat q)
 {
-	return JPH::Quat(q.x, q.y, q.z, q.w);
+	return JPH::Quat(q.x, q.y, q.z, q.w == 0 ? 1 : q.w);
 }

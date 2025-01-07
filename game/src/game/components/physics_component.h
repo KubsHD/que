@@ -2,12 +2,18 @@
 
 #include <core/ecs.h>
 
-class Component;
+enum class ColliderType{
+	Static,
+	Dynamic
+};
 
-DEFINE_COMPONENT(PhysicsComponent)
+class PhysicsComponent : public Component {
+	DEFINE_COMPONENT_BODY(PhysicsComponent)
+
 	PhysicsComponent(JPH::BodyCreationSettings bodySettings);
 
-	PhysicsComponent(Mesh& mesh, JPH::BodyCreationSettings bodySettings = {});
+	// static collider
+	PhysicsComponent(Mesh& mesh);
 
 	void init() override;
 	void update() override;
@@ -18,4 +24,7 @@ DEFINE_COMPONENT(PhysicsComponent)
 
 private:
 	JPH::BodyID m_body;
+
+	ColliderType m_collider_type;
+	Mesh m_mesh;
 };

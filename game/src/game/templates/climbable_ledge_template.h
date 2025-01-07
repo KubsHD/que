@@ -7,6 +7,6 @@
 
 namespace game {
 	namespace tmpl {
-		void create_climbable_ledge(Vec3 position, Scene& scn, PlayerComponent* pc);
+		Entity* create_climbable_ledge(Vec3 position, Scene& scn, PlayerComponent* pc);
 	}
 }

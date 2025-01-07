@@ -537,6 +537,26 @@ Model AssetManager::load_model_json(Path path)
 	return model;
 }
 
+void AssetManager::unload_model(Model& model)
+{
+	for (auto& mesh : model.meshes)
+	{
+		GfxDevice::destroy_buffer(mesh.vertex_buffer);
+		GfxDevice::destroy_buffer(mesh.index_buffer);
+	}
+
+	model.meshes.clear();
+
+	for (auto& [k, v] : model.materials2)
+	{
+		m_renderer_reference->global_descriptor_allocator.free(GfxDevice::device, v.material_set);
+	}
+
+	model.materials2.clear();
+
+	m_model_cache.erase(model.name);
+}
+
 nlohmann::json AssetManager::read_json(String path)
 {
 	auto bytes = AssetManager::read_all_bytes(path);

@@ -65,6 +65,7 @@ public:
 
 	// camera
 	void set_camera_position(glm::vec3 pos);
+	void unregister_mesh(MeshComponent* param1);
 private:
 	void draw_internal(VkCommandBuffer cmd);
 

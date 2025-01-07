@@ -268,11 +268,11 @@ template<typename T>
 T* Entity::add(T&& comp /*= T()*/)
 {
 	T* instance = new T();
+	((Component*)instance)->entity = this;
 
 	*instance = std::forward<T>(comp);
 
 	((Component*)instance)->entity = this;
-
 	((Component*)instance)->init();
     
 	m_components.push_back((Component*)instance);

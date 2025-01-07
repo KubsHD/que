@@ -15,9 +15,10 @@ struct Level {
 	std::string name;
 	Vector<Object> objects;
 	Scene* scene;
+	Vector<Entity*> entities;
 };
 
 namespace core {
 	Level load_level(String path, Scene* scene);
-	void unload_level(Level& level);
+	void unload_level(Level& level, Scene* scene);
 }

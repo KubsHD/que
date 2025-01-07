@@ -86,8 +86,8 @@ void Game::run()
 			
 			ImGui::ShowDemoWindow();
 
-			update();
 			platform->render();
+			update();
 
 			ImGui::Render();
 		}

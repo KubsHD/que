@@ -4,11 +4,14 @@
 
 class Component;
 
-DEFINE_COMPONENT(MeshComponent)
+class MeshComponent : public Component {
+	DEFINE_COMPONENT_BODY(MeshComponent)
+
 	MeshComponent(Model* model);
 
 	void init() override;
 	void update() override;
+	void destroy() override;
 
 	inline Model* get_model() const { return m_model; }
 private:

@@ -117,6 +117,11 @@ void Renderer2::set_camera_position(glm::vec3 pos)
 	m_camera_position = pos;
 }
 
+void Renderer2::unregister_mesh(MeshComponent* param1)
+{
+	m_reg.remove<core_mesh_component>(param1->entity->internal_entity);
+}
+
 void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 {
 

@@ -26,7 +26,7 @@ void DevScene::init()
 {
 	
 	const auto player = create("player");
-	player->position = glm::vec3(0, 5, 0);
+	player->position = glm::vec3(4, 7, -1);
 
 	auto cc = player->add<CharacterController>();
 	auto pc = player->add<PlayerComponent>(PlayerComponent(cc));
@@ -64,6 +64,18 @@ void DevScene::init()
 void DevScene::update()
 {
 	Scene::update();
+
+	if (ImGui::Begin("Level"))
+	{
+		ImGui::Text("Level: %s", level.name.c_str());
+		if (ImGui::Button("Reload"))
+		{
+			core::unload_level(level, this);
+			level = core::load_level("level/demo/demo.level", this);
+		}
+
+		ImGui::End();
+	}
 }
 
 void DevScene::render()

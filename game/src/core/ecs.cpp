@@ -95,7 +95,11 @@ void Scene::update()
 	// remove entities
 	for (int i = m_entites_marked_for_deletion.size() - 1; i >= 0; --i) 
 	{
+
+
+
 		auto ent = m_entites_marked_for_deletion[i];
+
 
 		for (auto comp : ent->m_components)
 		{
@@ -111,6 +115,10 @@ void Scene::update()
 		}
 
 		m_entites_marked_for_deletion.pop_back();
+
+		m_uuid_entity_map.erase(ent->id);
+		engine.reg->destroy(ent->internal_entity);
+
 		delete ent;
 	}
 }
@@ -134,6 +142,10 @@ static void draw_entity(Entity* ent)
 		// draw position and rotation
 		ImGui::DragFloat3("Position", &ent->position.x, 0.001f);
 		ImGui::DragFloat4("Rotation", &ent->rotation.x, 0.001f);
+		// euler rotation
+		glm::vec3 euler = glm::degrees(glm::eulerAngles(ent->rotation));
+		ImGui::DragFloat3("Rotation Euler", &euler.x, 0.001f);
+		ent->rotation = glm::quat(glm::radians(euler));
 		ImGui::DragFloat3("Scale", &ent->scale.x, 0.001f);
 
 		if (ImGui::TreeNode("Components"))
@@ -168,6 +180,11 @@ static void draw_entity(Entity* ent)
 		for (auto child_ent : ent->get_children())
 		{
 			draw_entity(child_ent);
+		}
+
+		if (ImGui::Button("Remove"))
+		{
+			ent->scene->remove(ent);
 		}
 
 		ImGui::TreePop();

@@ -85,6 +85,11 @@ VkDescriptorSet DescriptorAllocator::allocate(VkDevice device, VkDescriptorSetLa
 }
 
 
+void DescriptorAllocator::free(VkDevice device, VkDescriptorSet set)
+{
+	vkFreeDescriptorSets(device, pool, 1, &set);
+}
+
 // writer
 
 void DescriptorWriter::clear()

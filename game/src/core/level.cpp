@@ -38,7 +38,10 @@ Level core::load_level(String path, Scene* scene)
 
 		o.model = g_engine.asset->load_model_json(model_path);
 		o.pos = ser::vec3_deserialize(obj["position"]);
-		o.rot = glm::quat(ser::vec3_deserialize(obj["rotation"]));
+
+		auto angle = ser::vec3_deserialize(obj["rotation"]);
+
+		o.rot = glm::quat(glm::radians(angle));
 		o.scale = ser::vec3_deserialize(obj["scale"]);
 
 		// add the object to the scene
@@ -49,6 +52,8 @@ Level core::load_level(String path, Scene* scene)
 
 		e->add<MeshComponent>(MeshComponent(&lvl.objects.back().model));
 
+		lvl.entities.push_back(e);
+
 		// create mesh collider
 
 		if (!obj["col"])
@@ -56,14 +61,9 @@ Level core::load_level(String path, Scene* scene)
 
 		auto shape = physics::create_mesh_shape(lvl.objects.back().model.meshes[0], o.scale);
 
-		JPH::BodyCreationSettings settings(
-			shape,
-			JPH::to_jph(o.pos),
-			JPH::to_jph(o.rot),
-			JPH::EMotionType::Static,
-			Layers::NON_MOVING);
+		JPH::BodyCreationSettings asd{};
 
-		e->add<PhysicsComponent>(settings);
+		e->add<PhysicsComponent>(PhysicsComponent(o.model.meshes[0]));
     }
 
 	for (auto& ent : file["entities"])
@@ -77,4 +77,21 @@ Level core::load_level(String path, Scene* scene)
 	}
 
     return lvl;
+}
+
+void core::unload_level(Level& level, Scene* scene)
+{
+	for (auto& ent : level.entities)
+	{
+		scene->remove(ent);
+	}
+
+	level.entities.clear();
+
+	for (auto& obj : level.objects)
+	{
+		g_engine.asset->unload_model(obj.model);
+	}
+
+	level.objects.clear();
 }

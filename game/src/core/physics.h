@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Jolt/Jolt.h>
+#include <gfx/jolt_debug_renderer.h>
 
 #pragma region JOLT_BOILERPLATE
 
@@ -136,7 +137,13 @@ public:
 
 	JPH::PhysicsSystem* get_system() { return &m_system; }
 
+
+
 private:
+	void draw_debug();
+
+	JoltDebugRenderer m_debug_renderer;
+
 	JPH::PhysicsSystem m_system;
 	std::unique_ptr<JPH::TempAllocatorImpl> m_allocator;
 	JPH::JobSystemThreadPool m_job_system;
