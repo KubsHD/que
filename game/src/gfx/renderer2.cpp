@@ -95,6 +95,11 @@ Renderer2::~Renderer2()
 	vkDestroyCommandPool(GfxDevice::device, frame.command_pool, nullptr);
 }
 
+void Renderer2::update()
+{
+	m_shadow_renderer.update();
+}
+
 void Renderer2::load_default_resources()
 {
 	sky.create(*this, "pure_sky.sky_c", "cube.gltf");
@@ -120,6 +125,11 @@ void Renderer2::set_camera_position(glm::vec3 pos)
 void Renderer2::unregister_mesh(MeshComponent* param1)
 {
 	m_reg.remove<core_mesh_component>(param1->entity->internal_entity);
+}
+
+Vec3 Renderer2::get_camera_position()
+{
+	return m_camera_position;
 }
 
 void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
@@ -163,7 +173,6 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
 	m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
-	m_shadow_renderer.render_imgui();
 
 	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
 
@@ -194,6 +203,8 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	draw_internal(cmd);
 
 	vkCmdEndRendering(cmd);
+
+	debug->render(cmd);
 
 	TracyVkCollect(ctx, cmd);
 

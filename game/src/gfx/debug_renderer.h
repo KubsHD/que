@@ -24,6 +24,7 @@ struct DebugRenderer {
 	void draw_sphere(Vec3 pos, float radius, Vec4 color = Colors::default_color);
 
 private:
+	Renderer2* m_r2 = nullptr;
 
 	// im3d state
 	GPUBuffer m_im3d_buffer;

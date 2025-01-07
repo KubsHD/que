@@ -11,9 +11,6 @@ struct VSOutput {
 [[vk::push_constant]]
 GPUDrawPushConstants pc;
 
-
-
-
 VSOutput vs_main(VertexInput input, uint VertexIndex: SV_VertexID) {
     VSOutput output;
     output.texCoord = input.texCoord;

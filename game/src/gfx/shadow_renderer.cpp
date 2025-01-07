@@ -40,6 +40,11 @@ void ShadowRenderer::create(Renderer2& ren)
 	GfxDevice::set_debug_name(shadow_map.image, "directionaL_light_shadow_map");
 }
 
+void ShadowRenderer::update()
+{
+	render_imgui();
+}
+
 extern tracy::VkCtx* ctx;
 
 void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg, glm::vec3 cam_pos)

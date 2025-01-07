@@ -23,6 +23,7 @@ public:
 	void destroy();
 
 	void poll();
+	void update();
 	void render();
 
 	Renderer2* get_renderer() { return m_renderer; }

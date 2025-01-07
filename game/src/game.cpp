@@ -13,6 +13,8 @@
 #include <core/editor/editor_platform.h>
 #include <game/scenes/dev_scene.h>
 
+#include <gfx/debug_renderer.h>
+
 template<typename T>
 void Game::change_scene()
 {
@@ -83,13 +85,17 @@ void Game::run()
 			platform->poll();
 
 			ImGui::NewFrame();
-			
 			ImGui::ShowDemoWindow();
 
-			platform->render();
+			g_engine.render->debug->begin_frame();
+
 			update();
 
+			g_engine.render->debug->end_frame();
+			ImGui::EndFrame();
+
 			ImGui::Render();
+			platform->render();
 		}
 	}
 
@@ -98,6 +104,8 @@ void Game::run()
 void Game::update()
 {
 	QUE_PROFILE;
+
+	platform->update();
 
 	m_physics_system->update(1.0f / 60.0f, m_registry);
 

@@ -5,8 +5,6 @@ import sys
 base_dir = sys.argv[1]
 target_dir = sys.argv[2]
 
-files = [f for f in os.listdir(base_dir) if f.endswith('.hlsl')]
-
 def find_dxc():
 	# get vulkan sdk env
 	vulkan_sdk_path = os.environ.get('VULKAN_SDK')
@@ -25,23 +23,29 @@ def find_dxc():
 
 dxc_path = find_dxc()
 
-for f in files:
-	filename = os.path.splitext(f)[0]
-	full_path = os.path.join(base_dir, f)
+# Replace the file listing with recursive search
+for root, dirs, files in os.walk(base_dir):
+	for f in files:
+		if f.endswith('.hlsl'):
+			filename = os.path.splitext(f)[0]
+			full_path = os.path.join(root, f)
+			
+			# Preserve the subdirectory structure in the target directory
+			rel_path = os.path.relpath(root, base_dir)
+			output_dir = os.path.join(target_dir, rel_path)
+			os.makedirs(output_dir, exist_ok=True)
+			
+			vs_output_path = os.path.join(output_dir, filename + '.vs_c')
+			ps_output_path = os.path.join(output_dir, filename + '.ps_c')
 
-	output_path = os.path.join(target_dir, filename)
-	vs_output_path = os.path.join(target_dir, filename + '.vs_c')
-	ps_output_path = os.path.join(target_dir, filename + '.ps_c')
-
-	# compile the shader
-
-	r1 = subprocess.run([dxc_path, "-spirv", "-T", "vs_6_0", "-E", "vs_main", "-D", "COMPILE_VS", full_path, "-Fo", vs_output_path])
-	r2 = subprocess.run([dxc_path, "-spirv", "-T", "ps_6_0", "-E", "ps_main", "-D", "COMPILE_PS", full_path, "-Fo", ps_output_path])
-	
-	if (r1.returncode == 0 and r2.returncode == 0):
-		print("Compiled " + f + " to " + output_path)
-	else:	
-		print("Failed to compile " + f)
+			# compile the shader
+			r1 = subprocess.run([dxc_path, "-spirv", "-T", "vs_6_0", "-E", "vs_main", "-D", "COMPILE_VS", full_path, "-Fo", vs_output_path])
+			r2 = subprocess.run([dxc_path, "-spirv", "-T", "ps_6_0", "-E", "ps_main", "-D", "COMPILE_PS", full_path, "-Fo", ps_output_path])
+			
+			if (r1.returncode == 0 and r2.returncode == 0):
+				print(f"Compiled {full_path} to {output_dir}")
+			else:    
+				print(f"Failed to compile {full_path}")
 
 
 	

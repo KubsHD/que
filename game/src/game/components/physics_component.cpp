@@ -50,6 +50,8 @@ void PhysicsComponent::update()
 		g_engine.physics->set_body_position(m_body, this->entity->position);
 		g_engine.physics->set_body_rotation(m_body, this->entity->rotation);
 	}
+
+	Im3d::DrawCone(Im3d::Vec3(entity->position.x, entity->position.y, entity->position.z), Im3d::Vec3(0, 1, 0), 1.0f, 1.0f, Im3d::Color(1, 0, 0));
 }
 
 JPH::BodyID PhysicsComponent::get_body_id() const

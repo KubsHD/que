@@ -68,6 +68,11 @@ void OpenXRPlatform::poll()
 	poll_events();
 }
 
+void OpenXRPlatform::update()
+{
+	m_renderer->update();
+}
+
 void OpenXRPlatform::create_reference_space()
 {
 	XrReferenceSpaceCreateInfo referenceSpaceCI{ XR_TYPE_REFERENCE_SPACE_CREATE_INFO };

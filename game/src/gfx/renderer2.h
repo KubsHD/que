@@ -45,6 +45,8 @@ public:
     Renderer2(Swapchain& swapchain_info, entt::registry& reg);
 	~Renderer2();
 
+	void update();
+
 	void load_default_resources();
 
     void draw(Swapchain& swp, int image_index,XrView view);
@@ -66,13 +68,13 @@ public:
 	// camera
 	void set_camera_position(glm::vec3 pos);
 	void unregister_mesh(MeshComponent* param1);
+	Vec3 get_camera_position();
 private:
 	void draw_internal(VkCommandBuffer cmd);
 
 	VkQueue m_queue;
 	uint32_t m_queue_family;
 
-	GPUImage depth_image;
 
     FrameData frame;
 
@@ -86,6 +88,7 @@ private:
 
 	glm::vec3 m_camera_position;
 public:
+	GPUImage depth_image;
 	// desc
 	DescriptorAllocator global_descriptor_allocator;
 

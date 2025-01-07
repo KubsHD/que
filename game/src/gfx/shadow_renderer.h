@@ -10,6 +10,8 @@ struct ShadowRenderer {
 
 	void create(Renderer2& ren);
 
+	void update();
+
 	void render(VkCommandBuffer cmd, entt::registry& reg, glm::vec3 cam_pos);
 	void render_imgui();
 
