@@ -20,7 +20,7 @@ void PipelineBuilder::clear()
 	shader_stages.clear();
 }
 
-void PipelineBuilder::set_shaders(VkShaderModule vertex_shader, VkShaderModule fragment_shader)
+void PipelineBuilder::set_shaders(VkShaderModule vertex_shader, VkShaderModule fragment_shader, VkShaderModule geometry_shader)
 {
 	shader_stages.clear();
 
@@ -29,6 +29,12 @@ void PipelineBuilder::set_shaders(VkShaderModule vertex_shader, VkShaderModule f
 
 	shader_stages.push_back(
 		vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader, "ps_main"));
+
+	if (geometry_shader != nullptr)
+	{
+		shader_stages.push_back(
+			vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_GEOMETRY_BIT, geometry_shader, "gs_main"));
+	}
 }
 
 void PipelineBuilder::set_input_topology(VkPrimitiveTopology topology)

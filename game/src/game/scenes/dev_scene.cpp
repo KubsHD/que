@@ -53,11 +53,6 @@ void DevScene::init()
 	game::tmpl::create_controller(*this, 0, pc);
 	game::tmpl::create_controller(*this, 1, pc);
 
-	for (int i = 0; i < 10; i++)
-	{
-		game::tmpl::create_climbable_ledge(Vec3(i + 0.4f, 0.8f + i * 0.15f, 0.0f), *this, pc);
-	}
-
 	level = core::load_level("level/demo/demo.level", this);
 }
 

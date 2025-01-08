@@ -137,6 +137,8 @@ static void draw_component(T comp)
 
 static void draw_entity(Entity* ent)
 {
+
+
 	if (ImGui::TreeNode(ent->id.c_str(), "%s : %s", ent->name.c_str(), ent->id.c_str()))
 	{
 		// draw position and rotation

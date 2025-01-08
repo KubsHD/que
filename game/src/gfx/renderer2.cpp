@@ -85,9 +85,9 @@ Renderer2::~Renderer2()
 {
 	main_deletion_queue.execute();
 
-	delete debug;
-
 	m_shadow_renderer.destroy();
+	debug->destroy();
+	delete debug;
 
 	vkDestroyFence(GfxDevice::device, frame.main_fence, nullptr);
 	vkDestroySemaphore(GfxDevice::device, frame.swapchain_semaphore, nullptr);
@@ -202,9 +202,9 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	draw_internal(cmd);
 
+	debug->render(cmd, render_info);
 	vkCmdEndRendering(cmd);
 
-	debug->render(cmd);
 
 	TracyVkCollect(ctx, cmd);
 
@@ -212,6 +212,7 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	VkCommandBufferSubmitInfo cmdSubmitInfo = vkinit::command_buffer_submit_info(cmd);
 	VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
 
 	VkSubmitInfo2 submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
@@ -310,8 +311,6 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 		}
 	};
 
-
-	debug->render(cmd);
 
 	sky.draw(*this, cmd);
 }

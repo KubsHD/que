@@ -30,7 +30,7 @@ public:
 
 	void clear();
 
-	void set_shaders(VkShaderModule vertex_shader, VkShaderModule fragment_shader);
+	void set_shaders(VkShaderModule vertex_shader, VkShaderModule fragment_shader, VkShaderModule geometry_shader = nullptr);
 	void set_input_topology(VkPrimitiveTopology topology);
 	void set_polygon_mode(VkPolygonMode mode);
 	void set_cull_mode(VkCullModeFlags cullMode, VkFrontFace frontFace);

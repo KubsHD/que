@@ -19,6 +19,8 @@ void CharacterController::init()
 
 void CharacterController::update()
 {
+	Im3d::DrawCapsule(Im3d::Vec3(entity->position.x, entity->position.y, entity->position.z), Im3d::Vec3(entity->position.x, entity->position.y + 1, entity->position.z), 0.2f);
+
 	if (m_kineamtic)
 	{
 		m_internal_cc->SetPosition(JPH::to_jph(entity->position));

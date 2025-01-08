@@ -275,6 +275,7 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 
 	VkPhysicalDeviceFeatures features{};
 	features.samplerAnisotropy = true;
+	features.geometryShader = true;
 
 	VkPhysicalDeviceVulkan13Features features13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
 	features13.dynamicRendering = true;

@@ -91,6 +91,8 @@ void Game::run()
 
 			update();
 
+			Im3d::DrawCone(Im3d::Vec3(0, 0, 0), Im3d::Vec3(0, 1, 0), 5.0f, 2.0f, 25);
+
 			g_engine.render->debug->end_frame();
 			ImGui::EndFrame();
 

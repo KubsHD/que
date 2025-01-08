@@ -425,13 +425,13 @@ constexpr Color Color_Purple  = Color(0x800080ff);
 constexpr Color Color_Teal    = Color(0x008080ff);
 constexpr Color Color_Navy    = Color(0x000080ff);
 
-struct alignas(IM3D_VERTEX_ALIGNMENT) VertexData
+struct VertexData
 {
 	Vec4   m_positionSize; // xyz = position, w = size
-	Color  m_color;        // rgba8 (MSB = r)
+	alignas(16) Color  m_color;        // rgba8 (MSB = r)
 
 	VertexData() {}
-	VertexData(const Vec3& _position, float _size, Color _color): m_positionSize(_position, _size), m_color(_color) {}
+	VertexData(const Vec3& _position, float _size, Color _color) : m_positionSize(_position, _size), m_color(_color) {}
 };
 
 enum DrawPrimitiveType

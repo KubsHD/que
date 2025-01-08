@@ -51,7 +51,10 @@ void PhysicsComponent::update()
 		g_engine.physics->set_body_rotation(m_body, this->entity->rotation);
 	}
 
-	Im3d::DrawCone(Im3d::Vec3(entity->position.x, entity->position.y, entity->position.z), Im3d::Vec3(0, 1, 0), 1.0f, 1.0f, Im3d::Color(1, 0, 0));
+
+	//Im3d::DrawCone(Im3d::Vec3(entity->position.x, entity->position.y, entity->position.z), Im3d::Vec3(0, 1, 0), 10.0f, 10.0f, Im3d::Color(1, 0, 0));
+
+	//Im3d::DrawCapsule(Im3d::Vec3(0, 0, 0), Im3d::Vec3(0, 3, 0), 10.0);
 }
 
 JPH::BodyID PhysicsComponent::get_body_id() const

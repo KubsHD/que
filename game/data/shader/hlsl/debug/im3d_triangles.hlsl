@@ -1,32 +1,36 @@
 #include "im3d_common.hlsli"
 
-struct VSOutput {
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
-};
-
 #if COMPILE_VS
 
 [[vk::push_constant]]
 DrawData Data;
 
-VSOutput vs_main(uint VertexIndex: SV_VertexID)
+VS_OUTPUT vs_main(uint vertex_id : SV_VertexID) 
 {
-    const Im3dVertex v = Data.buffer[VertexIndex];
+	Im3dVertex _in = vertices[Data.offset + vertex_id];
 
-    VSOutput output;
-    output.position = mul(v.Position, Data.viewProj);
-    output.color = v.Color;
-    return output;
+	VS_OUTPUT ret;
+	ret.m_color = UnpackUnorm4x8(_in.Color).abgr;
+	ret.m_color.a *= smoothstep(0.0, 1.0, _in.Position.w / kAntialiasing);
+	ret.m_size = max(_in.Position.w, kAntialiasing);
+	ret.m_position = mul(float4(_in.Position.xyz, 1.0), Data.viewProj);
+
+	return ret;
 }
 
 #endif
 
 #if COMPILE_PS
 
-float4 ps_main(VSOutput input) : SV_TARGET
+[[vk::push_constant]]
+DrawData Data;
+
+float4 ps_main(VS_OUTPUT vData) : SV_TARGET
 {
-    return input.color;
+    float4 ret = vData.m_color;
+		
+	return ret;
 }
+
 
 #endif
