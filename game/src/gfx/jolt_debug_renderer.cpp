@@ -2,24 +2,6 @@
 
 #include "jolt_debug_renderer.h"
 
-void JoltDebugRenderer::init(Renderer2* r2)
-{
-}
-
-JoltDebugRenderer::JoltDebugRenderer()
-{
-	DebugRenderer::Initialize();
-}
-
-void JoltDebugRenderer::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
-{
-
-}
-
-void JoltDebugRenderer::DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, ECastShadow inCastShadow /*=ECastShadow::Off*/)
-{
-
-}
 
 Im3d::Vec3 joltToIm3d(const JPH::Vec3& v)
 {
@@ -42,9 +24,38 @@ Im3d::Color joltToIm3d(const JPH::Color& color)
 
 
 
+void JoltDebugRenderer::init(Renderer2* r2)
+{
+}
 
+JoltDebugRenderer::JoltDebugRenderer()
+{
+	DebugRenderer::Initialize();
+}
+
+void JoltDebugRenderer::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
+{
+	Im3d::DrawLine(joltToIm3d(inFrom), joltToIm3d(inTo), 1.f, joltToIm3d(inColor));
+}
+
+void JoltDebugRenderer::DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, ECastShadow inCastShadow /*=ECastShadow::Off*/)
+{
+	Im3d::PushColor(joltToIm3d(inColor));
+	Im3d::BeginTriangles();
+	Im3d::Vertex(joltToIm3d(inV1));
+	Im3d::Vertex(joltToIm3d(inV2));
+	Im3d::Vertex(joltToIm3d(inV3));
+	Im3d::End();
+	Im3d::PopColor();
+}
+
+
+
+static int counter = 0;
 void JoltDebugRenderer::DrawGeometry(JPH::RMat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode /*= ECullMode::CullBackFace*/, ECastShadow inCastShadow /*=ECastShadow::On*/, EDrawMode inDrawMode /*= EDrawMode::Solid*/)
 {
+	counter++;
+
 	const auto& b =
 		*static_cast<const BatchImpl*>(inGeometry->mLODs[0].mTriangleBatch.GetPtr());
 	for (std::size_t fi = 0; fi < b.indices.size(); fi += 3) {

@@ -229,7 +229,8 @@ JPH::EMotionType PhysicsSystem::get_body_type(JPH::BodyID bodyId)
 void PhysicsSystem::draw_debug()
 {
 	JPH::BodyManager::DrawSettings settings{};
-
+	settings.mDrawShapeWireframe = true;
+	settings.mDrawShape = true;
 	m_system.DrawBodies(settings, &m_debug_renderer);
 }
 

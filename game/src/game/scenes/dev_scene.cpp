@@ -26,7 +26,7 @@ void DevScene::init()
 {
 	
 	const auto player = create("player");
-	player->position = glm::vec3(4, 7, -1);
+	player->position = glm::vec3(4, 8, -1);
 
 	auto cc = player->add<CharacterController>();
 	auto pc = player->add<PlayerComponent>(PlayerComponent(cc));
