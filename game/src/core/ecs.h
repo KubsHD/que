@@ -52,7 +52,8 @@ TYPE NAME; \
 #define REQUIRE_COMPONENT(NAME) \
 assert(entity->get<NAME>() != nullptr); \
 
-
+#define INSPECT_FLOAT(NAME, VALUE) \
+ImGui::InputFloat(#NAME, &VALUE); \
 
 
 /// <summary>

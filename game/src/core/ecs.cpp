@@ -217,6 +217,7 @@ void Scene::draw_imgui()
 		for (auto ent : m_entities)
 		{
 			draw_entity(ent);
+			//Im3d::DrawSphere(Im3d::Vec3(ent->position.x, ent->position.y, ent->position.z), 0.2f, -1);
 		}
 		ImGui::End();
 	}

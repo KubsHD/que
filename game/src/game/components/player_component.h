@@ -26,5 +26,5 @@ private:
 	CharacterController* m_cc = nullptr;
 
 	glm::vec3 m_forward = glm::vec3(0,0,1);
-	float m_speed = 1.5f;
+	float m_speed = 1.0f;
 };

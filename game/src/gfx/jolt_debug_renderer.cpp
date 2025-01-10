@@ -95,7 +95,7 @@ void JoltDebugRenderer::DrawText3D(JPH::RVec3Arg inPosition, const std::string_v
 
 JPH::DebugRenderer::Batch JoltDebugRenderer::CreateTriangleBatch(const Triangle* inTriangles, int inTriangleCount)
 {
-	return new BatchImpl(inTriangles->mV, inTriangleCount, nullptr, 0);
+	return new BatchImpl(inTriangles->mV, inTriangleCount * 3, nullptr, inTriangleCount * 3);
 }
 
 JPH::DebugRenderer::Batch JoltDebugRenderer::CreateTriangleBatch(const Vertex* inVertices, int inVertexCount, const JPH::uint32* inIndices, int inIndexCount)

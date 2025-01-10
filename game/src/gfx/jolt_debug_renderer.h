@@ -32,8 +32,17 @@ public:
 			vertices.resize(inVertCount);
 			memcpy(vertices.data(), inVert, inVertCount * sizeof(Vertex));
 
-			indices.resize(inIdxCount);
-			memcpy(indices.data(), inIdx, inIdxCount * sizeof(JPH::uint32));
+			if (inIdx)
+			{
+				indices.resize(inIdxCount);
+				memcpy(indices.data(), inIdx, inIdxCount * sizeof(JPH::uint32));
+			}
+			else {
+				indices.resize(inIdxCount);
+				for (int i = 0; i < inIdxCount; i++) {
+					indices[i] = i;
+				}
+			}
 		}
 
 		void AddRef() override { m_ref_count++; }

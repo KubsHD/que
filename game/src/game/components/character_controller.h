@@ -13,6 +13,8 @@ namespace JPH
 
 class CharacterController : public Component, public JPH::CharacterContactListener {
 	DEFINE_COMPONENT_BODY(CharacterController)
+
+public:
 	void init() override;
 	void update() override;
 	void set_gravity(bool active);
@@ -25,7 +27,16 @@ private:
 	Vec3 m_velocity = Vec3(0, 0, 0);
 
 	JPH::CharacterVirtual* m_internal_cc = nullptr;
-	bool m_kineamtic = false;
+
+	bool m_draw_debug = false;
+
+	bool m_kinematic = false;
+	bool m_gravity_enabled = true;
+
+	float m_character_height = 1.5f;
+	float m_character_radius = 0.2f;
+
+	float m_velocity_falloff_speed = 0.5f;
 public:
 	void set_kinematic(bool is_kinematic);
 

@@ -33,12 +33,13 @@ void PlayerClimbManager::update()
 	{
 		for (auto& cc : m_controllers_attached_to_ledge)
 		{
-			m_player_offset += cc->get_velocity() * 1/60;
+			m_player_offset += cc->get_velocity();
 		}
 
 		m_prev_player_offset = m_player_offset;
 
-		entity->position = glm::lerp(entity->position, entity->position + m_player_offset, 10.0f);
+		m_cc->move(m_player_offset);
+		//entity->position = glm::lerp(entity->position, entity->position + m_player_offset, 10.0f);
 	}
 }
 
@@ -56,7 +57,7 @@ void PlayerClimbManager::report_controller_attached_to_ledge(ControllerComponent
 
 	m_controllers_attached_to_ledge.push_back(cc);
 	cc->set_frozen(true);
-	m_cc->set_kinematic(true);
+	m_cc->set_gravity(false);
 
 }
 
@@ -70,6 +71,7 @@ void PlayerClimbManager::report_controller_detached_from_ledge(ControllerCompone
 
 	if (m_controllers_attached_to_ledge.empty())
 	{
-		m_cc->set_kinematic(false);
+		//m_cc->move(m_prev_player_offset * 10);
+		m_cc->set_gravity(true);
 	}
 }

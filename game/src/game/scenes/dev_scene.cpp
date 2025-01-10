@@ -22,11 +22,13 @@
 
 static Level level;
 
+static Model test_cube;
+
 void DevScene::init()
 {
 	
 	const auto player = create("player");
-	player->position = glm::vec3(4, 8, -1);
+	player->position = glm::vec3(0, 1, 1);
 
 	auto cc = player->add<CharacterController>();
 	auto pc = player->add<PlayerComponent>(PlayerComponent(cc));
@@ -42,7 +44,7 @@ void DevScene::init()
 
 	JPH::BodyCreationSettings floor_settings(
 		floor_shape,
-		JPH::RVec3(0.0, -2.0, 0.0),
+		JPH::RVec3(0.0, -1.0, 0.0),
 		JPH::Quat::sIdentity(),
 		JPH::EMotionType::Static,
 		Layers::NON_MOVING);
@@ -54,6 +56,9 @@ void DevScene::init()
 	game::tmpl::create_controller(*this, 1, pc);
 
 	level = core::load_level("level/demo/demo.level", this);
+
+	test_cube = engine.asset->load_model_json("models/blocks/brick/Cube.model");
+	game::tmpl::create_block(*this, glm::vec3(0, 3, 0), &test_cube, nullptr);
 }
 
 void DevScene::update()
@@ -71,6 +76,8 @@ void DevScene::update()
 
 		ImGui::End();
 	}
+
+	Im3d::Text(Im3d::Vec3(0, 1, 0), Im3d::TextFlags_Default, "asdadsadas");
 }
 
 void DevScene::render()

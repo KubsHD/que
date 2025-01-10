@@ -137,7 +137,9 @@ public:
 
 	JPH::PhysicsSystem* get_system() { return &m_system; }
 
-
+#if _DEBUG
+	JoltDebugRenderer* get_debug_renderer() { return &m_debug_renderer; }
+#endif
 
 private:
 	void draw_debug();
