@@ -74,7 +74,7 @@ public:
         old_cout_buffer = std::cout.rdbuf(this);
         old_cerr_buffer = std::cerr.rdbuf(this);
 
-        logfile = std::ofstream("game.log");
+        logfile = std::ofstream("crashdb/game.log");
     }
     virtual ~DebugOutput() {
         std::cout.rdbuf(old_cout_buffer);

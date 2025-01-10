@@ -172,7 +172,9 @@ namespace Que
 
 
             if (target.Optimization == Optimization.Release)
-                conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
+            {
+                //conf.EventPostBuild.Add($"xcopy /s /y {realProjectPath}\\data $(OutDir)\\data");
+            }
             else
             {
                 //if (!Util.CreateSymbolicLink(targetPath, dataPath, true))

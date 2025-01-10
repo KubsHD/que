@@ -381,7 +381,7 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 					continue;
 				}
 
-				if (ext == ".hdr" || ext == ".tex")
+				if (ext == ".hdr" || ext == ".tex" || ext == ".blend" || ext == ".blend1")
 				{
 					continue;
 				}
