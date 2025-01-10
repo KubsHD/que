@@ -2,6 +2,7 @@
 
 #include "jolt_debug_renderer.h"
 
+#if _DEBUG
 
 Im3d::Vec3 joltToIm3d(const JPH::Vec3& v)
 {
@@ -101,3 +102,5 @@ JPH::DebugRenderer::Batch JoltDebugRenderer::CreateTriangleBatch(const Vertex* i
 {
 	return new BatchImpl(inVertices, inVertexCount, inIndices, inIndexCount);
 }
+
+#endif

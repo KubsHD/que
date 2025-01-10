@@ -142,7 +142,9 @@ public:
 private:
 	void draw_debug();
 
+#if _DEBUG
 	JoltDebugRenderer m_debug_renderer;
+#endif
 
 	JPH::PhysicsSystem m_system;
 	std::unique_ptr<JPH::TempAllocatorImpl> m_allocator;

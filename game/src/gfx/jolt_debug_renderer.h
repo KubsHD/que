@@ -5,11 +5,15 @@
 #include "rhi/gfx_device.h"
 
 #include <Jolt/Jolt.h>
-#include <Jolt/Renderer/DebugRenderer.h>
 #include <Jolt/Physics/Body/BodyManager.h>
 #include <Jolt/Core/Core.h>
 
+#if _DEBUG
+
+#include <Jolt/Renderer/DebugRenderer.h>
 class Renderer2;
+
+
 
 class JoltDebugRenderer: public JPH::DebugRenderer {
 	void init(Renderer2* r2);
@@ -54,3 +58,5 @@ public:
 	Batch CreateTriangleBatch(const Vertex* inVertices, int inVertexCount, const JPH::uint32* inIndices, int inIndexCount) override;
 
 };
+
+#endif
