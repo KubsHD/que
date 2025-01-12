@@ -19,7 +19,7 @@ struct ShadowRenderer {
 
 	glm::mat4 light_mtx;
 
-	GPUImage shadow_map;
+	GPUImage directional_shadow_map;
 	VkSampler shadow_map_sampler;
 	GPUPipeline dir_light_sm_pipeline;
 

@@ -8,7 +8,7 @@
 
 struct  DrawData {
 	uint32_t offset;
-	alignas(16) glm::mat4 viewProj;
+	glm::mat4 viewProj;
 	glm::vec2 viewport;
 };
 

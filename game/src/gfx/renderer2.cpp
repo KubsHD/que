@@ -98,6 +98,24 @@ Renderer2::~Renderer2()
 void Renderer2::update()
 {
 	m_shadow_renderer.update();
+
+
+	auto lights = m_reg.view<core_transform_component, core_uuid_component, core_light_component>();
+
+	for (const auto&& [e, tc, uc, lc] : lights.each())
+	{
+		if (lc.type == LightType::Spot)
+		{
+			m_spot_lights[uc.uuid] = gfx::SpotLight{ tc.position, lc.direction, lc.color, lc.intensity, lc.range, lc.angle };
+		}
+
+
+
+		if (lc.type == LightType::Point)
+		{
+			m_point_lights[uc.uuid] = gfx::PointLight{ tc.position, lc.color, lc.intensity, lc.range };
+		}
+	}
 }
 
 void Renderer2::load_default_resources()
@@ -156,6 +174,25 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	m_scene_data_cpu.proj = projection;
 
 	m_scene_data_cpu.camPos = camera_position;
+
+	// fill lights
+	m_scene_data_cpu.pointLightCount = m_point_lights.size();
+	m_scene_data_cpu.spotLightCount = m_spot_lights.size();
+
+
+	int i = 0;
+	for (auto& [uuid, light] : m_point_lights)
+	{
+		m_scene_data_cpu.pointLight[i] = light;
+		i++;
+	}
+
+	i = 0;
+	for (auto& [uuid, light] : m_spot_lights)
+	{
+		m_scene_data_cpu.spotLight[i] = light;
+		i++;
+	}
 
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
@@ -273,7 +310,7 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 	{
 		DescriptorWriter writer;
 		writer.write_buffer(0, m_scene_data_gpu.buffer, sizeof(gfx::SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		writer.write_image(1, m_shadow_renderer.shadow_map.view, m_shadow_renderer.shadow_map_sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.write_image(1, m_shadow_renderer.directional_shadow_map.view, m_shadow_renderer.shadow_map_sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		writer.update_set(GfxDevice::device, scene_data_set);
 	}
 

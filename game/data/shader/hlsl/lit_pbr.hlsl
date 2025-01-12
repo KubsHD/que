@@ -70,6 +70,103 @@ Texture2D tex_emission : register(t4);
 [[vk::combinedImageSampler]]
 SamplerState tex_emission_sm : register(s4);
 
+float3 calc_point_light(PointLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0)
+{
+	float3 lightDir = normalize(-light.position - fragPos); 
+	float3 h = normalize(viewDir + lightDir);
+
+	float distance = length(light.position);
+	float attenuation = 1.0 / (distance * distance);
+	float3 radiance = light.color;
+
+	float NDF = DistributionGGX(normal, h, roughness);
+	float G = GeometrySmith(normal, viewDir, lightDir, roughness);
+    float3 F    = fresnelSchlick(max(dot(h, viewDir), 0.0), F0);        
+
+	float3 kS = F;
+	float3 numerator = NDF * G * F;
+	float denominator = 4.0 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0)  + 0.0001;
+	float3 specular     = numerator / denominator;  
+
+	float3 kD = float3(1.0, 1.0, 1.0) - kS;
+	kD *= 1.0 - metallic;
+
+    float NdotL = max(dot(normal, lightDir), 0.0);        
+    return (kD * albedo / PI + specular) * radiance * NdotL /* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/;
+}
+
+float3 calc_spot_light(SpotLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0)
+{
+
+	float3 lightDir = normalize(light.position - fragPos); 
+
+
+	float theta = dot(lightDir, normalize(-light.direction));
+
+	float epsilon = cos(light.angle);
+
+	if (theta > epsilon)
+	{
+		float3 h = normalize(viewDir + lightDir);
+
+		float distance = length(light.position - fragPos);
+		float attenuation = 1.0 / (distance * distance);
+		float3 radiance = light.color * attenuation;
+
+		float NDF = DistributionGGX(normal, h, roughness);
+		float G = GeometrySmith(normal, viewDir, lightDir, roughness);
+		float3 F    = fresnelSchlick(max(dot(h, viewDir), 0.0), F0);        
+
+		float3 kS = F;
+		float3 numerator = NDF * G * F;
+		float denominator = 4.0 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0)  + 0.0001;
+		float3 specular     = numerator / denominator;  
+
+		float3 kD = float3(1.0, 1.0, 1.0) - kS;
+		kD *= 1.0 - metallic;
+
+		float NdotL = max(dot(normal, lightDir), 0.0);        
+		return (kD * albedo / PI + specular) * radiance * NdotL /* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/;
+	}
+	else
+	{
+		return float3(0.0f, 0.0f, 0.0f);
+	}
+}
+
+
+float3 calc_dir_light(float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0)
+{
+	float3 lightPos = float3( -0.2f, -1.0f, -0.3f);
+	float3 lightColor = float3(23.47, 21.31, 20.79);
+
+	float3 lightDir = normalize(-lightPos); 
+	float3 h = normalize(viewDir + lightDir);
+
+	float distance = length(lightPos);
+	float attenuation = 1.0 / (distance * distance);
+	float3 radiance = lightColor;
+
+	float NDF = DistributionGGX(normal, h, roughness);
+	float G = GeometrySmith(normal, viewDir, lightDir, roughness);
+    float3 F    = fresnelSchlick(max(dot(h, viewDir), 0.0), F0);        
+
+	float3 kS = F;
+	float3 numerator = NDF * G * F;
+	float denominator = 4.0 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0)  + 0.0001;
+	float3 specular     = numerator / denominator;  
+
+	float3 kD = float3(1.0, 1.0, 1.0) - kS;
+	kD *= 1.0 - metallic;
+
+	kS = fresnelSchlick(max(dot(normal, viewDir), 0.0), F0);
+	kD = float3(1.0f, 1.0f, 1.0f) - kS;
+	kD *= 1.0 - metallic;
+
+    float NdotL = max(dot(normal, lightDir), 0.0);        
+    return (kD * albedo / PI + specular) * radiance * NdotL /* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/;
+}
+
 float4 ps_main(VSOutput input): SV_Target {
 
 	// textures
@@ -81,14 +178,11 @@ float4 ps_main(VSOutput input): SV_Target {
 	ao = 1.0f;
 	metallic = 0.9f;
 
-	float3 lightPos = float3( -0.2f, -1.0f, -0.3f);
-	float3 lightColor = float3(23.47, 21.31, 20.79);
-	
+
 	
 	float3 norm = UnpackNormalMap(tex_normal.Sample(tex_normal_sm, input.texCoord)).xyz;
 	norm = normalize(mul(norm, input.TBN));
 	
-
 	//float3 norm = i_Normal;
 
 	float3 viewDir = normalize(Scene.camPos - input.worldPosition);
@@ -97,41 +191,28 @@ float4 ps_main(VSOutput input): SV_Target {
 	F0 = lerp(F0, albedo, metallic);
 
 	// start light calc
-	float3 lightDir = normalize(-lightPos); 
-	float3 h = normalize(viewDir + lightDir);
 
-	float distance = length(lightPos);
-	float attenuation = 1.0 / (distance * distance);
-	float3 radiance = lightColor;
+	float3 Lo = float3(0.0, 0.0, 0.0);
 
-	float NDF = DistributionGGX(norm, h, roughness);
-	float G = GeometrySmith(norm, viewDir, lightDir, roughness);
-    float3 F    = fresnelSchlick(max(dot(h, viewDir), 0.0), F0);        
+	//for (int i = 0; i < Scene.pointLightCount; i++)
+	//{
+//		Lo += calc_point_light(Scene.pointLights[i], norm, input.worldPosition, viewDir, albedo, metallic, roughness, F0);
+//	}
 
-	float3 kS = F;
-	float3 numerator = NDF * G * F;
-	float denominator = 4.0 * max(dot(norm, viewDir), 0.0) * max(dot(norm, lightDir), 0.0)  + 0.0001;
-	float3 specular     = numerator / denominator;  
-
-	float3 kD = float3(1.0, 1.0, 1.0) - kS;
-	kD *= 1.0 - metallic;
-
-    float NdotL = max(dot(norm, lightDir), 0.0);        
-    float3 Lo = (kD * albedo / PI + specular) * radiance * NdotL /* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/;
+	for (int i = 0; i < Scene.spotLightCount; i++)
+	{
+		Lo += calc_spot_light(Scene.spotLights[i], norm, input.worldPosition, viewDir, albedo, metallic, roughness, F0);
+	}
 
 	// post directional light
 	
-	kS = fresnelSchlick(max(dot(norm, viewDir), 0.0), F0);
-	kD = float3(1.0f, 1.0f, 1.0f) - kS;
-	kD *= 1.0 - metallic;
-	//float3 irradiance = tex_sky.Sample(tex_sky_sm, norm).rgb;
-	float3 diffuse =  albedo;
-	float3 ambient = (kD * diffuse) * ao;
 
+	//float3 irradiance = tex_sky.Sample(tex_sky_sm, norm).rgb;
+	float3 ambient = float3(0.01, 0.01, 0.01) * albedo * ao;
     float3 color = ambient + Lo;
 
     float shadow = ShadowCalculation(input.fragPosLightSpace);
-	color *= shadow;
+	//color *= shadow;
 	
     color = color / (color + float3(1.0, 1.0, 1.0));
     color = pow(color, float3(1.0/2.2,1.0/2.2,1.0/2.2));  

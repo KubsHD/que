@@ -9,8 +9,10 @@ struct VS_OUTPUT
 	noperspective float  m_size         : SIZE;
 	noperspective float  m_edgeDistance : EDGE_DISTANCE;
 
+    #if !COMPILE_PS
     [[vk::builtin("PointSize")]]
     float gl_PointSize : PSIZE;
+    #endif
 };
 
 #define kAntialiasing 2.0

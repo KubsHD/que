@@ -428,7 +428,7 @@ constexpr Color Color_Navy    = Color(0x000080ff);
 struct VertexData
 {
 	Vec4   m_positionSize; // xyz = position, w = size
-	alignas(16) Color  m_color;        // rgba8 (MSB = r)
+	Color  m_color;        // rgba8 (MSB = r)
 
 	VertexData() {}
 	VertexData(const Vec3& _position, float _size, Color _color) : m_positionSize(_position, _size), m_color(_color) {}

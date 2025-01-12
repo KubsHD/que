@@ -199,6 +199,7 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 		.defer_surface_initialization()
 		.set_required_features(features)
 		.set_required_features_13(features13)
+		.add_desired_extension(VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME)
 		.set_minimum_version(1, 3)
 		.select();
 	if (!phys_ret) {
@@ -292,6 +293,7 @@ void GfxDevice::InitXr(XrInstance xri, XrSystemId xrsi)
 		// THIS FIXES CRASH UNDER STEAMVR
 		.add_desired_extension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME)
 		// -----------------------------------
+		.add_desired_extension(VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME)
 
 		.select();
 	if (!phys_ret) {

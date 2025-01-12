@@ -15,7 +15,7 @@ VkExtent2D shadow_map_size = { 8192, 8192 };
 
 void ShadowRenderer::create(Renderer2& ren)
 {
-	shadow_map = GfxDevice::create_image(shadow_map_size, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	directional_shadow_map = GfxDevice::create_image(shadow_map_size, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	dir_light_sm_pipeline = pipeline::create_dir_light_pipeline(ren);
 
 	// we need a seperate sampler to not repeat the shadow map when sampling 
@@ -37,12 +37,14 @@ void ShadowRenderer::create(Renderer2& ren)
 
 	vkCreateSampler(GfxDevice::device, &sampl, nullptr, &shadow_map_sampler);
 
-	GfxDevice::set_debug_name(shadow_map.image, "directionaL_light_shadow_map");
+	GfxDevice::set_debug_name(directional_shadow_map.image, "directionaL_light_shadow_map");
 }
 
 void ShadowRenderer::update()
 {
 	render_imgui();
+
+
 }
 
 extern tracy::VkCtx* ctx;
@@ -51,10 +53,10 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg, glm::vec3 
 {
 	TracyVkZone(ctx, cmd, "Shadow Rendering");
 
-	DirectionalLight dl;
+	gfx::DirectionalLight dl;
 	dl.direction = glm::vec3(2.0f, 5.0f, 1.0f);
 
-	VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(shadow_map.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(directional_shadow_map.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	VkClearValue clearValues[2];
 	depthAttachment.clearValue.depthStencil.depth = 1.f;
@@ -125,7 +127,7 @@ void ShadowRenderer::render(VkCommandBuffer cmd, entt::registry& reg, glm::vec3 
 	vkCmdEndRendering(cmd);
 
 	//transition the shadow map image for sampling
-	vkutil::transition_image(cmd, shadow_map.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, -1, true);
+	vkutil::transition_image(cmd, directional_shadow_map.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, -1, true);
 }
 
 void ShadowRenderer::render_imgui()
@@ -143,7 +145,7 @@ void ShadowRenderer::render_imgui()
 
 void ShadowRenderer::destroy()
 {
-	GfxDevice::destroy_image(shadow_map);
+	GfxDevice::destroy_image(directional_shadow_map);
 	vkDestroyPipelineLayout(GfxDevice::device, dir_light_sm_pipeline.layout, nullptr);
 	GfxDevice::destroy_pipeline(dir_light_sm_pipeline.pipeline);
 }

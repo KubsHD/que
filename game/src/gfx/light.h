@@ -2,22 +2,28 @@
 
 #include <core/types.h>
 
-struct DirectionalLight {
-	Vec3 direction;
-	Vec3 color;
-	float intensity;
-};
 
-struct PointLight {
-	Vec3 position;
-	Vec3 color;
-	float intensity;
-};
+namespace gfx {
 
-struct SpotLight {
-	Vec3 position;
-	Vec3 direction;
-	Vec3 color;
-	float intensity;
-	float angle;
-};
+	struct DirectionalLight {
+		Vec3 direction;
+		Vec3 color;
+		float intensity;
+	};
+
+	struct PointLight {
+		Vec3 position;
+		Vec3 color;
+		float intensity;
+		float range;
+	};
+
+	struct SpotLight {
+		Vec3 position;
+		Vec3 direction;
+		Vec3 color;
+		float intensity;
+		float range;
+		float angle;
+	};
+}

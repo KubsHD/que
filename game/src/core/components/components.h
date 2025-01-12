@@ -79,13 +79,26 @@ struct attach_component {
 	entt::entity parent_entity;
 };
 
-struct game_state_component {
-	float elapsed_time;
-	float tower_height;
-	bool is_game_over;
-};
-
 struct core_camera_component {
 	glm::vec3 position;
 	glm::vec3 rotation;
+};
+
+enum class LightType {
+	Directional = 0,
+	Point = 1,
+	Spot = 2
+};
+
+struct core_light_component {
+	LightType type;
+
+	// common
+	glm::vec3 color;
+	float intensity;
+	float range;
+
+	// spot
+	Vec3 direction;
+	float angle;
 };

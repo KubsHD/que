@@ -9,6 +9,7 @@
 #include <core/physics_util.h>
 #include <common/serialization.h>
 #include <game/templates/climbable_ledge_template.h>
+#include <game/components/light_component.h>
 
 Level core::load_level(String path, Scene* scene)
 {
@@ -21,6 +22,7 @@ Level core::load_level(String path, Scene* scene)
     // parse json
     lvl.name = file["name"];
 
+
 	// preallocate object array
 	lvl.objects.reserve(file["objects"].size());
 
@@ -31,7 +33,6 @@ Level core::load_level(String path, Scene* scene)
         Path model_path(path);
 		model_path = model_path.parent_path() / obj["model"].get<String>();
 
-		
 		lvl.objects.push_back(Object());
 
 		auto& o = lvl.objects.back();
@@ -66,6 +67,7 @@ Level core::load_level(String path, Scene* scene)
 		e->add<PhysicsComponent>(PhysicsComponent(o.model.meshes[0]));
     }
 
+
 	for (auto& ent : file["entities"])
 	{
 		auto ent_name = ent["name"].get<String>();
@@ -73,6 +75,13 @@ Level core::load_level(String path, Scene* scene)
 		if (ent_name._Starts_with("grabbable"))
 		{
 			game::tmpl::create_climbable_ledge(ser::vec3_deserialize(ent["position"]), *scene, nullptr);
+		}
+
+		if (ent_name._Starts_with("spot"))
+		{
+			auto light = scene->create("spot_light");
+			light->position = ser::vec3_deserialize(ent["position"]);
+			light->add<LightComponent>(LightComponent(LightType::Spot, ser::vec3_deserialize(ent["color"]), ent["intensity"], ent["range"]));
 		}
 	}
 

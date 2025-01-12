@@ -1,9 +1,31 @@
+#define MAX_LIGHTS 32
+
+struct PointLight {
+	float3 position;
+	float3 color;
+	float intensity;
+	float range;
+};
+
+struct SpotLight {
+	float3 position;
+	float3 direction;
+	float3 color;
+	float intensity;
+	float range;
+	float angle;
+};
+
 struct SceneData {
 	row_major float4x4 viewProj;
 	row_major float4x4 view;
 	row_major float4x4 proj;
 	row_major float4x4 lightMtx;
 	float3 camPos;
+	PointLight pointLights[MAX_LIGHTS];
+	uint pointLightCount;
+	SpotLight spotLights[MAX_LIGHTS];
+	uint spotLightCount;
 };
 
 struct InstanceData {
@@ -14,6 +36,7 @@ struct InstanceData {
 struct GPUDrawPushConstants {
 	row_major float4x4 model;
 };
+
 
 
 

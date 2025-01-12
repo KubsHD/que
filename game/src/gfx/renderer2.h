@@ -14,6 +14,9 @@
 #include "sky/sky.h"
 #include "shadow_renderer.h"
 #include "mat/mat_lit.h"
+#include "buffers.h"
+#include "light.h"
+#include "light.h"
 
 struct DebugRenderer;
 class MeshComponent;
@@ -98,6 +101,10 @@ public:
 
 	gfx::SceneData m_scene_data_cpu{};
 	GPUBuffer m_scene_data_gpu;
+
+	Map<String, gfx::PointLight> m_point_lights;
+	Map<String, gfx::SpotLight> m_spot_lights;
+
 
 	// default resources
 	GPUImage texture_white;

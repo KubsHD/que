@@ -21,6 +21,7 @@ enum TextureType {
 	TT_HDRI = 2
 };
 
+
 using String = std::string;
 
 template<typename T>
@@ -35,6 +36,9 @@ using Vec4 = glm::vec4;
 using Path = std::filesystem::path;
 
 using Quat = glm::quat;
+
+template<typename T, typename V>
+using Map = std::unordered_map<T, V>;
 
 // filesystem
 
