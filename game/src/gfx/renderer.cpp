@@ -182,7 +182,7 @@ void Renderer::render_model(glm::mat4 model_matrix, const Model& model)
 
 void Renderer::register_mesh(const MeshComponent* mc)
 {
-	m_reg.emplace<core_mesh_component>(mc->entity->internal_entity, mc->get_model());
+	//m_reg.emplace<core_mesh_component>(mc->entity->internal_entity, mc->get_model());
 }
 
 void Renderer::draw_sky(App::FrameRenderInfo& info)

@@ -205,6 +205,7 @@ void App_Main()
 {
 	LOG_INFO("Que MAIN");
 
+
 	// check if game is run with -ed flag
 	bool run_editor = false;
 	for (int i = 0; i < __argc; i++)

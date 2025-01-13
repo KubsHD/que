@@ -8,12 +8,13 @@ class MeshComponent : public Component {
 	DEFINE_COMPONENT_BODY(MeshComponent)
 
 	MeshComponent(Model* model);
+	MeshComponent(String path);
 
 	void init() override;
 	void update() override;
 	void destroy() override;
 
-	inline Model* get_model() const { return m_model; }
+	inline Model* get_model() { return &m_model; }
 private:
-	Model* m_model;
+	Model m_model;
 };

@@ -106,7 +106,10 @@ void Renderer2::update()
 	{
 		if (lc.type == LightType::Spot)
 		{
-			m_spot_lights[uc.uuid] = gfx::SpotLight{ tc.position, lc.direction, lc.color, lc.intensity, lc.range, lc.angle };
+			glm::vec3 direction = glm::vec3(0, -lc.range, 0);
+			direction = glm::rotate(glm::quat(tc.rotation.w, tc.rotation.x, tc.rotation.y, tc.rotation.z), direction);
+
+			m_spot_lights[uc.uuid] = gfx::SpotLight{ tc.position, direction, lc.color, lc.intensity, lc.range, lc.angle };
 		}
 
 
@@ -130,7 +133,7 @@ void Renderer2::load_default_resources()
 
 int _frameNumber = 0;
 
-void Renderer2::register_mesh(const MeshComponent* mc)
+void Renderer2::register_mesh(MeshComponent* mc)
 {
 	m_reg.emplace<core_mesh_component>(mc->entity->internal_entity, mc->get_model());
 }
@@ -257,6 +260,7 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	submitInfo.pCommandBufferInfos = &cmdSubmitInfo;
 
 	VULKAN_CHECK_NOMSG(vkQueueSubmit2(m_queue, 1, &submitInfo, frame.main_fence));
+
 
 	_frameNumber++;
 

@@ -19,25 +19,28 @@ LightComponent::LightComponent(LightType type, glm::vec3 color, float intensity,
 
 void LightComponent::init()
 {
-
 	if (type == LightType::Spot)
 	{
-		direction = entity->position + glm::vec3(0, -10, 0);
 		angle = glm::radians(25.0f);
 	}
 
-	g_engine.reg->emplace<core_light_component>(this->entity->internal_entity, type, color, intensity, range, direction, angle);
+	g_engine.reg->emplace<core_light_component>(this->entity->internal_entity, type, color, intensity, range, glm::vec3(0,0,0), angle);
 }
 
 void LightComponent::draw_inspector()
 {
-
+	ImGui::ColorEdit3("Color", glm::value_ptr(color));
+	ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1000.0f);
+	ImGui::SliderFloat("Range", &range, 0.0f, 40.0f);
+	if (type == LightType::Spot)
+	{
+		ImGui::SliderAngle("Angle", &angle, 0.0f, 180.0f);
+	}
 }
 
 void LightComponent::update()
 {
 	// update light
-
 	auto lights = g_engine.reg->view<core_light_component>();
 
 	for (auto [e, light] : lights.each())
@@ -47,8 +50,13 @@ void LightComponent::update()
 			light.color = this->color;
 			light.intensity = this->intensity;
 			light.range = this->range;
-			light.direction = this->direction;
 			light.angle = this->angle;
 		}
 	};
+
+}
+
+void LightComponent::destroy()
+{
+	g_engine.reg->remove<core_light_component>(this->entity->internal_entity);
 }

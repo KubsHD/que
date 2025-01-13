@@ -18,15 +18,11 @@
 #include <lib/dds-ktx.h>
 
 fs::path root_path;
-
 std::string cache_path;
 
 std::unordered_map<std::string, std::shared_ptr<Sound>> AssetManager::m_sound_cache;
-
 std::unordered_map<std::string, std::shared_ptr<GPUImage>> m_image_cache;
 std::unordered_map<std::string, std::shared_ptr<Model>> m_model_cache;
-
-
 
 AudioSystem* AssetManager::m_audio_system_reference;
 Renderer2* AssetManager::m_renderer_reference;
@@ -523,17 +519,9 @@ Model AssetManager::load_model_json(Path path)
 
 			model.materials2.emplace((int)material["id"], inst);
 		}
-
 	}
 
-
-
-
-
-
-
 	m_model_cache.emplace(path.string(), std::make_shared<Model>(model));
-
 	return model;
 }
 
@@ -553,7 +541,6 @@ void AssetManager::unload_model(Model& model)
 	}
 
 	model.materials2.clear();
-
 	m_model_cache.erase(model.name);
 }
 

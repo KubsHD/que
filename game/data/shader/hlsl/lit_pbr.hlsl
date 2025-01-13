@@ -3,6 +3,8 @@
 #include "pbr.hlsli"
 #include "shadows.hlsli"
 
+#define SPOT_DEG_OFFSET 5
+
 struct VSOutput {
     float4 position : SV_Position;
     float3 localPosition : POSITION;
@@ -102,16 +104,17 @@ float3 calc_spot_light(SpotLight light, float3 normal, float3 fragPos, float3 vi
 
 
 	float theta = dot(lightDir, normalize(-light.direction));
+	float epsilon = cos(light.angle) - cos(light.angle + radians(SPOT_DEG_OFFSET));
+	float intensity = clamp((theta - cos(light.angle + radians(SPOT_DEG_OFFSET))) / epsilon, 0.0, 1.0) * light.intensity;
 
-	float epsilon = cos(light.angle);
+	float distance = length(light.position - fragPos);
 
-	if (theta > epsilon)
+	if (distance < light.range)
 	{
 		float3 h = normalize(viewDir + lightDir);
 
-		float distance = length(light.position - fragPos);
 		float attenuation = 1.0 / (distance * distance);
-		float3 radiance = light.color * attenuation;
+		float3 radiance = light.color * attenuation * intensity;
 
 		float NDF = DistributionGGX(normal, h, roughness);
 		float G = GeometrySmith(normal, viewDir, lightDir, roughness);
@@ -208,7 +211,7 @@ float4 ps_main(VSOutput input): SV_Target {
 	
 
 	//float3 irradiance = tex_sky.Sample(tex_sky_sm, norm).rgb;
-	float3 ambient = float3(0.01, 0.01, 0.01) * albedo * ao;
+	float3 ambient = float3(0.001, 0.001, 0.001) * albedo * ao;
     float3 color = ambient + Lo;
 
     float shadow = ShadowCalculation(input.fragPosLightSpace);

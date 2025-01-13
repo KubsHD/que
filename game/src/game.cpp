@@ -137,14 +137,8 @@ void Game::update()
 	else
 		m_audio_system->update(glm::vec3(0, 0, 0));
 
-
-	if (ImGui::Begin("ECS Debug", nullptr))
-	{
-		if (m_current_scene)
-			m_current_scene->draw_imgui();
-
-	}
-	ImGui::End();
+	if (m_current_scene)
+		m_current_scene->draw_imgui();
 }
 
 void Game::init_imgui()

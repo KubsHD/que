@@ -142,13 +142,13 @@ static void draw_entity(Entity* ent)
 	if (ImGui::TreeNode(ent->id.c_str(), "%s : %s", ent->name.c_str(), ent->id.c_str()))
 	{
 		// draw position and rotation
-		ImGui::DragFloat3("Position", &ent->position.x, 0.001f);
-		ImGui::DragFloat4("Rotation", &ent->rotation.x, 0.001f);
+		ImGui::DragFloat3("Position", &ent->position.x, 0.01f);
+		ImGui::DragFloat4("Rotation", &ent->rotation.x, 0.01f);
 		// euler rotation
 		glm::vec3 euler = glm::degrees(glm::eulerAngles(ent->rotation));
-		ImGui::DragFloat3("Rotation Euler", &euler.x, 0.001f);
+		ImGui::DragFloat3("Rotation Euler", &euler.x, 0.01f);
 		ent->rotation = glm::quat(glm::radians(euler));
-		ImGui::DragFloat3("Scale", &ent->scale.x, 0.001f);
+		ImGui::DragFloat3("Scale", &ent->scale.x, 0.01f);
 
 		if (ImGui::TreeNode("Components"))
 		{

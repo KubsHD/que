@@ -33,6 +33,7 @@ public:
 private:
 	static GPUImage AssetManager::try_to_load_texture_type(const aiScene* scene, aiMaterial* material, aiTextureType type, String root_path);
 	static std::unordered_map<std::string, std::shared_ptr<Sound>> m_sound_cache;
+
 	static AudioSystem* m_audio_system_reference;
 	static Renderer2* m_renderer_reference;
 };

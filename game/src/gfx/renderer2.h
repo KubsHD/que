@@ -56,7 +56,7 @@ public:
 
 	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
 
-	void register_mesh(const MeshComponent* mc);
+	void register_mesh(MeshComponent* mc);
 
 	DeletionQueue main_deletion_queue;
 

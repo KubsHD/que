@@ -18,6 +18,8 @@ class LightComponent : public Component
 	
 	void update() override;
 
+	void destroy() override;
+
 private:
 	LightType type = LightType::Spot;
 
@@ -26,6 +28,5 @@ private:
 	float range = 10.0f;
 
 	// spot
-	glm::vec3 direction = glm::vec3(0.0f);
 	float angle = 45.0f;
 };
