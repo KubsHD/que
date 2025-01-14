@@ -63,6 +63,7 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	ctx = TracyVkContext(GfxDevice::physical_device, GfxDevice::device, m_queue, frame.main_command_buffer);
 
+	offscren_color = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, color_format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	depth_image = GfxDevice::create_image(VkExtent2D{(uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height},VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	m_shadow_renderer.create(*this);
@@ -77,6 +78,7 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 	debug->init(this);
 
 	main_deletion_queue.push_function([&]() {
+		GfxDevice::destroy_image(offscren_color);
 		GfxDevice::destroy_image(depth_image);
 	});
 }
@@ -155,6 +157,7 @@ Vec3 Renderer2::get_camera_position()
 
 void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 {
+	QUE_PROFILE;
 
 	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
 	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
@@ -200,13 +203,11 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-	TracyVkZone(ctx, cmd, "Render");
-
 	VkClearValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 120.f));
 	clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
 	
-	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(swp.swapchainImages[image_index], &clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(offscren_color.view, &clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	VkExtent2D _windowExtent = {swp.width, swp.height };
@@ -218,9 +219,6 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
 
-	vkCmdBeginRendering(cmd, &render_info);
-
-
 	//set dynamic viewport and scissor
 	VkViewport viewport = {};
 	viewport.x = 0;
@@ -230,20 +228,40 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	viewport.minDepth = 0.f;
 	viewport.maxDepth = 1.f;
 
-	vkCmdSetViewport(cmd, 0, 1, &viewport);
-
 	VkRect2D scissor = {};
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
 	scissor.extent.width = swp.width;
 	scissor.extent.height = swp.height;
 
+	// main pass
+	vkCmdBeginRendering(cmd, &render_info);
+
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 	draw_internal(cmd);
 
-	debug->render(cmd, render_info);
 	vkCmdEndRendering(cmd);
+	// main pass end
+
+	// offscreen to swapchain 
+	vkutil::copy_image_to_image(cmd, offscren_color.image, swp.swapchainImageHandles[image_index].image, _windowExtent, _windowExtent);
+	// offscreen to swapchain  end
+
+	// debug pass
+	colorAttachment = vkinit::attachment_info(swp.swapchainImages[image_index], nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+
+	render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
+
+	vkCmdBeginRendering(cmd, &render_info);
+
+	debug->render(cmd, render_info);
+
+	vkCmdEndRendering(cmd);
+	// debug pass end
 
 
 	TracyVkCollect(ctx, cmd);
@@ -251,8 +269,6 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
 
 	VkCommandBufferSubmitInfo cmdSubmitInfo = vkinit::command_buffer_submit_info(cmd);
-	VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
 
 	VkSubmitInfo2 submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
@@ -260,8 +276,6 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	submitInfo.pCommandBufferInfos = &cmdSubmitInfo;
 
 	VULKAN_CHECK_NOMSG(vkQueueSubmit2(m_queue, 1, &submitInfo, frame.main_fence));
-
-
 	_frameNumber++;
 
 }
@@ -310,6 +324,7 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 
 void Renderer2::draw_internal(VkCommandBuffer cmd)
 {
+	TracyVkZone(ctx, cmd, "Render");
 
 	{
 		DescriptorWriter writer;

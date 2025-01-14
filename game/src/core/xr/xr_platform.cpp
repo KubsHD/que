@@ -322,6 +322,8 @@ void OpenXRPlatform::render()
 	frameEndInfo.layerCount = 1;
 	frameEndInfo.layers = &pLayer;
 	OPENXR_CHECK_PORTABLE(Xr::instance, xrEndFrame(m_session, &frameEndInfo), "Failed to end the XR Frame.");
+
+	QUE_PROFILE_FRAME;
 }
 
 void OpenXRPlatform::run()

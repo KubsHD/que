@@ -19,7 +19,7 @@
 #include <tracy/TracyVulkan.hpp>
 
 #define QUE_PROFILE ZoneScoped
-#define QUE_PROFILE_FRAME(x) FrameMark
+#define QUE_PROFILE_FRAME FrameMark
 #define QUE_PROFILE_SECTION(x) ZoneScopedN(x)
 #define QUE_PROFILE_TAG(y, x) ZoneText(x, strlen(x))
 #define QUE_PROFILE_LOG(text, size) TracyMessage(text, size)
@@ -28,7 +28,7 @@
 #define QUE_GPU_COLLECT 
 #else
 #define QUE_PROFILE 
-#define QUE_PROFILE_FRAME(x) 
+#define QUE_PROFILE_FRAME
 #define QUE_PROFILE_SECTION(x) 
 #define QUE_PROFILE_TAG(y, x)
 #define QUE_PROFILE_LOG(text, size)

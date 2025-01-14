@@ -3,8 +3,11 @@
 #include "debug_renderer.h"
 #include "renderer2.h"
 #include <common/vk_initializers.h>
+#include <tracy/TracyVulkan.hpp>
 
 #define MAX_VTX 10000000
+
+extern tracy::VkCtx* ctx;
 
 struct  DrawData {
 	uint32_t offset;
@@ -20,15 +23,11 @@ void DebugRenderer::init(Renderer2* r2)
 {
 	m_r2 = r2;
 
-
-
 	{
 		DescriptorLayoutBuilder	builder;
-
 		builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 		m_im3d_set_layout = builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-
 		m_im3d_set = m_r2->global_descriptor_allocator.allocate(GfxDevice::device, m_im3d_set_layout);
 	}
 
@@ -215,9 +214,12 @@ void DebugRenderer::begin_frame()
 
 void DebugRenderer::render(VkCommandBuffer cmd, VkRenderingInfo& info)
 {
+
 	if (Im3d::GetDrawListCount() == 0) {
 		return;
 	}
+
+	TracyVkZone(ctx, cmd, "Debug");
 
 	fill_buffer();
 

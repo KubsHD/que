@@ -55,7 +55,7 @@ void App::Run()
 			render_frame();
 		}
 
-		QUE_PROFILE_FRAME();
+		QUE_PROFILE_FRAME;
 	}
 
 	destroy();

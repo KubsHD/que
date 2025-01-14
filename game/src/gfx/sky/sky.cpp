@@ -23,6 +23,7 @@
 #include <asset/file/texture.h>
 #include <lib/dds-ktx.h>
 
+extern tracy::VkCtx* ctx;
 
 namespace gfx {
 
@@ -477,6 +478,8 @@ namespace gfx {
 
 	void Sky::draw(Renderer2& ren, VkCommandBuffer cmd)
 	{
+		TracyVkZone(ctx, cmd, "Sky draw");
+
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mat_sky_instance.pipeline->pipeline);
 
 		GPUDrawPushConstants pushConst;
