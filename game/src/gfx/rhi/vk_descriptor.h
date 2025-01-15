@@ -41,4 +41,5 @@ struct DescriptorWriter {
 
 	void clear();
 	void update_set(VkDevice device, VkDescriptorSet set);
+	void write_storage_image(int binding, VkImageView image_view, VkImageLayout image_layout);
 };

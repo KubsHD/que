@@ -16,7 +16,7 @@
 #include "mat/mat_lit.h"
 #include "buffers.h"
 #include "light.h"
-#include "light.h"
+#include "effect/bloom.h"
 
 struct DebugRenderer;
 class MeshComponent;
@@ -94,6 +94,9 @@ public:
 
 	GPUImage offscren_color;
 	GPUImage depth_image;
+
+	// bloom
+	BloomEffect bloom;
 
 	// desc
 	DescriptorAllocator global_descriptor_allocator;

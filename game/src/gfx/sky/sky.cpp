@@ -22,6 +22,7 @@
 #include <gfx/renderer2.h>
 #include <asset/file/texture.h>
 #include <lib/dds-ktx.h>
+#include <tracy/TracyVulkan.hpp>
 
 extern tracy::VkCtx* ctx;
 

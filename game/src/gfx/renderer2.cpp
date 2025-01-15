@@ -77,6 +77,8 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	debug->init(this);
 
+	bloom.init(this);
+
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_image(offscren_color);
 		GfxDevice::destroy_image(depth_image);
@@ -244,6 +246,14 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	vkCmdEndRendering(cmd);
 	// main pass end
+
+	// bloom pass
+	bloom.render(cmd, offscren_color.view);
+
+	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	// bloom pass end
+
+
 
 	// offscreen to swapchain 
 	vkutil::copy_image_to_image(cmd, offscren_color.image, swp.swapchainImageHandles[image_index].image, _windowExtent, _windowExtent);

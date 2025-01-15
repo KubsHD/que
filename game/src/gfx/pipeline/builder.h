@@ -48,3 +48,16 @@ public:
 
 	static VkShaderModule load_shader_module(const char* filename, VkDevice device);
 };
+
+class ComputePipelineBuilder {
+public:
+	VkPipelineShaderStageCreateInfo shader_stage;
+	VkPipelineLayout pipeline_layout;
+
+	ComputePipelineBuilder() { clear(); }
+
+	void clear();
+	void set_shader(VkShaderModule compute_shader);
+
+	VkPipeline build_pipeline(VkDevice device);
+};

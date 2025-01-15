@@ -342,7 +342,6 @@ VkPipelineShaderStageCreateInfo vkinit::pipeline_shader_stage_create_info(VkShad
 
 VkSamplerCreateInfo vkinit::sampler_create_info(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode, int aniso)
 {
-
     VkSamplerCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     info.pNext = nullptr;

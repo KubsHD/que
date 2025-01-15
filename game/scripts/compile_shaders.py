@@ -38,8 +38,8 @@ for root, dirs, files in os.walk(base_dir):
 			vs_output_path = os.path.join(output_dir, filename + '.vs_c')
 			ps_output_path = os.path.join(output_dir, filename + '.ps_c')
 			gs_output_path = os.path.join(output_dir, filename + '.gs_c')
+			cs_output_path = os.path.join(output_dir, filename + '.cs_c')
 
-			# Check if the file contains #if COMPILE_GS
 			with open(full_path, 'r') as file:
 				if '#if COMPILE_GS' in file.read():
 					# compile the geometry shader
@@ -47,6 +47,14 @@ for root, dirs, files in os.walk(base_dir):
 
 					if r3.returncode == 0:
 						print(f"Compiled GS {full_path} to {output_dir}")
+
+				file.seek(0)
+
+				if '#if COMPILE_CS' in file.read():
+					r4 = subprocess.run([dxc_path, "-spirv", "-fvk-use-scalar-layout", "-Zi", "-Od", "-T", "cs_6_0", "-E", "cs_main", "-D", "COMPILE_CS", full_path, "-Fo", cs_output_path])
+
+					if r4.returncode == 0:
+						print(f"Compiled CS {full_path} to {output_dir}")
 			
 			# compile the vertex and pixel shaders
 			r1 = subprocess.run([dxc_path, "-spirv", "-fvk-use-scalar-layout", "-Zi", "-Od", "-T", "vs_6_0", "-E", "vs_main", "-D", "COMPILE_VS", full_path, "-Fo", vs_output_path])
@@ -59,9 +67,8 @@ for root, dirs, files in os.walk(base_dir):
 				print(f"Compiled PS {full_path} to {output_dir}")
 
 			if (r1.returncode == 0 and r2.returncode == 0):
-				print(f"Compiled {full_path} to {output_dir}")
+				print(f"Finished compiling {full_path} to {output_dir}")
 			else:    
 				print(f"Failed to compile {full_path}")
 
-
-	
+			print("----------------------")

@@ -204,3 +204,27 @@ VkShaderModule PipelineBuilder::load_shader_module(const char* filename, VkDevic
 
 	return mod;
 }
+
+void ComputePipelineBuilder::clear()
+{
+	pipeline_layout = {};
+	shader_stage = {};
+}
+
+void ComputePipelineBuilder::set_shader(VkShaderModule compute_shader)
+{
+	shader_stage = vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_COMPUTE_BIT, compute_shader, "cs_main");
+}
+
+VkPipeline ComputePipelineBuilder::build_pipeline(VkDevice device)
+{
+	VkComputePipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO };
+	pipelineInfo.pNext = nullptr;
+	pipelineInfo.stage = shader_stage;
+	pipelineInfo.layout = pipeline_layout;
+
+	VkPipeline pl;
+	VULKAN_CHECK(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pl), "Failed to create graphics pipeline");
+
+	return pl;
+}

@@ -109,6 +109,25 @@ void DescriptorWriter::update_set(VkDevice device, VkDescriptorSet set)
 	vkUpdateDescriptorSets(device, (uint32_t)writes.size(), writes.data(), 0, nullptr);
 }
 
+void DescriptorWriter::write_storage_image(int binding, VkImageView image_view, VkImageLayout image_layout)
+{
+	VkDescriptorImageInfo image_info{};
+	image_info.imageLayout = image_layout;
+	image_info.imageView = image_view;
+
+	VkWriteDescriptorSet w{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+
+	w.dstBinding = binding;
+	w.dstSet = VK_NULL_HANDLE;
+
+	w.descriptorCount = 1;
+	w.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
+	w.pImageInfo = &image_infos.emplace_back(image_info);
+
+	writes.push_back(w);
+}
+
 void DescriptorWriter::write_image(int binding, VkImageView iv, VkSampler sampler, VkImageLayout layout, VkDescriptorType type)
 {
 	VkWriteDescriptorSet w { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
