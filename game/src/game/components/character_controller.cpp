@@ -36,7 +36,7 @@ void CharacterController::update()
 	}
 	else
 	{
-		auto vel = (Vec3(0, 1, 0) * g_engine.physics->get_gravity()) * 0.3f;
+		auto vel = (Vec3(0, 1, 0) * g_engine.physics->get_gravity()) * 0.1f;
 
 		if (m_gravity_enabled)
 		{

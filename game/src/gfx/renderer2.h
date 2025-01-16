@@ -95,6 +95,8 @@ public:
 	GPUImage offscren_color;
 	GPUImage depth_image;
 
+	GPUImage offscreen_tonemapped;
+
 	// bloom
 	BloomEffect bloom;
 

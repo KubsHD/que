@@ -71,7 +71,7 @@ void PlayerClimbManager::report_controller_detached_from_ledge(ControllerCompone
 
 	if (m_controllers_attached_to_ledge.empty())
 	{
-		//m_cc->move(m_prev_player_offset * 10);
+		m_cc->move(m_prev_player_offset * 10);
 		m_cc->set_gravity(true);
 	}
 }

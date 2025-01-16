@@ -11,13 +11,12 @@
 #include <common/glm_helpers.h>
 #include <entt/entt.hpp>
 
+
 #include <core/components/components.h>
 #include <game/components/mesh_component.h>
 #include <game/components/player_component.h>
 #include <core/profiler.h>
 #include "sky/sky.h"
-
-
 
 #include <NGFX_Injection.h>
 
@@ -25,13 +24,14 @@
 
 #include <tracy/TracyVulkan.hpp>
 
+
 tracy::VkCtx* ctx;
 
 Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg)
 {
 	QUE_PROFILE;
 
-	this->color_format = swapchain_info.swapchainFormat;
+	this->color_format = VK_FORMAT_R16G16B16A16_SFLOAT;
 
 	depth_format = VK_FORMAT_D32_SFLOAT;
 
@@ -64,9 +64,19 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 	ctx = TracyVkContext(GfxDevice::physical_device, GfxDevice::device, m_queue, frame.main_command_buffer);
 
 	offscren_color = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, color_format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+
+	offscreen_tonemapped = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, swapchain_info.swapchainFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+
 	depth_image = GfxDevice::create_image(VkExtent2D{(uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height},VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
+	GfxDevice::set_debug_name(offscren_color.image, "Offscreen color image");
+	GfxDevice::set_debug_name(offscren_color.view, "Offscreen color view");
+
+	GfxDevice::set_debug_name(depth_image.image, "Depth image");
+	GfxDevice::set_debug_name(depth_image.view, "Depth view");
+
 	m_shadow_renderer.create(*this);
+
 
 	create_default_textures();
 	create_global_descriptors();
@@ -77,10 +87,12 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	debug->init(this);
 
+
 	bloom.init(this);
 
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_image(offscren_color);
+		GfxDevice::destroy_image(offscreen_tonemapped);
 		GfxDevice::destroy_image(depth_image);
 	});
 }
@@ -92,6 +104,10 @@ Renderer2::~Renderer2()
 	m_shadow_renderer.destroy();
 	debug->destroy();
 	delete debug;
+
+	bloom.destroy();
+
+
 
 	vkDestroyFence(GfxDevice::device, frame.main_fence, nullptr);
 	vkDestroySemaphore(GfxDevice::device, frame.swapchain_semaphore, nullptr);
@@ -248,16 +264,25 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	// main pass end
 
 	// bloom pass
-	bloom.render(cmd, offscren_color.view);
+	vkutil::transition_image(cmd, offscreen_tonemapped.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 
-	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	bloom.render(cmd, offscren_color, offscreen_tonemapped);
+
+	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	vkutil::transition_image(cmd, offscreen_tonemapped.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	// bloom pass end
 
-
-
 	// offscreen to swapchain 
-	vkutil::copy_image_to_image(cmd, offscren_color.image, swp.swapchainImageHandles[image_index].image, _windowExtent, _windowExtent);
+	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+	vkutil::transition_image(cmd, swp.swapchainImageHandles[image_index].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vkutil::copy_image_to_image(cmd, offscreen_tonemapped.image, swp.swapchainImageHandles[image_index].image, _windowExtent, _windowExtent);
+	vkutil::transition_image(cmd, swp.swapchainImageHandles[image_index].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	// offscreen to swapchain  end
+
+
+
 
 	// debug pass
 	colorAttachment = vkinit::attachment_info(swp.swapchainImages[image_index], nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -268,11 +293,11 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	vkCmdBeginRendering(cmd, &render_info);
 
+
 	debug->render(cmd, render_info);
 
 	vkCmdEndRendering(cmd);
 	// debug pass end
-
 
 	TracyVkCollect(ctx, cmd);
 
@@ -334,6 +359,7 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 
 void Renderer2::draw_internal(VkCommandBuffer cmd)
 {
+
 	TracyVkZone(ctx, cmd, "Render");
 
 	{
@@ -388,7 +414,6 @@ void Renderer2::create_pipelines()
 
 	mat_unlit.create(this);
 	mat_lit.create(this);
-
 
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_buffer(m_scene_data_gpu);

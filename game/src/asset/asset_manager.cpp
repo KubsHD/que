@@ -477,7 +477,11 @@ Model AssetManager::load_model_json(Path path)
 				rs.diffuse = load_texture_c(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
 				rs.normal = load_texture_c(desc_directory + "/" + (String)material["normal"], TT_NORMAL);
 				rs.orm = load_texture_c(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
-				rs.emission = m_renderer_reference->texture_black;
+
+				if (material.contains("emission"))
+					rs.emission = load_texture_c(desc_directory + "/" + (String)material["emission"], TT_DIFFUSE);
+				else
+					rs.emission = m_renderer_reference->texture_black;
 
 				rs.sampler = m_renderer_reference->default_sampler_linear;
 
