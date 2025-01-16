@@ -121,6 +121,8 @@ public:
 	GPUImage texture_normal;
 
 	VkSampler default_sampler_linear;
+	VkSampler default_sampler_linear_clamp;
+
 	VkSampler default_sampler_nearest;
 
 	// materials

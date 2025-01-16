@@ -45,7 +45,7 @@ BloomPushConstants pc;
 [numthreads(16, 16, 1)]
 void cs_main(uint3 GlobalInvocationID : SV_DispatchThreadID)
 {
-    float2 texCoordTarget = float2(GlobalInvocationID.x, GlobalInvocationID.y);
+    float2 texCoordTarget = float2(GlobalInvocationID.x + 0.5, GlobalInvocationID.y + 0.5);
 
     // get source texture coordinates
     float2 texCoord = texCoordTarget * 2.0f;

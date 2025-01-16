@@ -37,7 +37,7 @@ RWTexture2D<float4> BloomOutput : register(u1);
 RWTexture2D<unorm float4> Output : register(u2);
 
 #define bloomStrength 0.04
-#define exposure 2
+#define exposure 1.5
 
 float3 ACESFilm(float3 x)
 {
@@ -61,20 +61,10 @@ void cs_main(uint3 GlobalInvocationID : SV_DispatchThreadID)
 
     float3 result = lerp(hdrColor, bloomColor, bloomStrength);
   
-    
-       // Load HDR color (in linear space)
-    
-    // Apply exposure
     float3 exposed = result * exposure;
+    //float3 tonemapped = ACESFilm(exposed);
+    float3 gammaCorrected = pow(exposed, 1.0 / 2.2);
     
-    // Apply ACES tonemapping (outputs to gamma space)
-    float3 tonemapped = ACESFilm(exposed);
-
-
-    float3 gammaCorrected = pow(tonemapped, 1.0 / 2.2);
-
-    
-    // Store result (sRGB format will apply gamma correction)
     Output[GlobalInvocationID.xy] = float4(gammaCorrected, Input[GlobalInvocationID.xy].a);
 }
 

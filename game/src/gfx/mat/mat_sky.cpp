@@ -50,7 +50,7 @@ void MAT_Sky::create(Renderer2* ren)
 	pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_LESS);
 
 	//connect the image format we will draw into, from draw image
-	pipelineBuilder.set_color_attachment_format(ren->color_format);
+	pipelineBuilder.set_color_attachment_format(VK_FORMAT_R8G8B8A8_SRGB);
 	pipelineBuilder.set_depth_format(ren->depth_format);
 
 	pipelineBuilder.vertex_input_info.vertexBindingDescriptionCount = 1;

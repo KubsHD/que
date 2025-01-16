@@ -72,6 +72,8 @@ Texture2D tex_emission : register(t4);
 [[vk::combinedImageSampler]]
 SamplerState tex_emission_sm : register(s4);
 
+#define BLOOM_STRENGTH 5
+
 float3 calc_point_light(PointLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0)
 {
 	float3 lightDir = normalize(-light.position - fragPos); 
@@ -97,7 +99,7 @@ float3 calc_point_light(PointLight light, float3 normal, float3 fragPos, float3 
     return (kD * albedo / PI + specular) * radiance * NdotL /* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/;
 }
 
-float3 calc_spot_light(SpotLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0)
+float3 calc_spot_light(SpotLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0, float3 emission)
 {
 
 	float3 lightDir = normalize(light.position - fragPos); 
@@ -129,7 +131,7 @@ float3 calc_spot_light(SpotLight light, float3 normal, float3 fragPos, float3 vi
 		kD *= 1.0 - metallic;
 
 		float NdotL = max(dot(normal, lightDir), 0.0);        
-		return (kD * albedo / PI + specular) * radiance * NdotL /* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/;
+		return ((kD * albedo / PI + specular) * radiance * NdotL) + emission * BLOOM_STRENGTH;/* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/
 	}
 	else
 	{
@@ -138,7 +140,7 @@ float3 calc_spot_light(SpotLight light, float3 normal, float3 fragPos, float3 vi
 }
 
 
-float3 calc_dir_light(float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0)
+float3 calc_dir_light(float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0, float3 emission)
 {
 	float3 lightPos = float3( -0.2f, -1.0f, -0.3f);
 	float3 lightColor = float3(23.47, 21.31, 20.79);
@@ -167,16 +169,17 @@ float3 calc_dir_light(float3 normal, float3 fragPos, float3 viewDir, float3 albe
 	kD *= 1.0 - metallic;
 
     float NdotL = max(dot(normal, lightDir), 0.0);        
-    return (kD * albedo / PI + specular) * radiance * NdotL /* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/;
+    return ((kD * albedo / PI + specular) * radiance * NdotL) + emission * BLOOM_STRENGTH;
 }
 
 float4 ps_main(VSOutput input): SV_Target {
 
 	// textures
-	float3 albedo = pow(tex_diffuse.Sample(tex_diffuse_sm, input.texCoord).rgb, float3(2.2,2.2,2.2));
+	float3 albedo = tex_diffuse.Sample(tex_diffuse_sm, input.texCoord).rgb;
 	float ao = tex_orm.Sample(tex_orm_sm, input.texCoord).x;
 	float roughness = tex_orm.Sample(tex_orm_sm, input.texCoord).y;
 	float metallic = tex_orm.Sample(tex_orm_sm, input.texCoord).z;
+	float3 emission = tex_emission.Sample(tex_emission_sm, input.texCoord).xyz;
 
 	ao = 1.0f;
 	metallic = 0.9f;
@@ -197,25 +200,22 @@ float4 ps_main(VSOutput input): SV_Target {
 
 	float3 Lo = float3(0.0, 0.0, 0.0);
 
-	//for (int i = 0; i < Scene.pointLightCount; i++)
-	//{
-//		Lo += calc_point_light(Scene.pointLights[i], norm, input.worldPosition, viewDir, albedo, metallic, roughness, F0);
-//	}
+	Lo += calc_dir_light(norm, input.worldPosition, viewDir, albedo, metallic, roughness, F0, emission);
 
 	for (int i = 0; i < Scene.spotLightCount; i++)
 	{
-		Lo += calc_spot_light(Scene.spotLights[i], norm, input.worldPosition, viewDir, albedo, metallic, roughness, F0);
+		Lo += calc_spot_light(Scene.spotLights[i], norm, input.worldPosition, viewDir, albedo, metallic, roughness, F0, emission);
 	}
 
 	// post directional light
 	
 
 	//float3 irradiance = tex_sky.Sample(tex_sky_sm, norm).rgb;
-	float3 ambient = float3(0.001, 0.001, 0.001) * albedo * ao;
+	float3 ambient = float3(0.03, 0.03, 0.03) * albedo * ao;
     float3 color = ambient + Lo;
 
     float shadow = ShadowCalculation(input.fragPosLightSpace);
-	//color *= shadow;
+	color *= shadow;
 	
     //color = color / (color + float3(1.0, 1.0, 1.0));
     //color = pow(color, float3(1.0/2.2,1.0/2.2,1.0/2.2));  

@@ -258,10 +258,15 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	vkCmdSetViewport(cmd, 0, 1, &viewport);
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
+
 	draw_internal(cmd);
 
 	vkCmdEndRendering(cmd);
 	// main pass end
+
+
+
+
 
 	// bloom pass
 	vkutil::transition_image(cmd, offscreen_tonemapped.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -273,6 +278,8 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	vkutil::transition_image(cmd, offscreen_tonemapped.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	// bloom pass end
 
+
+
 	// offscreen to swapchain 
 	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
@@ -281,9 +288,6 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	vkutil::transition_image(cmd, swp.swapchainImageHandles[image_index].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	// offscreen to swapchain  end
 
-
-
-
 	// debug pass
 	colorAttachment = vkinit::attachment_info(swp.swapchainImages[image_index], nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -291,10 +295,15 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
+
+
+
+
 	vkCmdBeginRendering(cmd, &render_info);
 
-
+	sky.draw(*this, cmd);
 	debug->render(cmd, render_info);
+
 
 	vkCmdEndRendering(cmd);
 	// debug pass end
@@ -305,10 +314,12 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 
 	VkCommandBufferSubmitInfo cmdSubmitInfo = vkinit::command_buffer_submit_info(cmd);
 
+
 	VkSubmitInfo2 submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
 	submitInfo.commandBufferInfoCount = 1;
 	submitInfo.pCommandBufferInfos = &cmdSubmitInfo;
+
 
 	VULKAN_CHECK_NOMSG(vkQueueSubmit2(m_queue, 1, &submitInfo, frame.main_fence));
 	_frameNumber++;
@@ -370,6 +381,9 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 	}
 
 
+
+
+
 	GPUDrawPushConstants pc;
 	VkDeviceSize offset = 0;
 
@@ -404,13 +418,15 @@ void Renderer2::draw_internal(VkCommandBuffer cmd)
 	};
 
 
-	sky.draw(*this, cmd);
 }
 
 void Renderer2::create_pipelines()
 {
 	m_scene_data_gpu = GfxDevice::create_buffer(sizeof(gfx::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
+	
+
+
 
 	mat_unlit.create(this);
 	mat_lit.create(this);
@@ -420,6 +436,7 @@ void Renderer2::create_pipelines()
 		mat_unlit.clear(GfxDevice::device);
 	});
 }
+
 
 void Renderer2::create_global_descriptors()
 {
@@ -478,6 +495,8 @@ void Renderer2::create_default_textures()
 	// samplers
 	VkSamplerCreateInfo sampl = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
 
+
+
 	sampl.magFilter = VK_FILTER_NEAREST;
 	sampl.minFilter = VK_FILTER_NEAREST;
 	
@@ -486,6 +505,10 @@ void Renderer2::create_default_textures()
 	sampl.magFilter = VK_FILTER_LINEAR;
 	sampl.minFilter = VK_FILTER_LINEAR;
 	vkCreateSampler(GfxDevice::device, &sampl, nullptr, &default_sampler_linear);
+
+	sampl.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	sampl.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	vkCreateSampler(GfxDevice::device, &sampl, nullptr, &default_sampler_linear_clamp);
 
 	main_deletion_queue.push_function([&]() {
 		vkDestroySampler(GfxDevice::device, default_sampler_nearest, nullptr);

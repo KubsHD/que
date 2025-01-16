@@ -10,9 +10,11 @@
 
 extern tracy::VkCtx* ctx;
 
+
 struct BloomPushConstants {
 	Vec2 srcResolution;
 };
+
 
 BloomPushConstants pc;
 
@@ -21,25 +23,29 @@ Vec2 original_size;
 void BloomEffect::init(Renderer2* r2)
 {
 	
-	sampler = r2->default_sampler_linear;
+	sampler = r2->default_sampler_linear_clamp;
 
 	temp = GfxDevice::create_image(VkExtent2D{ r2->depth_image.size.width, r2->depth_image.size.height }, r2->color_format, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
 	GfxDevice::set_debug_name(temp.image, "Intermiedate bloom image");
 	GfxDevice::set_debug_name(temp.view, "Intermiedate bloom image view");
-	
-
-
-
-	DescriptorLayoutBuilder layout_builder;
-	layout_builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-	layout_builder.add_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-
-	bloom_set_layout = layout_builder.build(GfxDevice::device, VK_SHADER_STAGE_COMPUTE_BIT);
-
 
 	{
+		// downscale pipeline
+
+
+
+
+
+		DescriptorLayoutBuilder layout_builder;
+		layout_builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		layout_builder.add_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+
+		bloom_set_layout = layout_builder.build(GfxDevice::device, VK_SHADER_STAGE_COMPUTE_BIT);
+
 		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+
+
 
 		VkPushConstantRange range{};
 		range.offset = 0;
@@ -55,11 +61,7 @@ void BloomEffect::init(Renderer2* r2)
 		pipeline_layout_info.setLayoutCount = sets.size();
 
 		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &bloom_downscale_pipeline.layout));
-		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &bloom_upscale_pipeline.layout));
-	}
 
-	{
-		// downscale pipeline
 		ComputePipelineBuilder builder;
 
 		auto cs = PipelineBuilder::load_shader_module("shader/effect/bloom_downscale.cs_c", GfxDevice::device);
@@ -75,6 +77,40 @@ void BloomEffect::init(Renderer2* r2)
 
 	{
 		// upscale pipeline
+
+		DescriptorLayoutBuilder layout_builder;
+
+		// prev mip
+		layout_builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		// current mip for sampling
+		layout_builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		// next mip read write
+		layout_builder.add_binding(2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+
+		bloom_upscale_set_layout = layout_builder.build(GfxDevice::device, VK_SHADER_STAGE_COMPUTE_BIT);
+
+		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+
+
+
+
+
+
+		VkPushConstantRange range{};
+		range.offset = 0;
+		range.size = sizeof(BloomPushConstants);
+		range.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		pipeline_layout_info.pPushConstantRanges = &range;
+		pipeline_layout_info.pushConstantRangeCount = 1;
+
+		auto sets = { bloom_upscale_set_layout };
+
+		pipeline_layout_info.pSetLayouts = sets.begin();
+		pipeline_layout_info.setLayoutCount = sets.size();
+
+		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &bloom_upscale_pipeline.layout));
+
 		ComputePipelineBuilder builder;
 
 		auto cs = PipelineBuilder::load_shader_module("shader/effect/bloom_upscale.cs_c", GfxDevice::device);
@@ -84,8 +120,10 @@ void BloomEffect::init(Renderer2* r2)
 
 		bloom_upscale_pipeline.pipeline = builder.build_pipeline(GfxDevice::device);
 
+
 		vkDestroyShaderModule(GfxDevice::device, cs, nullptr);
 	}
+
 
 	{
 		// render pipeline
@@ -138,9 +176,7 @@ void BloomEffect::init(Renderer2* r2)
 		mip.int_size = mip_int_size;
 		mip.texture = GfxDevice::create_image(VkExtent2D{ (uint32_t)mip.size.x, (uint32_t)mip.size.y }, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		mip.set = r2->global_descriptor_allocator.allocate(GfxDevice::device, bloom_set_layout);
-		mip.upscale_set = r2->global_descriptor_allocator.allocate(GfxDevice::device, bloom_set_layout);
-
-
+		mip.upscale_set = r2->global_descriptor_allocator.allocate(GfxDevice::device, bloom_upscale_set_layout);
 
 		mips.push_back(mip);
 	}
@@ -180,6 +216,7 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 
 		writer.update_set(GfxDevice::device, mip.set);
 
+		pc.srcResolution = mip.size;
 
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, bloom_downscale_pipeline.pipeline);
 
@@ -204,13 +241,22 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 	}
 
 	for (int i = mips.size() - 1; i > 0; i--)
+
 	{
 		const auto& mip = mips[i];
 		const auto& next_mip = mips[i - 1];
 
+
+
+
+
+		vkutil::transition_image(cmd, mip.texture.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 		DescriptorWriter writer;
-		writer.write_storage_image(0, mip.texture.view, VK_IMAGE_LAYOUT_GENERAL);
-		writer.write_storage_image(1, next_mip.texture.view, VK_IMAGE_LAYOUT_GENERAL);
+
+		writer.write_image(0, mip.texture.view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.write_image(1, next_mip.texture.view, sampler, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.write_storage_image(2, next_mip.texture.view, VK_IMAGE_LAYOUT_GENERAL);
 
 		writer.update_set(GfxDevice::device, mip.upscale_set);
 
@@ -218,10 +264,17 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 		vkCmdPushConstants(cmd, bloom_upscale_pipeline.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(BloomPushConstants), &pc);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, bloom_upscale_pipeline.layout, 0, 1, &mip.upscale_set, 0, nullptr);
 		vkCmdDispatch(cmd,
-			(mip.size.x + 15) / 16,
-			(mip.size.y + 15) / 16,
+			(next_mip.size.x + 15) / 16,
+			(next_mip.size.y + 15) / 16,
 			1
 		);
+
+
+
+
+
+
+
 
 		VkMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;

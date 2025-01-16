@@ -29,15 +29,16 @@ private:
 	GPUImage temp;
 
 	GPUPipeline bloom_downscale_pipeline;
-	GPUPipeline bloom_upscale_pipeline;
-	VkDescriptorSet bloom_set;
 	VkDescriptorSetLayout bloom_set_layout;
+
+	GPUPipeline bloom_upscale_pipeline;
+	VkDescriptorSetLayout bloom_upscale_set_layout;
 
 	GPUPipeline bloom_render_pipeline;
 	VkDescriptorSet bloom_render_set;
 	VkDescriptorSetLayout bloom_render_set_layout;
 	VkSampler sampler;
 
-	int m_mip_count = 4;
+	int m_mip_count = 6;
 };
 
