@@ -39,7 +39,9 @@ void PlayerClimbManager::update()
 		m_prev_player_offset = m_player_offset;
 
 		m_cc->move(m_player_offset);
-		//entity->position = glm::lerp(entity->position, entity->position + m_player_offset, 10.0f);
+
+		m_player_offset = glm::lerp(m_player_offset, Vec3(0.0f), 0.5f);
+
 	}
 }
 
@@ -71,7 +73,7 @@ void PlayerClimbManager::report_controller_detached_from_ledge(ControllerCompone
 
 	if (m_controllers_attached_to_ledge.empty())
 	{
-		m_cc->move(m_prev_player_offset * 10);
 		m_cc->set_gravity(true);
+		m_cc->move_force(m_prev_player_offset * 0.5f);
 	}
 }

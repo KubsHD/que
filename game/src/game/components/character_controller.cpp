@@ -36,22 +36,54 @@ void CharacterController::update()
 	}
 	else
 	{
-		auto vel = (Vec3(0, 1, 0) * g_engine.physics->get_gravity()) * 0.1f;
+		m_internal_cc->UpdateGroundVelocity();
+
+		auto dt = 1 / 72.0f;
+		JPH::Vec3 force = JPH::Vec3(0,0,0);
+
+		const auto currentVerticalVelocity =
+			m_internal_cc->GetLinearVelocity().Dot(m_internal_cc->GetUp()) * m_internal_cc->GetUp();
+		const auto groundVelocity = m_internal_cc->GetGroundVelocity();
+		JPH::Vec3 newVelocity;
+		bool movingTowardsGround = (currentVerticalVelocity.GetY() - groundVelocity.GetY()) < 0.1f;
+		bool characterOnGround =
+			m_internal_cc->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround;
+		bool useGroundVelocity = movingTowardsGround;
 
 		if (m_gravity_enabled)
 		{
-			if (m_internal_cc->GetGroundState() != JPH::CharacterBase::EGroundState::OnGround)
-				m_velocity += vel;
+			if (characterOnGround && useGroundVelocity) {
+				force = groundVelocity;
+			}
+			else {
+				force = currentVerticalVelocity;
+			}
 		}
 
-		
+		auto gravity = JPH::to_jph(g_engine.physics->get_gravity());
 
-		m_internal_cc->SetLinearVelocity(JPH::to_jph(m_velocity));
-		g_engine.physics->update_character_virtual(m_internal_cc);
+		if (m_gravity_enabled)
+			force += gravity * dt;
+
+		if (m_internal_cc->IsSupported() || m_gravity_enabled == false)
+		{
+			force += JPH::to_jph(m_velocity);
+		}
+		else {
+			JPH::Vec3 currentHorizontalVelocity =
+				m_internal_cc->GetLinearVelocity() - currentVerticalVelocity;
+			force += currentHorizontalVelocity;
+		}
+
+		force += JPH::to_jph(m_force_velocity);
+
+		m_internal_cc->SetLinearVelocity(force);
 		entity->position = JPH::to_glm(m_internal_cc->GetPosition());
-
-		m_velocity = glm::lerp(m_velocity, Vec3(0, 0, 0), m_velocity_falloff_speed);
+		m_velocity = Vec3(0);
+		m_force_velocity = Vec3(0);
 	}
+
+	g_engine.physics->update_character_virtual(m_internal_cc);
 
 #if _DEBUG
 	const auto com = m_internal_cc->GetCenterOfMassTransform();
@@ -68,7 +100,12 @@ void CharacterController::set_gravity(bool active)
 
 void CharacterController::move(Vec3 force)
 {
-	m_velocity += force;
+	m_velocity = force;
+}
+
+void CharacterController::move_force(Vec3 force)
+{
+	m_force_velocity = force;
 }
 
 void CharacterController::draw_inspector()

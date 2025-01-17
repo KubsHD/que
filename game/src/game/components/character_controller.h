@@ -20,11 +20,13 @@ public:
 	void set_gravity(bool active);
 	bool kinematic = false;
 	void move(Vec3 force);
+	void move_force(Vec3 force);
 
 	void draw_inspector() override;
 
 private:
 	Vec3 m_velocity = Vec3(0, 0, 0);
+	Vec3 m_force_velocity = Vec3(0, 0, 0);
 
 	JPH::CharacterVirtual* m_internal_cc = nullptr;
 

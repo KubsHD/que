@@ -245,7 +245,7 @@ void PhysicsSystem::set_motion_type(JPH::BodyID id, JPH::EMotionType param2)
 void PhysicsSystem::update_character_virtual(JPH::CharacterVirtual* m_internal_cc)
 {
 	m_internal_cc->Update(cDeltaTime,
-		m_system.GetGravity(),
+		m_system.GetGravity() * -m_internal_cc->GetUp(),
 		m_system.GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
 		m_system.GetDefaultLayerFilter(Layers::MOVING),
 		{},

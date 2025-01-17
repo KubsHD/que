@@ -25,6 +25,5 @@ private:
 	Vector<ControllerComponent*> m_controllers_attached_to_ledge;
 
 	Vec3 m_player_offset = Vec3(0.0f);
-
 	Vec3 m_prev_player_offset = Vec3(0.0f);
 };
