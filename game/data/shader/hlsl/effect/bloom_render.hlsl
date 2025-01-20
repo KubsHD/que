@@ -63,11 +63,11 @@ void cs_main(uint3 GlobalInvocationID : SV_DispatchThreadID)
     BloomOutput.GetDimensions(bloomSrcSize.x, bloomSrcSize.y);
 
     float2 texCoord = float2(GlobalInvocationID.x, GlobalInvocationID.y);
-    texCoord = GlobalInvocationID.xy / dstSize;
+    texCoord = (GlobalInvocationID.xy + 0.5f) / dstSize;
 
     float3 hdrColor = Input.SampleLevel(Input_sm, texCoord, 0).rgb;
 
-    float2 bloomCoord = GlobalInvocationID.xy / dstSize;
+    float2 bloomCoord = (GlobalInvocationID.xy + 0.5f) / dstSize;
     float3 bloomColor = BloomOutput.SampleLevel(BloomOutput_sm, bloomCoord, 0).rgb;
 
     float3 result = lerp(hdrColor, bloomColor, bloomStrength);

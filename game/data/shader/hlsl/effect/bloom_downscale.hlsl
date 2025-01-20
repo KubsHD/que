@@ -42,7 +42,7 @@ struct BloomPushConstants {
 BloomPushConstants pc;
 
 // https://learnopengl.com/Guest-Articles/2022/Phys.-Based-Bloom
-[numthreads(16, 16, 1)]
+[numthreads(8, 8, 1)]
 void cs_main(uint3 GlobalInvocationID : SV_DispatchThreadID)
 {
     float2 texCoordTarget = float2(GlobalInvocationID.x + 0.5, GlobalInvocationID.y + 0.5);

@@ -50,7 +50,7 @@ BloomPushConstants pc;
 
 
 // https://learnopengl.com/Guest-Articles/2022/Phys.-Based-Bloom
-[numthreads(16, 16, 1)]
+[numthreads(8, 8, 1)]
 void cs_main(uint3 GlobalInvocationID : SV_DispatchThreadID)
 {
   
@@ -92,6 +92,8 @@ void cs_main(uint3 GlobalInvocationID : SV_DispatchThreadID)
     upsample += (b + d + f + h) * 2.0;
     upsample += (a + c + g + i);
     upsample *= 1.0 / 16.0;
+
+    //upsample += Input.SampleLevel(Input_sm, texCoord, 0).rgb;
 
     Output[GlobalInvocationID.xy].rgb = upsample;
 }

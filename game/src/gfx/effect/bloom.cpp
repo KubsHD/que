@@ -139,6 +139,7 @@ void BloomEffect::init(Renderer2* r2)
 		pipeline_layout_info.pSetLayouts = sets.begin();
 		pipeline_layout_info.setLayoutCount = sets.size();
 
+
 		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &bloom_render_pipeline.layout));
 
 		ComputePipelineBuilder builder;
@@ -165,6 +166,7 @@ void BloomEffect::init(Renderer2* r2)
 	for (int i = 0; i < m_mip_count; i++)
 	{
 		BloomMip mip;
+
 
 		mip_size *= 0.5f;
 		mip_int_size /= 2;
@@ -220,8 +222,8 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 		vkCmdPushConstants(cmd, bloom_downscale_pipeline.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(BloomPushConstants), &pc);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, bloom_downscale_pipeline.layout, 0, 1, &mip.set, 0, nullptr);
 		vkCmdDispatch(cmd,
-			(mip.size.x + 15) / 16, 
-			(mip.size.y + 15) / 16,  
+			(mip.size.x + 7) / 8, 
+			(mip.size.y + 7) / 8,  
 			1
 		);
 
@@ -246,6 +248,7 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 
 
 
+
 		vkutil::transition_image(cmd, mip.texture.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		DescriptorWriter writer;
@@ -260,10 +263,12 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 		vkCmdPushConstants(cmd, bloom_upscale_pipeline.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(BloomPushConstants), &pc);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, bloom_upscale_pipeline.layout, 0, 1, &mip.upscale_set, 0, nullptr);
 		vkCmdDispatch(cmd,
-			(next_mip.size.x + 15) / 16,
-			(next_mip.size.y + 15) / 16,
+			(next_mip.size.x + 7) / 8,
+			(next_mip.size.y + 7) / 8,
 			1
 		);
+
+
 
 
 
