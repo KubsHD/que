@@ -91,6 +91,7 @@ private:
 
 	glm::vec3 m_camera_position;
 public:
+	GPUImage depth_prepass;
 
 	GPUImage offscren_color;
 	GPUImage depth_image;

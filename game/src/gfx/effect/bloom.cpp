@@ -32,11 +32,6 @@ void BloomEffect::init(Renderer2* r2)
 
 	{
 		// downscale pipeline
-
-
-
-
-
 		DescriptorLayoutBuilder layout_builder;
 		layout_builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 		layout_builder.add_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -129,9 +124,10 @@ void BloomEffect::init(Renderer2* r2)
 		// render pipeline
 
 		DescriptorLayoutBuilder layout_builder;
-		layout_builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		layout_builder.add_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		layout_builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		layout_builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		layout_builder.add_binding(2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+
 
 		bloom_render_set_layout = layout_builder.build(GfxDevice::device, VK_SHADER_STAGE_COMPUTE_BIT);
 		bloom_render_set = r2->global_descriptor_allocator.allocate(GfxDevice::device, bloom_render_set_layout);
@@ -161,6 +157,7 @@ void BloomEffect::init(Renderer2* r2)
 
 	// generate mips
 	mips.reserve(m_mip_count);
+
 
 	Vec2 mip_size = { r2->depth_image.size.width, r2->depth_image.size.height };
 	glm::ivec2 mip_int_size = { r2->depth_image.size.width, r2->depth_image.size.height };
@@ -249,7 +246,6 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 
 
 
-
 		vkutil::transition_image(cmd, mip.texture.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		DescriptorWriter writer;
@@ -271,11 +267,6 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 
 
 
-
-
-
-
-
 		VkMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 		barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
@@ -285,9 +276,10 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 	}
 
 	DescriptorWriter writer;
-	writer.write_storage_image(0, input.view, VK_IMAGE_LAYOUT_GENERAL);
-	writer.write_storage_image(1, mips[0].texture.view, VK_IMAGE_LAYOUT_GENERAL);
+	writer.write_image(0, input.view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	writer.write_image(1, mips[0].texture.view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	writer.write_storage_image(2, output.view, VK_IMAGE_LAYOUT_GENERAL);
+
 
 	writer.update_set(GfxDevice::device, bloom_render_set);
 
@@ -302,6 +294,7 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 
 	vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &barrier, 0, nullptr, 0, nullptr);
 }
+
 
 void BloomEffect::update()
 {

@@ -192,8 +192,10 @@ void DebugRenderer::destroy()
 	GfxDevice::destroy_buffer(m_im3d_buffer);
 	vkDestroyPipeline(GfxDevice::device, m_triangles_pipeline.pipeline, nullptr);
 	vkDestroyPipeline(GfxDevice::device, m_lines_pipeline.pipeline, nullptr);
+	vkDestroyPipeline(GfxDevice::device, m_points_pipeline.pipeline, nullptr);
 	vkDestroyPipelineLayout(GfxDevice::device, m_triangles_pipeline.layout, nullptr);
 	vkDestroyPipelineLayout(GfxDevice::device, m_lines_pipeline.layout, nullptr);
+	vkDestroyPipelineLayout(GfxDevice::device, m_points_pipeline.layout, nullptr);
 	vkDestroyDescriptorSetLayout(GfxDevice::device, m_im3d_set_layout, nullptr);
 }
 
@@ -207,7 +209,6 @@ void DebugRenderer::begin_frame()
 	ad.m_viewDirection = Im3d::Vec3(0.0f, 0.0f, -1.0f);
 	ad.m_worldUp = Im3d::Vec3(0.0f, 1.0f, 0.0f);
 	ad.m_projOrtho = false;
-
 
 	Im3d::NewFrame();
 }

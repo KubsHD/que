@@ -148,4 +148,6 @@ void ShadowRenderer::destroy()
 	GfxDevice::destroy_image(directional_shadow_map);
 	vkDestroyPipelineLayout(GfxDevice::device, dir_light_sm_pipeline.layout, nullptr);
 	GfxDevice::destroy_pipeline(dir_light_sm_pipeline.pipeline);
+	vkDestroySampler(GfxDevice::device, shadow_map_sampler, nullptr);
+	
 }

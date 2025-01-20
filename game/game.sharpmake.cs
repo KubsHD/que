@@ -32,6 +32,9 @@ namespace Que
             SourceFilesExtensions.Add(".hlsl");
             SourceFilesExtensions.Add(".hlsli");
             SourceFilesExtensions.Add(".py");
+            SourceFilesExtensions.Add(".rc");
+            SourceFilesExtensions.Add(".ico");
+            SourceFilesExtensions.Add(".appxmanifest");
 
 
             var platformPath = Path.Combine(Globals.RootDirectory, "platform");
@@ -131,6 +134,8 @@ namespace Que
             conf.AddPublicDependency<Nvtt>(target);
             conf.AddPublicDependency<Ngsdk>(target);
 
+
+
             //conf.AddPublicDependency<EASTLProject>(target);
 
             // conf.Options.Add(Options.Vc.Compiler.JumboBuild.Enable);
@@ -161,6 +166,9 @@ namespace Que
             conf.Options.Add(Options.Vc.Compiler.RTTI.Enable);
 
             conf.SourceFilesBuildExclude.Add(Path.Combine(Android.GlobalSettings.NdkRoot, @"sources\android\native_app_glue\android_native_app_glue.c"));
+            
+            conf.ResourceIncludePaths.Add(@"[project.SourceRootPath]\..\platform\windows\game.rc");
+
 
             var realProjectPath = ResolveString(SharpmakeCsProjectPath, conf, target);
 

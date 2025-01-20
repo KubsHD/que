@@ -21,8 +21,7 @@
 #include <core/level.h>
 
 static Level level;
-
-static Model test_cube;
+static Model lamp;
 
 void DevScene::init()
 {
@@ -57,8 +56,12 @@ void DevScene::init()
 
 	level = core::load_level("level/demo/demo.level", this);
 
-	test_cube = engine.asset->load_model_json("models/blocks/brick/Cube.model");
-	game::tmpl::create_block(*this, glm::vec3(0, 3, 0), &test_cube, nullptr);
+	lamp = engine.asset->load_model_json("models/env/lamp/env_industrial_light.model");
+	auto ent = create("lamp");
+	ent->position = glm::vec3(0, 0, 2);
+	ent->scale = glm::vec3(0.01f);
+	ent->rotation = glm::quat(glm::vec3(0, glm::radians(180.0f), 0));
+	ent->add<MeshComponent>(MeshComponent(&lamp));
 }
 
 void DevScene::update()

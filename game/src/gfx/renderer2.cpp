@@ -63,11 +63,16 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	ctx = TracyVkContext(GfxDevice::physical_device, GfxDevice::device, m_queue, frame.main_command_buffer);
 
-	offscren_color = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, color_format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	offscren_color = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, color_format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-	offscreen_tonemapped = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, swapchain_info.swapchainFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	offscreen_tonemapped = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, swapchain_info.swapchainFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
 	depth_image = GfxDevice::create_image(VkExtent2D{(uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height},VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depth_prepass = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+
+	GfxDevice::set_debug_name(depth_prepass.image, "Depth prepass image");
+	GfxDevice::set_debug_name(depth_prepass.view, "Depth prepass view");
 
 	GfxDevice::set_debug_name(offscren_color.image, "Offscreen color image");
 	GfxDevice::set_debug_name(offscren_color.view, "Offscreen color view");
@@ -94,6 +99,7 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 		GfxDevice::destroy_image(offscren_color);
 		GfxDevice::destroy_image(offscreen_tonemapped);
 		GfxDevice::destroy_image(depth_image);
+		GfxDevice::destroy_image(depth_prepass);
 	});
 }
 
@@ -113,6 +119,8 @@ Renderer2::~Renderer2()
 	vkDestroySemaphore(GfxDevice::device, frame.swapchain_semaphore, nullptr);
 	vkDestroySemaphore(GfxDevice::device, frame.render_semaphore, nullptr);
 	vkDestroyCommandPool(GfxDevice::device, frame.command_pool, nullptr);
+
+	TracyVkDestroy(ctx);
 }
 
 void Renderer2::update()
@@ -424,9 +432,6 @@ void Renderer2::create_pipelines()
 {
 	m_scene_data_gpu = GfxDevice::create_buffer(sizeof(gfx::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
-	
-
-
 
 	mat_unlit.create(this);
 	mat_lit.create(this);
@@ -434,6 +439,7 @@ void Renderer2::create_pipelines()
 	main_deletion_queue.push_function([&]() {
 		GfxDevice::destroy_buffer(m_scene_data_gpu);
 		mat_unlit.clear(GfxDevice::device);
+		mat_lit.clear(GfxDevice::device);
 	});
 }
 
@@ -513,6 +519,7 @@ void Renderer2::create_default_textures()
 	main_deletion_queue.push_function([&]() {
 		vkDestroySampler(GfxDevice::device, default_sampler_nearest, nullptr);
 		vkDestroySampler(GfxDevice::device, default_sampler_linear, nullptr);
+		vkDestroySampler(GfxDevice::device, default_sampler_linear_clamp, nullptr);
 
 		GfxDevice::destroy_image(texture_checker);
 		GfxDevice::destroy_image(texture_black);

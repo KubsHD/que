@@ -133,7 +133,7 @@ std::vector<char> AssetManager::read_all_bytes_raw(String path)
 	AAsset_close(file);
 	return binary;
 #else
-	if (!fs::exists(path))
+	if (!fs::exists(path)) 
 		abort();
 
 	std::ifstream stream(path, std::fstream::in | std::fstream::binary | std::fstream::ate);
@@ -474,9 +474,22 @@ Model AssetManager::load_model_json(Path path)
 			if (shader_type == "lit")
 			{
 				MAT_Lit::Resoruces rs;
-				rs.diffuse = load_texture_c(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
-				rs.normal = load_texture_c(desc_directory + "/" + (String)material["normal"], TT_NORMAL);
-				rs.orm = load_texture_c(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+
+				if (material.contains("diffuse"))
+					rs.diffuse = load_texture_c(desc_directory + "/" + (String)material["diffuse"], TT_DIFFUSE);
+				else
+					rs.diffuse = m_renderer_reference->texture_black;
+
+
+				if (material.contains("normal"))
+					rs.normal = load_texture_c(desc_directory + "/" + (String)material["normal"], TT_NORMAL);
+				else
+					rs.normal = m_renderer_reference->texture_normal;
+
+				if (material.contains("orm"))
+					rs.orm = load_texture_c(desc_directory + "/" + (String)material["orm"], TT_DIFFUSE);
+				else
+					rs.orm = m_renderer_reference->texture_black;
 
 				if (material.contains("emission"))
 					rs.emission = load_texture_c(desc_directory + "/" + (String)material["emission"], TT_DIFFUSE);

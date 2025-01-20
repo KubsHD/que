@@ -188,6 +188,9 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 	VkPhysicalDeviceFeatures features{};
 	features.samplerAnisotropy = true;
 
+	VkPhysicalDeviceVulkan12Features features12{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+	features12.scalarBlockLayout = true;
+
 	VkPhysicalDeviceVulkan13Features features13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
 	features13.dynamicRendering = true;
 	features13.synchronization2 = true;
@@ -198,6 +201,7 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 		.defer_surface_initialization()
 		.defer_surface_initialization()
 		.set_required_features(features)
+		.set_required_features_12(features12)
 		.set_required_features_13(features13)
 		.add_desired_extension(VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME)
 		.set_minimum_version(1, 3)
