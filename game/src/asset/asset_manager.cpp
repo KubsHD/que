@@ -391,6 +391,9 @@ Model AssetManager::load_model_json(Path path)
 {
 	QUE_PROFILE;
 
+	if (!fs::exists(root_path / path))
+		MessageBoxExA(NULL, path.string().c_str(), "Model file does not exist", MB_ICONERROR, MB_OK);
+
 	if (auto cached = try_cache_load(path.string(), m_model_cache))
 	{
 		return *cached;

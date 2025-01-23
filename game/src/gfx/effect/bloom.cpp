@@ -140,9 +140,11 @@ void BloomEffect::init(Renderer2* r2)
 		pipeline_layout_info.setLayoutCount = sets.size();
 
 
+
 		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &bloom_render_pipeline.layout));
 
 		ComputePipelineBuilder builder;
+
 
 		auto cs = PipelineBuilder::load_shader_module("shader/effect/bloom_render.cs_c", GfxDevice::device);
 
