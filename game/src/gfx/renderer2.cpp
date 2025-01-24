@@ -174,6 +174,12 @@ void Renderer2::load_default_resources()
 
 }
 
+void Renderer2::wait_for_frame()
+{
+	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
+	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
+}
+
 int _frameNumber = 0;
 
 void Renderer2::register_mesh(MeshComponent* mc)
@@ -196,147 +202,78 @@ Vec3 Renderer2::get_camera_position()
 	return m_camera_position;
 }
 
+static GPUImage last_image;
+static uint32_t last_image_index;
+
+void Renderer2::present(VkSwapchainKHR swp)
+{
+	const VkSemaphore waitSemaphores[] = { frame.render_semaphore };
+
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.pNext = nullptr;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &swp;
+	presentInfo.pImageIndices = &last_image_index;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = waitSemaphores;
+
+	vkQueuePresentKHR(m_queue, &presentInfo);
+}
+
+
+GPUImage Renderer2::acquire_image(vkb::Swapchain& swapchain)
+{
+	VkResult result = vkAcquireNextImageKHR(
+		GfxDevice::device,
+		swapchain.swapchain,
+		0,
+		frame.swapchain_semaphore,
+		VK_NULL_HANDLE,
+		&last_image_index
+	);
+
+
+
+	last_image.image = swapchain.get_images().value()[last_image_index];
+	last_image.view = swapchain.get_image_views().value()[last_image_index];
+
+	return last_image;
+}
+
 void Renderer2::draw(RenderTarget rt, CameraRenderData view)
 {
 	QUE_PROFILE;
 
-	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
-	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
-
-	VkCommandBuffer cmd = frame.main_command_buffer;
-	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
-
-	m_scene_data_cpu.viewProj = view.projection * view.view;
-	m_scene_data_cpu.view = view.view;
-	m_scene_data_cpu.proj = view.projection;
-
-	m_scene_data_cpu.camPos = glm::vec3(m_camera_position) + view.position;
-
-	// fill lights
-	m_scene_data_cpu.pointLightCount = m_point_lights.size();
-	m_scene_data_cpu.spotLightCount = m_spot_lights.size();
-
-
-	int i = 0;
-	for (auto& [uuid, light] : m_point_lights)
-	{
-		m_scene_data_cpu.pointLight[i] = light;
-		i++;
-	}
-
-	i = 0;
-	for (auto& [uuid, light] : m_spot_lights)
-	{
-		m_scene_data_cpu.spotLight[i] = light;
-		i++;
-	}
-
-	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
-
-	VkClearValue clearValue;
-	float flash = std::abs(std::sin(_frameNumber / 120.f));
-	clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
+	draw_internal(rt, view);
 	
-	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(offscren_color.view, &clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	VkCommandBufferSubmitInfo cmdSubmitInfo = vkinit::command_buffer_submit_info(frame.main_command_buffer);
 
-	VkExtent2D _windowExtent = {rt.size.x, rt.size.y };
-	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
-
-	m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
-
-	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
-
-	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
-
-	//set dynamic viewport and scissor
-	VkViewport viewport = {};
-	viewport.x = 0;
-	viewport.y = 0;
-	viewport.width = rt.size.x;
-	viewport.height = rt.size.y;
-	viewport.minDepth = 0.f;
-	viewport.maxDepth = 1.f;
-
-	VkRect2D scissor = {};
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	scissor.extent.width = rt.size.x;
-	scissor.extent.height = rt.size.y;
-
-	// main pass
-	vkCmdBeginRendering(cmd, &render_info);
-
-	vkCmdSetViewport(cmd, 0, 1, &viewport);
-	vkCmdSetScissor(cmd, 0, 1, &scissor);
+	auto waitInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, frame.swapchain_semaphore);
+	auto signalInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame.render_semaphore);
 
 
-	draw_internal(cmd);
-
-	vkCmdEndRendering(cmd);
-	// main pass end
-
-
-
-
-
-	// bloom pass
-	vkutil::transition_image(cmd, offscreen_tonemapped.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-
-	bloom.render(cmd, offscren_color, offscreen_tonemapped);
-
-	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	vkutil::transition_image(cmd, offscreen_tonemapped.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	// bloom pass end
-
-
-
-	// offscreen to swapchain 
-	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vkutil::copy_image_to_image(cmd, offscreen_tonemapped.image, rt.image.image, _windowExtent, _windowExtent);
-	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	// offscreen to swapchain  end
-
-	// debug pass
-	colorAttachment = vkinit::attachment_info(rt.image.view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-
-	render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
-
-
-
-
-
-	vkCmdBeginRendering(cmd, &render_info);
-
-	sky.draw(*this, cmd);
-	debug->render(cmd, render_info);
-
-
-	vkCmdEndRendering(cmd);
-	// debug pass end
-
-	TracyVkCollect(ctx, cmd);
-
-	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
-
-	VkCommandBufferSubmitInfo cmdSubmitInfo = vkinit::command_buffer_submit_info(cmd);
-
-
-	VkSubmitInfo2 submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-	submitInfo.commandBufferInfoCount = 1;
-	submitInfo.pCommandBufferInfos = &cmdSubmitInfo;
-
+	VkSubmitInfo2 submitInfo = vkinit::submit_info(&cmdSubmitInfo, &signalInfo, &waitInfo);
 
 	VULKAN_CHECK_NOMSG(vkQueueSubmit2(m_queue, 1, &submitInfo, frame.main_fence));
 	_frameNumber++;
 
+}
+
+void Renderer2::draw_xr(RenderTarget rt, CameraRenderData crd)
+{
+	QUE_PROFILE;
+
+	wait_for_frame();
+
+	draw_internal(rt, crd);
+
+	VkCommandBufferSubmitInfo cmdSubmitInfo = vkinit::command_buffer_submit_info(frame.main_command_buffer);
+
+	VkSubmitInfo2 submitInfo = vkinit::submit_info(&cmdSubmitInfo, nullptr, nullptr);
+
+	VULKAN_CHECK_NOMSG(vkQueueSubmit2(m_queue, 1, &submitInfo, frame.main_fence));
+	_frameNumber++;
 }
 
 GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices)
@@ -381,56 +318,174 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 	return meshBuffer;
 }
 
-void Renderer2::draw_internal(VkCommandBuffer cmd)
+void Renderer2::draw_internal(RenderTarget rt, CameraRenderData crd)
 {
 
-	TracyVkZone(ctx, cmd, "Render");
+	VkCommandBuffer cmd = frame.main_command_buffer;
+	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
 
+
+
+	m_scene_data_cpu.viewProj = crd.projection * crd.view;
+	m_scene_data_cpu.view = crd.view;
+	m_scene_data_cpu.proj = crd.projection;
+
+	m_scene_data_cpu.camPos = glm::vec3(m_camera_position) + crd.position;
+
+	// fill lights
+	m_scene_data_cpu.pointLightCount = m_point_lights.size();
+	m_scene_data_cpu.spotLightCount = m_spot_lights.size();
+
+
+	int i = 0;
+	for (auto& [uuid, light] : m_point_lights)
 	{
-		DescriptorWriter writer;
-		writer.write_buffer(0, m_scene_data_gpu.buffer, sizeof(gfx::SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		writer.write_image(1, m_shadow_renderer.directional_shadow_map.view, m_shadow_renderer.shadow_map_sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		writer.update_set(GfxDevice::device, scene_data_set);
+		m_scene_data_cpu.pointLight[i] = light;
+		i++;
 	}
 
-
-
-
-
-	GPUDrawPushConstants pc;
-	VkDeviceSize offset = 0;
-
-	auto modelsToRender = m_reg.view<core_transform_component, core_mesh_component>();
-	for (const auto&& [e, tc, mc] : modelsToRender.each())
+	i = 0;
+	for (auto& [uuid, light] : m_spot_lights)
 	{
-		tc.calculate_matrix();
-		glm::mat4 model_matrix = tc.matrix;
+		m_scene_data_cpu.spotLight[i] = light;
+		i++;
+	}
 
-		pc.model = model_matrix;
+	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-		for (auto& mesh : mc.model->meshes)
+	VkClearValue clearValue;
+	float flash = std::abs(std::sin(_frameNumber / 240.f));
+	clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
+
+	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(offscren_color.view, &clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+	VkExtent2D _windowExtent = { rt.size.x, rt.size.y };
+	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
+
+	m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
+
+	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
+
+	GfxDevice::upload_buffer(m_scene_data_gpu, 0, &m_scene_data_cpu, sizeof(gfx::SceneData));
+
+	//set dynamic viewport and scissor
+	VkViewport viewport = {};
+	viewport.x = 0;
+	viewport.y = 0;
+	viewport.width = rt.size.x;
+	viewport.height = rt.size.y;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+
+	VkRect2D scissor = {};
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	scissor.extent.width = rt.size.x;
+	scissor.extent.height = rt.size.y;
+
+	// main pass
+	vkCmdBeginRendering(cmd, &render_info);
+
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+	{
+		TracyVkZone(ctx, cmd, "Render");
+
+
 		{
-			auto minst = mc.model->materials2[mesh.material_index];
-
-			if (minst.pipeline == nullptr)
-			{
-				continue;
-			}
-
-			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->pipeline);
-
-			vkCmdBindVertexBuffers(cmd, 0, 1, &mesh.vertex_buffer.buffer, &offset);
-			vkCmdBindIndexBuffer(cmd, mesh.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->layout, 0, 1, &scene_data_set, 0, nullptr);
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->layout, 1, 1, &mc.model->materials2[mesh.material_index].material_set, 0, nullptr);
-
-			vkCmdPushConstants(cmd, minst.pipeline->layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUDrawPushConstants), &pc);
-			vkCmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0);
+			DescriptorWriter writer;
+			writer.write_buffer(0, m_scene_data_gpu.buffer, sizeof(gfx::SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+			writer.write_image(1, m_shadow_renderer.directional_shadow_map.view, m_shadow_renderer.shadow_map_sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			writer.update_set(GfxDevice::device, scene_data_set);
 		}
-	};
 
 
+
+
+
+		GPUDrawPushConstants pc;
+		VkDeviceSize offset = 0;
+
+		auto modelsToRender = m_reg.view<core_transform_component, core_mesh_component>();
+		for (const auto&& [e, tc, mc] : modelsToRender.each())
+		{
+			tc.calculate_matrix();
+			glm::mat4 model_matrix = tc.matrix;
+
+			pc.model = model_matrix;
+
+			for (auto& mesh : mc.model->meshes)
+			{
+				auto minst = mc.model->materials2[mesh.material_index];
+
+				if (minst.pipeline == nullptr)
+				{
+					continue;
+				}
+
+				vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->pipeline);
+
+				vkCmdBindVertexBuffers(cmd, 0, 1, &mesh.vertex_buffer.buffer, &offset);
+				vkCmdBindIndexBuffer(cmd, mesh.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+				vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->layout, 0, 1, &scene_data_set, 0, nullptr);
+				vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, minst.pipeline->layout, 1, 1, &mc.model->materials2[mesh.material_index].material_set, 0, nullptr);
+
+				vkCmdPushConstants(cmd, minst.pipeline->layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(GPUDrawPushConstants), &pc);
+				vkCmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0);
+			}
+		};
+
+	}
+
+	vkCmdEndRendering(cmd);
+	// main pass end
+
+
+	// bloom pass
+	vkutil::transition_image(cmd, offscreen_tonemapped.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+
+	bloom.render(cmd, offscren_color, offscreen_tonemapped);
+
+	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	vkutil::transition_image(cmd, offscreen_tonemapped.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	// bloom pass end
+
+
+
+	// offscreen to swapchain 
+	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vkutil::copy_image_to_image(cmd, offscreen_tonemapped.image, rt.image.image, _windowExtent, _windowExtent);
+	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	// offscreen to swapchain  end
+
+	// debug pass
+	colorAttachment = vkinit::attachment_info(rt.image.view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+
+	render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
+
+	vkCmdBeginRendering(cmd, &render_info);
+
+	sky.draw(*this, cmd);
+	debug->render(cmd, render_info);
+
+	vkCmdEndRendering(cmd);
+	// debug pass end
+
+
+	TracyVkCollect(ctx, cmd);
+
+	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
 }
 
 void Renderer2::create_pipelines()
@@ -505,8 +560,6 @@ void Renderer2::create_default_textures()
 
 	// samplers
 	VkSamplerCreateInfo sampl = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
-
-
 
 	sampl.magFilter = VK_FILTER_NEAREST;
 	sampl.minFilter = VK_FILTER_NEAREST;

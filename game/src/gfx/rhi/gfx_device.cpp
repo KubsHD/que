@@ -59,7 +59,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	void* pUserData) {
 
 	//	 ignore unused vertex shader input warning		steamvr ignorable validation error					ngfx-only errors
-	if (pCallbackData->messageIdNumber == 101294395 || pCallbackData->messageIdNumber == 1303270965 || pCallbackData->messageIdNumber == 657209523)
+	if (pCallbackData->messageIdNumber == -937765618 || pCallbackData->messageIdNumber == 1303270965 || pCallbackData->messageIdNumber == 657209523)
 		return VK_FALSE;
 
 	std::cerr << "ERROR: VALIDATION: " << pCallbackData->pMessage << std::endl;

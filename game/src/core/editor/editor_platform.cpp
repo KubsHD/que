@@ -41,9 +41,9 @@ void EditorPlatform::init(entt::registry& reg)
 
 	vkb_swapchain = swapchainBuilder
 		//.use_default_format_selection()
-		.set_desired_format(VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
+		.set_desired_format(VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
 		//use vsync present mode
-		.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+		.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR)
 		.set_desired_extent(width, height)
 		.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 		.build()
@@ -56,7 +56,7 @@ void EditorPlatform::init(entt::registry& reg)
 	rt.size.x = vkb_swapchain.extent.width;
 	rt.size.y = vkb_swapchain.extent.height;
 
-	rt.format = VK_FORMAT_B8G8R8A8_UNORM;
+	rt.format = vkb_swapchain.image_format;
 
 	// init renderer
 	m_renderer = new Renderer2(rt, reg);
@@ -113,9 +113,12 @@ void EditorPlatform::render(Camera cam)
 	crd.view = glm::lookAt(cam.position, cam.position + cam.rotation * glm::vec3(0, 0, -1), cam.rotation * glm::vec3(0, 1, 0));
 
 
-	m_renderer->draw(rt, crd);
 
-	
+	m_renderer->wait_for_frame();
+	rt.image = m_renderer->acquire_image(vkb_swapchain);
+
+	m_renderer->draw(rt, crd);
+	m_renderer->present(vkb_swapchain.swapchain);
 }
 
 std::vector<String> EditorPlatform::get_requested_extensions()

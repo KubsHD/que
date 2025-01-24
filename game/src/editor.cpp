@@ -47,7 +47,11 @@ void Editor::run()
 	while (g_editor_running)
 	{
 		g_editor_running = ed_platform->poll();
-		ed_platform->render({});
+
+		Camera cam;
+		cam.position = Vec3(0, 0, -10);
+
+		ed_platform->render(cam);
 	}
 }
 

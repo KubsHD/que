@@ -39,5 +39,7 @@ private:
 	ImguiRenderer* m_imgui_renderer;
 
 	vkb::Swapchain vkb_swapchain;
+	int image_index;
+
 	RenderTarget rt;
 };

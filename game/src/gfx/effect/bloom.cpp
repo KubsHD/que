@@ -179,6 +179,10 @@ void BloomEffect::init(Renderer2* r2)
 		mip.set = r2->global_descriptor_allocator.allocate(GfxDevice::device, bloom_set_layout);
 		mip.upscale_set = r2->global_descriptor_allocator.allocate(GfxDevice::device, bloom_upscale_set_layout);
 
+		GfxDevice::set_debug_name(mip.texture.image, "Bloom mip texture: " + std::to_string(i));
+
+		GfxDevice::set_debug_name(mip.texture.view, "Bloom mip texture view: " + std::to_string(i));
+
 		mips.push_back(mip);
 	}
 
@@ -242,14 +246,9 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 	}
 
 	for (int i = mips.size() - 1; i > 0; i--)
-
 	{
 		const auto& mip = mips[i];
 		const auto& next_mip = mips[i - 1];
-
-
-
-
 
 		vkutil::transition_image(cmd, mip.texture.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -270,10 +269,6 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 			1
 		);
 
-
-
-
-
 		VkMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 		barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
@@ -287,12 +282,16 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 	writer.write_image(1, mips[0].texture.view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	writer.write_storage_image(2, output.view, VK_IMAGE_LAYOUT_GENERAL);
 
-
 	writer.update_set(GfxDevice::device, bloom_render_set);
+
+	vkutil::transition_image(cmd, input.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	vkutil::transition_image(cmd, mips[0].texture.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, bloom_render_pipeline.pipeline);
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, bloom_render_pipeline.layout, 0, 1, &bloom_render_set, 0, nullptr);
 	vkCmdDispatch(cmd, original_size.x / 16, original_size.y / 16, 1);
+
 
 	VkMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -300,6 +299,8 @@ void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 	vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &barrier, 0, nullptr, 0, nullptr);
+
+	vkutil::transition_image(cmd, input.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 

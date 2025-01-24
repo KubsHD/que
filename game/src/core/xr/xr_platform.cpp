@@ -314,7 +314,7 @@ void OpenXRPlatform::render()
 
 		rt.format = colorSwapchainInfo.swapchainFormat;
 
-		m_renderer->draw(rt, crd);
+		m_renderer->draw_xr(rt, crd);
 
 		XrSwapchainImageReleaseInfo releaseImageInfo{};
 		releaseImageInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;

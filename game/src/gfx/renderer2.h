@@ -55,15 +55,22 @@ public:
     Renderer2(RenderTarget rt_info, entt::registry& reg);
 	~Renderer2();
 
-	void update();
-
 	void load_default_resources();
 
+	void update();
+
+
+	void wait_for_frame();
+	GPUImage acquire_image(vkb::Swapchain& swapchain);
     void draw(RenderTarget rt, CameraRenderData view);
 
-	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
+	void draw_xr(RenderTarget rt, CameraRenderData crd);
 
+
+	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
+	
 	void register_mesh(MeshComponent* mc);
+	void unregister_mesh(MeshComponent* param1);
 
 	DeletionQueue main_deletion_queue;
 
@@ -74,14 +81,13 @@ public:
 
 	DebugRenderer* debug;
 
-
 	// camera
 	void set_camera_position(glm::vec3 pos);
-	void unregister_mesh(MeshComponent* param1);
 	Vec3 get_camera_position();
+	void present(VkSwapchainKHR swp);
 private:
 	void init_internal(RenderTarget rt_info, entt::registry& reg);
-	void draw_internal(VkCommandBuffer cmd);
+	void draw_internal(RenderTarget rt, CameraRenderData crd);
 
 	VkQueue m_queue;
 	uint32_t m_queue_family;
