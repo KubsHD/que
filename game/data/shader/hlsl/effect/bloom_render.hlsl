@@ -39,8 +39,8 @@ SamplerState BloomOutput_sm : register(s1);
 
 RWTexture2D<float4> Output : register(u2);
 
-#define bloomStrength 0.04
-#define exposure 1.5
+#define bloomStrength 0.05
+#define exposure 5.0
 
 float3 ACESFilm(float3 x)
 {

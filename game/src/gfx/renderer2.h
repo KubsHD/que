@@ -17,10 +17,16 @@
 #include "buffers.h"
 #include "light.h"
 #include "effect/bloom.h"
+#include "camera.h"
 
 struct DebugRenderer;
 class MeshComponent;
 
+struct RenderTarget {
+	GPUImage image;
+	Vec2 size;
+	VkFormat format;
+};
 
 struct FrameData {
 	VkCommandPool command_pool;
@@ -45,14 +51,15 @@ struct GPUMeshBuffer {
 
 class Renderer2 {
 public:
-    Renderer2(Swapchain& swapchain_info, entt::registry& reg);
+	Renderer2(Swapchain& swp, entt::registry& reg);
+    Renderer2(RenderTarget rt_info, entt::registry& reg);
 	~Renderer2();
 
 	void update();
 
 	void load_default_resources();
 
-    void draw(Swapchain& swp, int image_index,XrView view);
+    void draw(RenderTarget rt, CameraRenderData view);
 
 	GPUMeshBuffer upload_mesh(std::vector<uint32_t> indices, std::vector<Vertex2> vertices);
 
@@ -73,6 +80,7 @@ public:
 	void unregister_mesh(MeshComponent* param1);
 	Vec3 get_camera_position();
 private:
+	void init_internal(RenderTarget rt_info, entt::registry& reg);
 	void draw_internal(VkCommandBuffer cmd);
 
 	VkQueue m_queue;

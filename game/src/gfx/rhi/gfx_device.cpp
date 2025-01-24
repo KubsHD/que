@@ -187,6 +187,7 @@ void GfxDevice::Init(const std::vector<std::string>& requested_extensions)
 
 	VkPhysicalDeviceFeatures features{};
 	features.samplerAnisotropy = true;
+	features.geometryShader = true;
 
 	VkPhysicalDeviceVulkan12Features features12{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
 	features12.scalarBlockLayout = true;

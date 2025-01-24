@@ -10,6 +10,8 @@
 #include <base/numerics/safe_conversions.h>
 
 #include <entt/entt.hpp>
+#include <common/glm_helpers.h>
+#include <gfx/camera.h>
 
 #if defined(__ANDROID__)
 android_app* OpenXRPlatform::androidApp = nullptr;
@@ -281,7 +283,38 @@ void OpenXRPlatform::render()
 		waitImageInfo.timeout = std::numeric_limits<int64_t>::max();
 		OPENXR_CHECK(xrWaitSwapchainImage(colorSwapchainInfo.swapchain, &waitImageInfo), "Failed to wait for Image from the Color Swapchain");
 		
-		m_renderer->draw(colorSwapchainInfo, colorImageIndex, views[i]);
+
+		// process view data
+		auto& view = views[i];
+
+		glm::mat4 projection = glm::to_glm_projection(view.fov);
+
+		auto camera_position = m_renderer->get_camera_position() + glm::vec3(view.pose.position.x, view.pose.position.y, view.pose.position.z);
+
+		// https://gitlab.com/amini-allight/openxr-tutorial/-/blob/master/examples/part-9/openxr_example.cpp?ref_type=heads#L1434
+		glm::mat4 viewMatrix = glm::inverse(
+			glm::translate(glm::mat4(1.0f), glm::vec3(camera_position))
+			* glm::mat4_cast(glm::quat(view.pose.orientation.w, view.pose.orientation.x, view.pose.orientation.y, view.pose.orientation.z))
+		);
+
+
+		CameraRenderData crd;
+		crd.model = glm::mat4(1.0f);
+		crd.projection = projection;
+		crd.view = viewMatrix;
+		crd.position = glm::vec3(camera_position);
+
+		RenderTarget rt;
+
+		rt.image.image = colorSwapchainInfo.swapchainImageHandles[colorImageIndex].image;
+		rt.image.view = colorSwapchainInfo.swapchainImages[colorImageIndex];
+
+		rt.size.x = colorSwapchainInfo.width;
+		rt.size.y = colorSwapchainInfo.height;
+
+		rt.format = colorSwapchainInfo.swapchainFormat;
+
+		m_renderer->draw(rt, crd);
 
 		XrSwapchainImageReleaseInfo releaseImageInfo{};
 		releaseImageInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;

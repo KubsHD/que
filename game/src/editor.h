@@ -3,6 +3,8 @@
 #include <core/types.h>
 #include <core/editor/editor_platform.h>
 
+class AudioSystem;
+
 class Editor {
 public:
 	Editor();
@@ -13,4 +15,6 @@ public:
 	EditorPlatform* ed_platform;
 
 	entt::registry reg;
+
+	AudioSystem* m_audio_system;
 };

@@ -72,7 +72,7 @@ Texture2D tex_emission : register(t4);
 [[vk::combinedImageSampler]]
 SamplerState tex_emission_sm : register(s4);
 
-#define BLOOM_STRENGTH 15
+#define BLOOM_STRENGTH 10.0
 
 float3 calc_point_light(PointLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0)
 {

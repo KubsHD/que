@@ -320,86 +320,64 @@ void ResourceCompiler::Compile(fs::path source_data_path, fs::path output_dir)
 {
 	QUE_PROFILE;
 
-	// Get the command-line string
-	LPWSTR commandLine = GetCommandLineW();
+	std::filesystem::path shader_dir = source_data_path / "shader/hlsl";
+	std::vector<fs::path> paths;
+	std::vector<fs::path> texture_paths;
+	std::vector<fs::path> skies_path;
 
-	// Parse the command line into an array of arguments
-	int argc;
-	LPWSTR* argv = CommandLineToArgvW(commandLine, &argc);
-	if (argv == nullptr) {
-		std::cerr << "CommandLineToArgvW failed\n";
-	}
+	std::vector<fs::path> copy_paths;
 
-	if (argc < 2)
-		return;
-
-	// Store arguments in a vector of std::string
-	std::vector<std::string> args;
-	for (int i = 0; i < argc; ++i) {
-		args.push_back(ws2s(argv[i])); // Convert wide string to std::string
-	}
-
-	if (args[1] == "sc")
+	for (const auto& entry : std::filesystem::directory_iterator(shader_dir))
 	{
-		std::filesystem::path shader_dir = source_data_path / "shader/hlsl";
-		std::vector<fs::path> paths;
-		std::vector<fs::path> texture_paths;
-		std::vector<fs::path> skies_path;
-
-		std::vector<fs::path> copy_paths;
-
-		for (const auto& entry : std::filesystem::directory_iterator(shader_dir))
+		if (entry.is_regular_file())
 		{
-			if (entry.is_regular_file())
-			{
-				auto path = entry.path();
-				auto ext = path.extension();
+			auto path = entry.path();
+			auto ext = path.extension();
 
-				if (ext == ".hlsl")
-				{
-					paths.push_back(path);
-				}
+			if (ext == ".hlsl")
+			{
+				paths.push_back(path);
 			}
 		}
+	}
 
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(source_data_path))
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(source_data_path))
+	{
+		if (entry.is_regular_file())
 		{
-			if (entry.is_regular_file())
+			auto path = entry.path();
+			auto ext = path.extension();
+
+			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp")
 			{
-				auto path = entry.path();
-				auto ext = path.extension();
-
-				if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp")
-				{
-					texture_paths.push_back(path);
-					continue;
-				}
-
-				if (ext == ".sky")
-				{
-					skies_path.push_back(path);
-					continue;
-				}
-
-				if (ext == ".hdr" || ext == ".tex" || ext == ".blend" || ext == ".blend1")
-				{
-					continue;
-				}
-
-				copy_paths.push_back(path);
+				texture_paths.push_back(path);
+				continue;
 			}
-		}
 
-		//compile_shaders(paths);
-		compile_textures(source_data_path, texture_paths, output_dir);
-		compile_skies(source_data_path, skies_path, output_dir);
+			if (ext == ".sky")
+			{
+				skies_path.push_back(path);
+				continue;
+			}
 
-		for (const auto& path : copy_paths)
-		{
-			auto asset_relative_path = path.lexically_relative(source_data_path);
-			auto output_path = output_dir / asset_relative_path;
-			fs::create_directories(output_path.parent_path());
-			fs::copy_file(path, output_path, fs::copy_options::overwrite_existing);
+			if (ext == ".hdr" || ext == ".tex" || ext == ".blend" || ext == ".blend1" || ext == ".hlsl" || ext == ".hlsli")
+			{
+				continue;
+			}
+
+			copy_paths.push_back(path);
 		}
+	}
+
+	//compile_shaders(paths);
+	compile_textures(source_data_path, texture_paths, output_dir);
+	compile_skies(source_data_path, skies_path, output_dir);
+
+	for (const auto& path : copy_paths)
+	{
+		auto asset_relative_path = path.lexically_relative(source_data_path);
+		auto output_path = output_dir / asset_relative_path;
+		fs::create_directories(output_path.parent_path());
+		fs::copy_file(path, output_path, fs::copy_options::overwrite_existing);
 	}
 }

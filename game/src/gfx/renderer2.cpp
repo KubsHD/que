@@ -23,11 +23,17 @@
 #include "debug_renderer.h"
 
 #include <tracy/TracyVulkan.hpp>
+#include "camera.h"
 
 
 tracy::VkCtx* ctx;
 
-Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg)
+Renderer2::Renderer2(RenderTarget rt_info, entt::registry& reg) : m_reg(reg)
+{
+	init_internal(rt_info, reg);
+}
+
+void Renderer2::init_internal(RenderTarget rt_info, entt::registry & reg)
 {
 	QUE_PROFILE;
 
@@ -63,12 +69,12 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 
 	ctx = TracyVkContext(GfxDevice::physical_device, GfxDevice::device, m_queue, frame.main_command_buffer);
 
-	offscren_color = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, color_format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	offscren_color = GfxDevice::create_image(VkExtent2D{ (uint32_t)rt_info.size.x, (uint32_t)rt_info.size.y }, color_format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-	offscreen_tonemapped = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, swapchain_info.swapchainFormat, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	offscreen_tonemapped = GfxDevice::create_image(VkExtent2D{ (uint32_t)rt_info.size.x, (uint32_t)rt_info.size.y }, rt_info.format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-	depth_image = GfxDevice::create_image(VkExtent2D{(uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height},VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-	depth_prepass = GfxDevice::create_image(VkExtent2D{ (uint32_t)swapchain_info.width, (uint32_t)swapchain_info.height }, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depth_image = GfxDevice::create_image(VkExtent2D{(uint32_t)rt_info.size.x, (uint32_t)rt_info.size.y},VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depth_prepass = GfxDevice::create_image(VkExtent2D{ (uint32_t)rt_info.size.x, (uint32_t)rt_info.size.y }, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
 	GfxDevice::set_debug_name(depth_prepass.image, "Depth prepass image");
@@ -103,6 +109,18 @@ Renderer2::Renderer2(Swapchain& swapchain_info, entt::registry& reg) : m_reg(reg
 	});
 }
 
+Renderer2::Renderer2(Swapchain& swp, entt::registry& reg) : m_reg(reg)
+{
+	RenderTarget rt;
+
+	rt.size.x = swp.width;
+	rt.size.y = swp.height;
+
+	rt.format = swp.swapchainFormat;
+
+	init_internal(rt, reg);
+}
+
 Renderer2::~Renderer2()
 {
 	main_deletion_queue.execute();
@@ -112,8 +130,6 @@ Renderer2::~Renderer2()
 	delete debug;
 
 	bloom.destroy();
-
-
 
 	vkDestroyFence(GfxDevice::device, frame.main_fence, nullptr);
 	vkDestroySemaphore(GfxDevice::device, frame.swapchain_semaphore, nullptr);
@@ -139,7 +155,6 @@ void Renderer2::update()
 
 			m_spot_lights[uc.uuid] = gfx::SpotLight{ tc.position, direction, lc.color, lc.intensity, lc.range, lc.angle };
 		}
-
 
 
 		if (lc.type == LightType::Point)
@@ -181,7 +196,7 @@ Vec3 Renderer2::get_camera_position()
 	return m_camera_position;
 }
 
-void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
+void Renderer2::draw(RenderTarget rt, CameraRenderData view)
 {
 	QUE_PROFILE;
 
@@ -191,21 +206,11 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkCommandBuffer cmd = frame.main_command_buffer;
 	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
 
-	glm::mat4 projection = glm::to_glm_projection(view.fov);
+	m_scene_data_cpu.viewProj = view.projection * view.view;
+	m_scene_data_cpu.view = view.view;
+	m_scene_data_cpu.proj = view.projection;
 
-	auto camera_position = glm::vec4(m_camera_position, 0.0f) + glm::vec4(view.pose.position.x, view.pose.position.y, view.pose.position.z, 1.0f);
-
-	// https://gitlab.com/amini-allight/openxr-tutorial/-/blob/master/examples/part-9/openxr_example.cpp?ref_type=heads#L1434
-	glm::mat4 viewMatrix = glm::inverse(
-		glm::translate(glm::mat4(1.0f), glm::vec3(camera_position))
-		* glm::mat4_cast(glm::quat(view.pose.orientation.w, view.pose.orientation.x, view.pose.orientation.y, view.pose.orientation.z))
-	);
-
-	m_scene_data_cpu.viewProj = projection * viewMatrix;
-	m_scene_data_cpu.view = viewMatrix;
-	m_scene_data_cpu.proj = projection;
-
-	m_scene_data_cpu.camPos = camera_position;
+	m_scene_data_cpu.camPos = glm::vec3(m_camera_position) + view.position;
 
 	// fill lights
 	m_scene_data_cpu.pointLightCount = m_point_lights.size();
@@ -236,7 +241,7 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(offscren_color.view, &clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-	VkExtent2D _windowExtent = {swp.width, swp.height };
+	VkExtent2D _windowExtent = {rt.size.x, rt.size.y };
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
 	m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
@@ -249,16 +254,16 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	VkViewport viewport = {};
 	viewport.x = 0;
 	viewport.y = 0;
-	viewport.width = swp.width;
-	viewport.height = swp.height;
+	viewport.width = rt.size.x;
+	viewport.height = rt.size.y;
 	viewport.minDepth = 0.f;
 	viewport.maxDepth = 1.f;
 
 	VkRect2D scissor = {};
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
-	scissor.extent.width = swp.width;
-	scissor.extent.height = swp.height;
+	scissor.extent.width = rt.size.x;
+	scissor.extent.height = rt.size.y;
 
 	// main pass
 	vkCmdBeginRendering(cmd, &render_info);
@@ -291,13 +296,13 @@ void Renderer2::draw(Swapchain& swp, int image_index, XrView view)
 	// offscreen to swapchain 
 	vkutil::transition_image(cmd, offscren_color.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-	vkutil::transition_image(cmd, swp.swapchainImageHandles[image_index].image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	vkutil::copy_image_to_image(cmd, offscreen_tonemapped.image, swp.swapchainImageHandles[image_index].image, _windowExtent, _windowExtent);
-	vkutil::transition_image(cmd, swp.swapchainImageHandles[image_index].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vkutil::copy_image_to_image(cmd, offscreen_tonemapped.image, rt.image.image, _windowExtent, _windowExtent);
+	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	// offscreen to swapchain  end
 
 	// debug pass
-	colorAttachment = vkinit::attachment_info(swp.swapchainImages[image_index], nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	colorAttachment = vkinit::attachment_info(rt.image.view, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	depthAttachment = vkinit::depth_attachment_info(depth_image.view, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 

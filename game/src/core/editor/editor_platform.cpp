@@ -4,8 +4,11 @@
 #include <SDL3/SDL.h>
 #include <gfx/rhi/gfx_device.h>
 #include <gfx/renderer2.h>
+#include <gfx/imgui_renderer.h>
 #include <SDL3/SDL_vulkan.h>
 #include <lib/imgui/imgui_impl_vulkan.h>
+#include <lib/imgui/imgui_impl_sdl3.h>
+
 
 VkSurfaceKHR surf;
 
@@ -36,7 +39,7 @@ void EditorPlatform::init(entt::registry& reg)
 
 	vkb::SwapchainBuilder swapchainBuilder{ GfxDevice::physical_device, GfxDevice::device, surf };
 
-	vkb::Swapchain vkbSwapchain = swapchainBuilder
+	vkb_swapchain = swapchainBuilder
 		//.use_default_format_selection()
 		.set_desired_format(VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
 		//use vsync present mode
@@ -46,25 +49,19 @@ void EditorPlatform::init(entt::registry& reg)
 		.build()
 		.value();
 
-	Swapchain sw;
 
-	sw.swapchainVk = vkbSwapchain.swapchain;
+	rt.image.image = vkb_swapchain.get_images().value()[0];
+	rt.image.view = vkb_swapchain.get_image_views().value()[0];
 
-	sw.swapchainImagesVk = vkbSwapchain.get_images().value();
-	sw.swapchainImages = vkbSwapchain.get_image_views().value();
+	rt.size.x = vkb_swapchain.extent.width;
+	rt.size.y = vkb_swapchain.extent.height;
 
-	sw.width = vkbSwapchain.extent.width;
-	sw.height = vkbSwapchain.extent.height;
-
-	sw.swapchainFormat = VK_FORMAT_B8G8R8A8_UNORM;
+	rt.format = VK_FORMAT_B8G8R8A8_UNORM;
 
 	// init renderer
-	m_renderer = new Renderer2(sw, reg);
+	m_renderer = new Renderer2(rt, reg);
 
 
-	// init imgui
-
-	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -76,6 +73,11 @@ void EditorPlatform::init(entt::registry& reg)
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
+
+	ImGui_ImplSDL3_InitForVulkan(m_internal_window);
+
+	m_imgui_renderer = new ImguiRenderer();
+	m_imgui_renderer->init(m_renderer);
 }
 
 void EditorPlatform::destroy()
@@ -101,8 +103,19 @@ bool EditorPlatform::poll()
 	return true;
 }
 
-void EditorPlatform::render()
+void EditorPlatform::render(Camera cam)
 {
+
+	CameraRenderData crd;
+
+	crd.position = cam.position;
+	crd.projection = glm::perspective(glm::radians(90.0f), 16.0f / 9.0f, 0.1f, 1000.0f);
+	crd.view = glm::lookAt(cam.position, cam.position + cam.rotation * glm::vec3(0, 0, -1), cam.rotation * glm::vec3(0, 1, 0));
+
+
+	m_renderer->draw(rt, crd);
+
+	
 }
 
 std::vector<String> EditorPlatform::get_requested_extensions()

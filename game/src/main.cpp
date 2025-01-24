@@ -72,28 +72,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	std::wstring commandLineStr(GetCommandLineW());
 
-	std::wstring arg = L"-sc";
-	if (commandLineStr.find(arg) != std::wstring::npos)
-	{
-		STARTUPINFO si{};
-		PROCESS_INFORMATION pi{};
-
-		OutputDebugString("Compiling shaders...");
-		if (!CreateProcess(NULL, "python c:\dev\git\que\game\scripts\compile_shaders.py c:\dev\git\que\game\data\shader\hlsl C:\dev\git\que\projects\Game\output\win64\Debug\shader", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
-		{
-			OutputDebugString("ERROR COMPILING SHADERS");
-		}
-		WaitForSingleObject(pi.hProcess, INFINITE);
-
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
-
-		OutputDebugString(" Done!\n");
-	}
-
 	// inject ngfx
-
-	arg = L"-ngfx";
+	auto arg = L"-ngfx";
 	if (commandLineStr.find(arg) != std::wstring::npos)
 	{
 		QUE_PROFILE_SECTION("NGFX Injection");
@@ -172,13 +152,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	auto crashpadok = start_crash_handler();
 #endif
 
-
 	DebugOutput debugOutput; // This redirects std::cerr and std::cout to the IDE's output or Android Studio's logcat.
-
 	AssetManager::PreInit();
 
 #if _DEBUG
-	ResourceCompiler::Compile(AssetManager::get_asset_dir(), ".cache");
+
+	if (commandLineStr.find(L"-rc"))
+		ResourceCompiler::Compile(AssetManager::get_asset_dir(), ".cache");
 #else
 	if (!fs::exists("data"))
 		ResourceCompiler::Compile("..\\..\\..\\..\\..\\game\\data", "data");
@@ -196,8 +176,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #endif
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
+
 #include <game.h>
 #include <editor.h>
 

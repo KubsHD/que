@@ -14,19 +14,24 @@ Editor::Editor()
 	ed_platform = new EditorPlatform();
 	ed_platform->init(reg);
 
-	AudioSystem audio_system;
+	m_audio_system = new AudioSystem();
 
-	AssetManager::Init(audio_system, *ed_platform->get_renderer());
+	AssetManager::Init(*m_audio_system, *ed_platform->get_renderer());
 	ed_platform->get_renderer()->load_default_resources();
 
-	//g_engine.audio = m_audio_system.get();
-	//g_engine.physics = m_physics_system.get();
-	//g_engine.reg = &m_registry;
-	//g_engine.input = platform->input.get();
-
+	g_engine.audio = m_audio_system;
 	g_engine.asset = new AssetManager();
 	g_engine.render = ed_platform->get_renderer();
 
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.Fonts->AddFontDefault();
+	io.Fonts->Build();
+	io.Fonts->SetTexID(0);
+	io.DisplaySize = ImVec2(8, 8);
+	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
+	ImGui::StyleColorsDark();
 }
 
 Editor::~Editor()
@@ -42,7 +47,7 @@ void Editor::run()
 	while (g_editor_running)
 	{
 		g_editor_running = ed_platform->poll();
-		ed_platform->render();
+		ed_platform->render({});
 	}
 }
 

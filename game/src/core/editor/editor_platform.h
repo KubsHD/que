@@ -4,8 +4,12 @@
 #include <vector>
 #include <entt/entt.hpp>
 #include <SDL3/SDL.h>
+#include <gfx/rhi/gfx_swapchain.h>
+#include <gfx/camera.h>
+#include <gfx/renderer2.h>
 
-class Renderer2;
+
+class ImguiRenderer;
 
 class EditorPlatform
 {
@@ -17,7 +21,7 @@ public:
 	void destroy();
 
 	bool poll();
-	void render();
+	void render(Camera cam);
 
 	std::vector<String> get_requested_extensions();
 
@@ -25,9 +29,15 @@ public:
 		return m_renderer;
 	}
 
+
+
 private:
 	Renderer2* m_renderer;
 	SDL_Window* m_internal_window;
 	SDL_Surface m_surface;
 
+	ImguiRenderer* m_imgui_renderer;
+
+	vkb::Swapchain vkb_swapchain;
+	RenderTarget rt;
 };
