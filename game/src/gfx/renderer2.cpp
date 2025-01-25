@@ -125,11 +125,15 @@ Renderer2::Renderer2(Swapchain& swp, entt::registry& reg) : m_reg(reg)
 
 Renderer2::~Renderer2()
 {
+	vkDeviceWaitIdle(GfxDevice::device);
+
 	main_deletion_queue.execute();
 
 	m_shadow_renderer.destroy();
 	debug->destroy();
 	delete debug;
+
+	delete imgui_renderer;
 
 	bloom.destroy();
 
@@ -204,7 +208,6 @@ Vec3 Renderer2::get_camera_position()
 	return m_camera_position;
 }
 
-static GPUImage last_image;
 static uint32_t last_image_index;
 
 void Renderer2::present(VkSwapchainKHR swp)
@@ -214,41 +217,53 @@ void Renderer2::present(VkSwapchainKHR swp)
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.pNext = nullptr;
+	
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &swp;
+	
 	presentInfo.pImageIndices = &last_image_index;
+
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = waitSemaphores;
 
-	vkQueuePresentKHR(m_queue, &presentInfo);
+	VULKAN_CHECK_NOMSG(vkQueuePresentKHR(m_queue, &presentInfo));
 }
 
 
-GPUImage Renderer2::acquire_image(vkb::Swapchain& swapchain)
+int Renderer2::acquire_image(vkb::Swapchain& swapchain)
 {
 	VkResult result = vkAcquireNextImageKHR(
 		GfxDevice::device,
 		swapchain.swapchain,
-		0,
+		1000000000,
 		frame.swapchain_semaphore,
 		VK_NULL_HANDLE,
 		&last_image_index
 	);
 
-
-
-	last_image.image = swapchain.get_images().value()[last_image_index];
-	last_image.view = swapchain.get_image_views().value()[last_image_index];
-
-	return last_image;
+	return last_image_index;
 }
 
-void Renderer2::draw(RenderTarget rt, CameraRenderData view)
+void Renderer2::draw(RenderTarget& rt, CameraRenderData view)
 {
 	QUE_PROFILE;
 
-	draw_internal(rt, view);
-	
+	VkCommandBuffer cmd = frame.main_command_buffer;
+	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
+
+	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	draw_internal(cmd, rt, view);
+
+	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+	TracyVkCollect(ctx, cmd);
+
+	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
+
 	VkCommandBufferSubmitInfo cmdSubmitInfo = vkinit::command_buffer_submit_info(frame.main_command_buffer);
 
 	auto waitInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, frame.swapchain_semaphore);
@@ -268,7 +283,19 @@ void Renderer2::draw_xr(RenderTarget rt, CameraRenderData crd)
 
 	wait_for_frame();
 
-	draw_internal(rt, crd);
+	VkCommandBuffer cmd = frame.main_command_buffer;
+	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
+
+	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+
+	draw_internal(cmd, rt, crd);
+
+	TracyVkCollect(ctx, cmd);
+
+	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
+
 
 	VkCommandBufferSubmitInfo cmdSubmitInfo = vkinit::command_buffer_submit_info(frame.main_command_buffer);
 
@@ -320,11 +347,8 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 	return meshBuffer;
 }
 
-void Renderer2::draw_internal(RenderTarget rt, CameraRenderData crd)
+void Renderer2::draw_internal(VkCommandBuffer cmd, RenderTarget rt, CameraRenderData crd)
 {
-
-	VkCommandBuffer cmd = frame.main_command_buffer;
-	VULKAN_CHECK_NOMSG(vkResetCommandBuffer(cmd, 0));
 
 
 
@@ -353,8 +377,6 @@ void Renderer2::draw_internal(RenderTarget rt, CameraRenderData crd)
 		i++;
 	}
 
-	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-	VULKAN_CHECK_NOMSG(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
 	VkClearValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 240.f));
@@ -483,9 +505,6 @@ void Renderer2::draw_internal(RenderTarget rt, CameraRenderData crd)
 	vkCmdEndRendering(cmd);
 	// debug pass end
 
-	TracyVkCollect(ctx, cmd);
-
-	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
 }
 
 void Renderer2::create_pipelines()
@@ -589,5 +608,6 @@ void Renderer2::create_default_textures()
 		GfxDevice::destroy_image(texture_checker);
 		GfxDevice::destroy_image(texture_black);
 		GfxDevice::destroy_image(texture_normal);
+		GfxDevice::destroy_image(texture_white);
 	});
 }

@@ -37,6 +37,8 @@ private:
 	SDL_Surface m_surface;
 
 	vkb::Swapchain vkb_swapchain;
+	Vector<VkImage> swapchain_images;
+	Vector<VkImageView> swapchain_image_views;
 	int image_index;
 
 	RenderTarget rt;

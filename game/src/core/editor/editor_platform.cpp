@@ -49,9 +49,8 @@ void EditorPlatform::init(entt::registry& reg)
 		.build()
 		.value();
 
-
-	rt.image.image = vkb_swapchain.get_images().value()[0];
-	rt.image.view = vkb_swapchain.get_image_views().value()[0];
+	swapchain_images = vkb_swapchain.get_images().value();
+	swapchain_image_views = vkb_swapchain.get_image_views().value();
 
 	rt.size.x = vkb_swapchain.extent.width;
 	rt.size.y = vkb_swapchain.extent.height;
@@ -59,26 +58,15 @@ void EditorPlatform::init(entt::registry& reg)
 	rt.format = vkb_swapchain.image_format;
 
 
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontDefault();
-	io.Fonts->Build();
-	io.DisplaySize = ImVec2(8, 8);
-	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
 
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsLight();
 
-	ImGui_ImplSDL3_InitForVulkan(m_internal_window);
 
 
 	// init renderer
 	m_renderer = new Renderer2(rt, reg);
 
-
+	ImGui_ImplSDL3_InitForVulkan(m_internal_window);
+	image_index = 0;
 
 	
 }
@@ -91,6 +79,8 @@ void EditorPlatform::destroy()
 	SDL_DestroyWindow(m_internal_window);
 	SDL_Quit();
 }
+
+static bool mouse_capture = false;
 
 bool EditorPlatform::poll()
 {
@@ -105,6 +95,9 @@ bool EditorPlatform::poll()
 			return false;
 			break;
 		case SDL_EVENT_KEY_DOWN:
+			if (!mouse_capture)
+				break;
+
 			if (event.key.scancode == SDL_SCANCODE_W)
 				test_cam.position.z -= 0.1f;
 			if (event.key.scancode == SDL_SCANCODE_S)
@@ -117,8 +110,12 @@ bool EditorPlatform::poll()
 				test_cam.position.y -= 0.1f;
 			if (event.key.scancode == SDL_SCANCODE_E)
 				test_cam.position.y += 0.1f;
+
 			break;
 		case SDL_EVENT_MOUSE_MOTION:
+			if (!mouse_capture)
+				break;
+
 			test_cam.rotation_euler.y += -(event.motion.xrel * 0.01f);
 			test_cam.rotation_euler.x += event.motion.yrel * 0.01f;
 
@@ -129,6 +126,20 @@ bool EditorPlatform::poll()
 			if (test_cam.rotation_euler.x < -1.57f)
 				test_cam.rotation_euler.x = -1.57f;
 			break;
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			if (event.button.button == SDL_BUTTON_RIGHT)
+			{
+				SDL_HideCursor();
+				mouse_capture = true;
+			}
+			break;
+		case SDL_EVENT_MOUSE_BUTTON_UP:
+			if (event.button.button == SDL_BUTTON_RIGHT)
+			{
+				SDL_ShowCursor();
+				mouse_capture = false;
+			}
+			break;
 		}
 	}
 
@@ -137,8 +148,9 @@ bool EditorPlatform::poll()
 
 void EditorPlatform::render(Camera cam)
 {
-	ImGui::NewFrame();
 	ImGui_ImplSDL3_NewFrame();
+
+	ImGui::NewFrame();
 
 	ImGui::ShowDemoWindow();
 
@@ -154,7 +166,10 @@ void EditorPlatform::render(Camera cam)
 	ImGui::Render();
 
 	m_renderer->wait_for_frame();
-	rt.image = m_renderer->acquire_image(vkb_swapchain);
+	image_index = m_renderer->acquire_image(vkb_swapchain);
+
+	rt.image.image = swapchain_images[image_index];
+	rt.image.view = swapchain_image_views[image_index];
 
 	m_renderer->draw(rt, crd);
 

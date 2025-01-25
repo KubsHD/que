@@ -62,8 +62,8 @@ public:
 
 
 	void wait_for_frame();
-	GPUImage acquire_image(vkb::Swapchain& swapchain);
-    void draw(RenderTarget rt, CameraRenderData view);
+	int acquire_image(vkb::Swapchain& swapchain);
+    void draw(RenderTarget& rt, CameraRenderData view);
 
 	void draw_xr(RenderTarget rt, CameraRenderData crd);
 
@@ -89,7 +89,7 @@ public:
 	void present(VkSwapchainKHR swp);
 private:
 	void init_internal(RenderTarget rt_info, entt::registry& reg);
-	void draw_internal(RenderTarget rt, CameraRenderData crd);
+	void draw_internal(VkCommandBuffer cmd, RenderTarget rt, CameraRenderData crd);
 
 	VkQueue m_queue;
 	uint32_t m_queue_family;

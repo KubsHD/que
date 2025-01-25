@@ -26,6 +26,20 @@ void ImguiRenderer::init(Renderer2* r2)
 {
 	m_r2 = r2;
 
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.Fonts->AddFontDefault();
+	io.Fonts->Build();
+	io.DisplaySize = ImVec2(8, 8);
+	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
+	io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsLight();
+
 	{
 		DescriptorLayoutBuilder builder;
 
@@ -102,6 +116,7 @@ void ImguiRenderer::init(Renderer2* r2)
 		GfxDevice::destroy_buffer(imgui_vertices);
 		GfxDevice::destroy_buffer(imgui_indices);
 
+		GfxDevice::destroy_image(imgui_font);
 	});
 }
 

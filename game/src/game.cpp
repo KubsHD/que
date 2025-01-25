@@ -143,16 +143,6 @@ void Game::update()
 
 void Game::init_imgui()
 {
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontDefault();
-	io.Fonts->Build();
-	io.Fonts->SetTexID(0);
-	io.DisplaySize = ImVec2(8, 8);
-	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
-	ImGui::StyleColorsDark();
-
 	NetImgui::Startup();
 	NetImgui::ConnectFromApp("que", 8810);
 }
