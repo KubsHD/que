@@ -58,17 +58,15 @@ void EditorPlatform::init(entt::registry& reg)
 
 	rt.format = vkb_swapchain.image_format;
 
-	// init renderer
-	m_renderer = new Renderer2(rt, reg);
-
-
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	ImGuiIO& io = ImGui::GetIO();
+	io.Fonts->AddFontDefault();
+	io.Fonts->Build();
+	io.DisplaySize = ImVec2(8, 8);
+	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -76,9 +74,16 @@ void EditorPlatform::init(entt::registry& reg)
 
 	ImGui_ImplSDL3_InitForVulkan(m_internal_window);
 
-	m_imgui_renderer = new ImguiRenderer();
-	m_imgui_renderer->init(m_renderer);
+
+	// init renderer
+	m_renderer = new Renderer2(rt, reg);
+
+
+
+	
 }
+
+static Camera test_cam;
 
 void EditorPlatform::destroy()
 {
@@ -92,10 +97,37 @@ bool EditorPlatform::poll()
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
+		ImGui_ImplSDL3_ProcessEvent(&event);
+
 		switch (event.type)
 		{
 		case SDL_EVENT_QUIT:
 			return false;
+			break;
+		case SDL_EVENT_KEY_DOWN:
+			if (event.key.scancode == SDL_SCANCODE_W)
+				test_cam.position.z -= 0.1f;
+			if (event.key.scancode == SDL_SCANCODE_S)
+				test_cam.position.z += 0.1f;
+			if (event.key.scancode == SDL_SCANCODE_A)
+				test_cam.position.x -= 0.1f;
+			if (event.key.scancode == SDL_SCANCODE_D)
+				test_cam.position.x += 0.1f;
+			if (event.key.scancode == SDL_SCANCODE_Q)
+				test_cam.position.y -= 0.1f;
+			if (event.key.scancode == SDL_SCANCODE_E)
+				test_cam.position.y += 0.1f;
+			break;
+		case SDL_EVENT_MOUSE_MOTION:
+			test_cam.rotation_euler.y += -(event.motion.xrel * 0.01f);
+			test_cam.rotation_euler.x += event.motion.yrel * 0.01f;
+
+			// cap rotation to 90 degrees
+			if (test_cam.rotation_euler.x > 1.57f)
+				test_cam.rotation_euler.x = 1.57f;
+
+			if (test_cam.rotation_euler.x < -1.57f)
+				test_cam.rotation_euler.x = -1.57f;
 			break;
 		}
 	}
@@ -105,20 +137,30 @@ bool EditorPlatform::poll()
 
 void EditorPlatform::render(Camera cam)
 {
+	ImGui::NewFrame();
+	ImGui_ImplSDL3_NewFrame();
+
+	ImGui::ShowDemoWindow();
+
+	test_cam.rotation = glm::quat(test_cam.rotation_euler);
 
 	CameraRenderData crd;
 
-	crd.position = cam.position;
+	crd.position = test_cam.position;
 	crd.projection = glm::perspective(glm::radians(90.0f), 16.0f / 9.0f, 0.1f, 1000.0f);
-	crd.view = glm::lookAt(cam.position, cam.position + cam.rotation * glm::vec3(0, 0, -1), cam.rotation * glm::vec3(0, 1, 0));
+	crd.view = glm::lookAt(test_cam.position, test_cam.position + test_cam.rotation * glm::vec3(0, 0, -1), test_cam.rotation * glm::vec3(0, 1, 0));
 
 
+	ImGui::Render();
 
 	m_renderer->wait_for_frame();
 	rt.image = m_renderer->acquire_image(vkb_swapchain);
 
 	m_renderer->draw(rt, crd);
+
 	m_renderer->present(vkb_swapchain.swapchain);
+
+
 }
 
 std::vector<String> EditorPlatform::get_requested_extensions()

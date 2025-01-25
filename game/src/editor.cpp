@@ -23,15 +23,7 @@ Editor::Editor()
 	g_engine.asset = new AssetManager();
 	g_engine.render = ed_platform->get_renderer();
 
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontDefault();
-	io.Fonts->Build();
-	io.Fonts->SetTexID(0);
-	io.DisplaySize = ImVec2(8, 8);
-	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
-	ImGui::StyleColorsDark();
+
 }
 
 Editor::~Editor()

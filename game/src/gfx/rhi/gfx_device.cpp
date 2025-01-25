@@ -512,6 +512,9 @@ GPUImage GfxDevice::create_image(void* data, VkExtent2D size, VkFormat format, V
 
 	int pixels = img.size.width * img.size.height * 4;
 
+	if (format == VK_FORMAT_D16_UNORM)
+		pixels = img.size.width * img.size.height;
+
 	if (format == VK_FORMAT_R32G32B32A32_SFLOAT)
 		pixels *= sizeof(float);
 

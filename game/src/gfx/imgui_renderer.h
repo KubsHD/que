@@ -7,11 +7,6 @@
 
 class Renderer2;
 
-namespace Colors
-{
-	const Vec4 default_color = Vec4(0.5f, 0.5f, 0.5f, 1.0f);
-}
-
 struct ImguiRenderer {
 	void init(Renderer2* r2);
 	void destroy();
@@ -20,6 +15,13 @@ struct ImguiRenderer {
 	void render(VkCommandBuffer cmd);
 	void end_frame();
 private:
+	Renderer2* m_r2 = nullptr;
+
+	GPUBuffer imgui_indices;
+	GPUBuffer imgui_vertices;
+
+	GPUImage imgui_font;
+
 	GPUPipeline m_imgui_pipeline;
 	VkDescriptorSetLayout m_imgui_set_layout;
 	VkDescriptorSet m_imgui_set;

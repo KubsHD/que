@@ -15,7 +15,11 @@ VkExtent2D shadow_map_size = { 8192, 8192 };
 
 void ShadowRenderer::create(Renderer2& ren)
 {
-	directional_shadow_map = GfxDevice::create_image(shadow_map_size, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+
+	std::vector<uint16_t> black_data(shadow_map_size.width * shadow_map_size.height, 0);
+
+	directional_shadow_map = GfxDevice::create_image(&black_data[0], shadow_map_size, VK_FORMAT_D16_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	dir_light_sm_pipeline = pipeline::create_dir_light_pipeline(ren);
 
 	// we need a seperate sampler to not repeat the shadow map when sampling 

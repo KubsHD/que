@@ -41,7 +41,7 @@ VS_OUTPUT vs_main(uint vertex_id : SV_VertexID)
 	VS_OUTPUT o;
 	o.uv = _in.uv;
 	o.color = UnpackUnorm4x8(_in.color);
-	o.pos = float4(_in.pos *  drawData.scale + drawData.translation, 0.0, 1.0);
+	o.pos = float4(_in.pos * drawData.scale + drawData.translation, 0.0, 1.0);
 
 	return o;
 }
@@ -65,7 +65,7 @@ float gammaToLinear(float gamma) {
 
 float4 ps_main(VS_OUTPUT _in) : SV_TARGET
 {
-	float4 color = texture.Sample(texture_sm, _in.uv);
+	float4 color = _in.color * texture.Sample(texture_sm, _in.uv);
     color.rgb *= color.a;
 
 	color.rgb = float3(
@@ -73,6 +73,8 @@ float4 ps_main(VS_OUTPUT _in) : SV_TARGET
 		gammaToLinear(color.g),
 		gammaToLinear(color.b)
 	);
+
+	
 
 	return color;
 }

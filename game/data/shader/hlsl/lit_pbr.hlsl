@@ -200,7 +200,7 @@ float4 ps_main(VSOutput input): SV_Target {
 
 	float3 Lo = float3(0.0, 0.0, 0.0);
 
-	Lo += calc_dir_light(norm, input.worldPosition, viewDir, albedo, metallic, roughness, F0, emission);
+	//Lo += calc_dir_light(norm, input.worldPosition, viewDir, albedo, metallic, roughness, F0, emission);
 
 	for (int i = 0; i < Scene.spotLightCount; i++)
 	{
@@ -214,8 +214,8 @@ float4 ps_main(VSOutput input): SV_Target {
 	float3 ambient = float3(0.03, 0.03, 0.03) * albedo * ao;
     float3 color = ambient + Lo;
 
-    float shadow = ShadowCalculation(input.fragPosLightSpace);
-	color *= shadow;
+    //float shadow = ShadowCalculation(input.fragPosLightSpace);
+	//color *= shadow;
 	
     //color = color / (color + float3(1.0, 1.0, 1.0));
     //color = pow(color, float3(1.0/2.2,1.0/2.2,1.0/2.2));  

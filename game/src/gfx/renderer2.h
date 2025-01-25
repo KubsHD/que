@@ -18,6 +18,7 @@
 #include "light.h"
 #include "effect/bloom.h"
 #include "camera.h"
+#include "imgui_renderer.h"
 
 struct DebugRenderer;
 class MeshComponent;
@@ -80,6 +81,7 @@ public:
 	gfx::Sky sky;
 
 	DebugRenderer* debug;
+	ImguiRenderer* imgui_renderer;
 
 	// camera
 	void set_camera_position(glm::vec3 pos);

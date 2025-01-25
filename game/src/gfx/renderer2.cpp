@@ -98,6 +98,8 @@ void Renderer2::init_internal(RenderTarget rt_info, entt::registry & reg)
 
 	debug->init(this);
 
+	imgui_renderer = new ImguiRenderer();
+	imgui_renderer->init(this);
 
 	bloom.init(this);
 
@@ -364,7 +366,7 @@ void Renderer2::draw_internal(RenderTarget rt, CameraRenderData crd)
 	VkExtent2D _windowExtent = { rt.size.x, rt.size.y };
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
-	m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
+	//m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
 
 	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
 
@@ -479,9 +481,10 @@ void Renderer2::draw_internal(RenderTarget rt, CameraRenderData crd)
 	sky.draw(*this, cmd);
 	debug->render(cmd, render_info);
 
+	imgui_renderer->render(cmd);
+
 	vkCmdEndRendering(cmd);
 	// debug pass end
-
 
 	TracyVkCollect(ctx, cmd);
 
@@ -539,6 +542,7 @@ void Renderer2::create_default_textures()
 	uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
 	uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
 	uint32_t normal = glm::packUnorm4x8(glm::vec4(0.5, 0.5, 1, 1));
+	uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
 
 	std::array<uint32_t, 16 * 16 > pixels; //for 16x16 checkerboard texture
 	for (int x = 0; x < 16; x++) {
@@ -557,6 +561,12 @@ void Renderer2::create_default_textures()
 
 	texture_normal = GfxDevice::create_image(&normal, VkExtent2D{ 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	 
+	texture_white = GfxDevice::create_image(&white, VkExtent2D{ 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	GfxDevice::set_debug_name(texture_white.image, "White Texture");
+
 
 	// samplers
 	VkSamplerCreateInfo sampl = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);

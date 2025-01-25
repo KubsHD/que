@@ -36,8 +36,6 @@ private:
 	SDL_Window* m_internal_window;
 	SDL_Surface m_surface;
 
-	ImguiRenderer* m_imgui_renderer;
-
 	vkb::Swapchain vkb_swapchain;
 	int image_index;
 
