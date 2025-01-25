@@ -15,7 +15,11 @@ struct ImguiRenderer {
 	void render(VkCommandBuffer cmd);
 	void end_frame();
 private:
+	void prepare_buffer(VkCommandBuffer cmd);
+
 	Renderer2* m_r2 = nullptr;
+
+	Vector<VkImageView> tex_views;
 
 	GPUBuffer imgui_indices;
 	GPUBuffer imgui_vertices;

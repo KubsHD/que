@@ -8,10 +8,12 @@
 #include <common/vk_initializers.h>
 
 #define MAX_VTX 9999999
+#define MAX_TEX 32
 
 struct ImguiDrawData {
 	Vec2 translation;
 	Vec2 scale;
+	int textureIndex;
 };
 
 struct ImguiVertex {
@@ -42,7 +44,7 @@ void ImguiRenderer::init(Renderer2* r2)
 
 		VkPushConstantRange push_constant_range = {};
 		push_constant_range.size = sizeof(ImguiDrawData);
-		push_constant_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		push_constant_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		layout_info.pPushConstantRanges = &push_constant_range;
 		layout_info.pushConstantRangeCount = 1;
@@ -79,11 +81,12 @@ void ImguiRenderer::init(Renderer2* r2)
 	{
 		auto& io = ImGui::GetIO();
 
+		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+
 		auto* pixels = static_cast<std::uint8_t*>(nullptr);
 		int width = 0;
 		int height = 0;
 		io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
 
 		imgui_font = GfxDevice::create_image(pixels, VkExtent2D{(std::uint32_t)width, (std::uint32_t)height }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
@@ -112,13 +115,22 @@ void ImguiRenderer::render(VkCommandBuffer cmd)
 	const auto clipOffset = dd->DisplayPos;
 	const auto clipScale = dd->FramebufferScale;
 
+	prepare_buffer(cmd);
+
+	DescriptorWriter writer;
+
+	writer.write_buffer(0, imgui_vertices.buffer, sizeof(ImguiVertex) * MAX_VTX, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	// todo: support more textures
+	writer.write_image(1, imgui_font.view, m_r2->default_sampler_linear, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+	writer.update_set(GfxDevice::device, m_imgui_set);
+
+	int vtxOffset = 0;
+	int idxOffset = 0;
 
 	for (int i = 0; i < dd->CmdListsCount; i++)
 	{
 		const ImDrawList* cmd_list = dd->CmdLists[i];
-
-		GfxDevice::upload_buffer(imgui_vertices, 0, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImguiVertex));
-		GfxDevice::upload_buffer(imgui_indices, 0, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(uint16_t));
 
 		vkCmdBindIndexBuffer(cmd, imgui_indices.buffer, 0, VK_INDEX_TYPE_UINT16);
 
@@ -140,49 +152,55 @@ void ImguiRenderer::render(VkCommandBuffer cmd)
 			clipMin.y = std::clamp(clipMin.y, 0.0f, (float)m_r2->depth_image.size.height);
 			clipMax.y = std::clamp(clipMax.y, 0.0f, (float)m_r2->depth_image.size.height);
 
-
 			if (clipMax.x <= clipMin.x || clipMax.y <= clipMin.y) {
 				continue;
 			}
 
+			const auto scissorX = static_cast<std::int32_t>(clipMin.x);
+			const auto scissorY = static_cast<std::int32_t>(clipMin.y);
+			const auto scissorWidth = static_cast<std::uint32_t>(clipMax.x - clipMin.x);
+			const auto scissorHeight = static_cast<std::uint32_t>(clipMax.y - clipMin.y);
+			const auto scissor = VkRect2D{
+				{scissorX, scissorY},
+				{scissorWidth, scissorHeight},
+			};
+			vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 			ImguiDrawData dd2;
 			dd2.scale = Vec2(2.0f / dd->DisplaySize.x, 2.0f / dd->DisplaySize.y);
 			dd2.translation = Vec2(-1.0f - dd->DisplayPos.x * dd2.scale.x, -1.0f - dd->DisplayPos.y * dd2.scale.y);
-
-			DescriptorWriter writer;
-
-			writer.write_buffer(0, imgui_vertices.buffer, sizeof(ImguiVertex) * MAX_VTX, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
 			
-			VkImageView tex_view;
-			
-			if (im_cmd.GetTexID() == 0)
-				tex_view = m_r2->texture_white.view;
-			else 
-				tex_view = *reinterpret_cast<VkImageView*>(im_cmd.GetTexID());
-
-			writer.write_image(1, tex_view, m_r2->default_sampler_linear, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-			writer.update_set(GfxDevice::device, m_imgui_set);
-
 			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_imgui_pipeline.pipeline);
-			vkCmdPushConstants(cmd, m_imgui_pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ImguiDrawData), &dd2);
+			vkCmdPushConstants(cmd, m_imgui_pipeline.layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ImguiDrawData), &dd2);
 			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_imgui_pipeline.layout, 0, 1, &m_imgui_set, 0, nullptr);
 
-
-			vkCmdDrawIndexed(cmd, im_cmd.ElemCount, 1, im_cmd.IdxOffset, im_cmd.VtxOffset, 0);
-
-			// wait for cmd draw to finish
-			VkMemoryBarrier barrier{};
-
-			barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-			barrier.pNext = nullptr;
-			barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-
-			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 1, &barrier, 0, nullptr, 0, nullptr);
+			vkCmdDrawIndexed(cmd, im_cmd.ElemCount, 1, im_cmd.IdxOffset + idxOffset, im_cmd.VtxOffset + vtxOffset, 0);
 		}
+
+		vtxOffset += cmd_list->VtxBuffer.Size;
+		idxOffset += cmd_list->IdxBuffer.Size;
+	}
+}
+
+void ImguiRenderer::prepare_buffer(VkCommandBuffer cmd)
+{
+	const auto& dd = ImGui::GetDrawData();
+
+	if (dd->CmdListsCount == 0)
+		return;
+
+	int offset = 0;
+	int idxOffset = 0;
+
+	for (int i = 0; i < dd->CmdListsCount; i++)
+	{
+		const ImDrawList* cmd_list = dd->CmdLists[i];
+
+		GfxDevice::upload_buffer(imgui_vertices, offset, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImguiVertex));
+		GfxDevice::upload_buffer(imgui_indices, idxOffset, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(uint16_t));
+		
+		offset += cmd_list->VtxBuffer.Size * sizeof(ImguiVertex);
+		idxOffset += cmd_list->IdxBuffer.Size * sizeof(uint16_t);
 	}
 }
 

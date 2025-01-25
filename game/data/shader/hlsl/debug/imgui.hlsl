@@ -12,6 +12,7 @@ float4 UnpackUnorm4x8(uint packedValue)
 struct ImguiDrawData {
 	float2 translation;
 	float2 scale;
+	int textureIndex;
 };
 
 struct ImguiVertex {
@@ -50,12 +51,15 @@ VS_OUTPUT vs_main(uint vertex_id : SV_VertexID)
 
 #if COMPILE_PS 
 
+#define MAX_TEX 32
+
 [[vk::binding(1, 0)]]
-[[vk::combinedImageSampler]]
 Texture2D texture;
 [[vk::binding(1, 0)]]
-[[vk::combinedImageSampler]]
 SamplerState texture_sm;
+
+[[vk::push_constant]]
+ImguiDrawData drawData;
 
 float gammaToLinear(float gamma) {
     return gamma < 0.04045 ?
@@ -74,7 +78,7 @@ float4 ps_main(VS_OUTPUT _in) : SV_TARGET
 		gammaToLinear(color.b)
 	);
 
-	
+	color.a = 1.0 - gammaToLinear(1 - color.a);
 
 	return color;
 }

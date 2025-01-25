@@ -13,6 +13,16 @@ void DescriptorLayoutBuilder::add_binding(uint32_t binding, VkDescriptorType typ
 	bindings.push_back(b);
 }
 
+void DescriptorLayoutBuilder::add_binding_array(uint32_t binding, VkDescriptorType type, uint32_t count)
+{
+	VkDescriptorSetLayoutBinding b{};
+	b.binding = binding;
+	b.descriptorType = type;
+	b.descriptorCount = count;
+
+	bindings.push_back(b);
+}
+
 void DescriptorLayoutBuilder::clear()
 {
 	bindings.clear();
@@ -139,6 +149,25 @@ void DescriptorWriter::write_image(int binding, VkImageView iv, VkSampler sample
 	w.descriptorType = type;
 
 	w.pImageInfo = &image_infos.emplace_back(VkDescriptorImageInfo{ sampler, iv, layout });
+
+	writes.push_back(w);
+}
+
+void DescriptorWriter::write_image_array(int binding, std::vector<VkImageView> ivs, VkSampler sampler, VkImageLayout layout, VkDescriptorType)
+{
+	VkWriteDescriptorSet w{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+	w.dstBinding = binding;
+	w.dstSet = VK_NULL_HANDLE;
+	w.descriptorCount = (uint32_t)ivs.size();
+	w.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	for (auto iv : ivs)
+	{
+		if (ivs[0] == iv)
+			w.pImageInfo = &image_infos.emplace_back(VkDescriptorImageInfo{ sampler, iv, layout });
+		else
+			image_infos.emplace_back(VkDescriptorImageInfo{ sampler, iv, layout });
+		
+	}
 
 	writes.push_back(w);
 }

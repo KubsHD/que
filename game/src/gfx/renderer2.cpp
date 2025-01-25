@@ -405,9 +405,6 @@ void Renderer2::draw_internal(RenderTarget rt, CameraRenderData crd)
 		}
 
 
-
-
-
 		GPUDrawPushConstants pc;
 		VkDeviceSize offset = 0;
 
