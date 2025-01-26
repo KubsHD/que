@@ -8,12 +8,18 @@
 #include <SDL3/SDL_vulkan.h>
 #include <lib/imgui/imgui_impl_vulkan.h>
 #include <lib/imgui/imgui_impl_sdl3.h>
+#include <common/DebugOutput.h>
 
 
 VkSurfaceKHR surf;
 
 static ImGui_ImplVulkanH_Window g_MainWindowData;
 
+
+static bool mouse_capture = false;
+static Vec3 target_cam_pos = Vec3(0, 0, 0);
+
+std::unordered_map<SDL_Scancode, bool> key_map;
 
 EditorPlatform::EditorPlatform()
 {
@@ -25,12 +31,14 @@ EditorPlatform::~EditorPlatform()
 
 }
 
+const float FPS = 75.f;
+const float dt = 1.f / FPS;
+
 void EditorPlatform::init(entt::registry& reg)
 {
-
 	GfxDevice::Init({"VK_KHR_surface"});
 
-	m_internal_window = SDL_CreateWindow("QuEdit", 1280, 720, SDL_WINDOW_VULKAN);
+	m_internal_window = SDL_CreateWindow("QuEdit", 1600, 900, SDL_WINDOW_VULKAN);
 
 	SDL_Vulkan_CreateSurface(m_internal_window, GfxDevice::instance, nullptr, &surf);
 
@@ -57,18 +65,14 @@ void EditorPlatform::init(entt::registry& reg)
 
 	rt.format = vkb_swapchain.image_format;
 
-
-
-
-
-
 	// init renderer
 	m_renderer = new Renderer2(rt, reg);
 
 	ImGui_ImplSDL3_InitForVulkan(m_internal_window);
 	image_index = 0;
 
-	
+	m_last_time = std::chrono::high_resolution_clock::now();
+	m_accumulator = dt; // so that we get at least 1 update before render
 }
 
 static Camera test_cam;
@@ -80,7 +84,53 @@ void EditorPlatform::destroy()
 	SDL_Quit();
 }
 
-static bool mouse_capture = false;
+void EditorPlatform::update()
+{
+
+	if (mouse_capture)
+	{
+		if (key_map[SDL_SCANCODE_W])
+		{
+			target_cam_pos += test_cam.rotation * Vec3(0, 0, -speed);
+		}
+
+		if (key_map[SDL_SCANCODE_S])
+		{
+			target_cam_pos += test_cam.rotation * Vec3(0, 0, speed);
+		}
+
+		if (key_map[SDL_SCANCODE_A])
+		{
+			target_cam_pos += test_cam.rotation * Vec3(-speed, 0, 0);
+		}
+
+		if (key_map[SDL_SCANCODE_D])
+		{
+			target_cam_pos += test_cam.rotation * Vec3(speed, 0, 0);
+		}
+
+		if (key_map[SDL_SCANCODE_E])
+		{
+			target_cam_pos += Vec3(0, speed, 0);
+		}
+
+		if (key_map[SDL_SCANCODE_Q])
+		{
+			target_cam_pos += Vec3(0, -speed, 0);
+		}
+	}
+
+
+	m_last_time = std::chrono::high_resolution_clock::now();
+
+	// Delay to not overload the CPU
+	const auto now = std::chrono::high_resolution_clock::now();
+	const auto frameTime = std::chrono::duration<float>(now - m_last_time).count();
+	if (dt > frameTime) {
+		SDL_Delay(static_cast<std::uint32_t>(dt - frameTime));
+	}
+}
+
 
 bool EditorPlatform::poll()
 {
@@ -95,29 +145,18 @@ bool EditorPlatform::poll()
 			return false;
 			break;
 		case SDL_EVENT_KEY_DOWN:
-			if (!mouse_capture)
-				break;
+			key_map[event.key.scancode] = true;
 
-			if (event.key.scancode == SDL_SCANCODE_W)
-				test_cam.position.z -= 0.1f;
-			if (event.key.scancode == SDL_SCANCODE_S)
-				test_cam.position.z += 0.1f;
-			if (event.key.scancode == SDL_SCANCODE_A)
-				test_cam.position.x -= 0.1f;
-			if (event.key.scancode == SDL_SCANCODE_D)
-				test_cam.position.x += 0.1f;
-			if (event.key.scancode == SDL_SCANCODE_Q)
-				test_cam.position.y -= 0.1f;
-			if (event.key.scancode == SDL_SCANCODE_E)
-				test_cam.position.y += 0.1f;
-
+			break;
+		case SDL_EVENT_KEY_UP:
+			key_map[event.key.scancode] = false;
 			break;
 		case SDL_EVENT_MOUSE_MOTION:
 			if (!mouse_capture)
 				break;
 
-			test_cam.rotation_euler.y += -(event.motion.xrel * 0.01f);
-			test_cam.rotation_euler.x += event.motion.yrel * 0.01f;
+			test_cam.rotation_euler.y -= (event.motion.xrel * 0.01f);
+			test_cam.rotation_euler.x -= (event.motion.yrel * 0.01f);
 
 			// cap rotation to 90 degrees
 			if (test_cam.rotation_euler.x > 1.57f)
@@ -148,22 +187,21 @@ bool EditorPlatform::poll()
 
 void EditorPlatform::render(Camera cam)
 {
-	ImGui_ImplSDL3_NewFrame();
 
-	ImGui::NewFrame();
-
-	ImGui::ShowDemoWindow();
 
 	test_cam.rotation = glm::quat(test_cam.rotation_euler);
 
 	CameraRenderData crd;
 
+	test_cam.position = glm::lerp(test_cam.position, target_cam_pos, 0.01f);
+
 	crd.position = test_cam.position;
 	crd.projection = glm::perspective(glm::radians(90.0f), 16.0f / 9.0f, 0.1f, 1000.0f);
+
+	crd.projection[1][1] *= -1;
+
 	crd.view = glm::lookAt(test_cam.position, test_cam.position + test_cam.rotation * glm::vec3(0, 0, -1), test_cam.rotation * glm::vec3(0, 1, 0));
 
-
-	ImGui::Render();
 
 	m_renderer->wait_for_frame();
 	image_index = m_renderer->acquire_image(vkb_swapchain);
@@ -172,10 +210,12 @@ void EditorPlatform::render(Camera cam)
 	rt.image.view = swapchain_image_views[image_index];
 
 	m_renderer->draw(rt, crd);
-
 	m_renderer->present(vkb_swapchain.swapchain);
+}
 
-
+std::unordered_map<SDL_Scancode, bool> EditorPlatform::get_key_map()
+{
+	return key_map;
 }
 
 std::vector<String> EditorPlatform::get_requested_extensions()

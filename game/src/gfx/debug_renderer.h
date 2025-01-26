@@ -12,11 +12,17 @@ namespace Colors
 	const Vec4 default_color = Vec4(0.5f, 0.5f, 0.5f, 1.0f);
 }
 
+struct DebugRendererRenderInfo
+{
+	Vec3 world_up;
+	Vec3 view_direction;
+};
+
 struct DebugRenderer {
 	void init(Renderer2* r2);
 	void destroy();
 	
-	void begin_frame();
+	void begin_frame(DebugRendererRenderInfo* info = nullptr);
 	void render(VkCommandBuffer cmd, VkRenderingInfo& info);
 	void end_frame();
 

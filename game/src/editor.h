@@ -17,4 +17,7 @@ public:
 	entt::registry reg;
 
 	AudioSystem* m_audio_system;
+
+private:
+	void editor_ui();
 };

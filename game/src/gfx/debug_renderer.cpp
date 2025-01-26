@@ -199,16 +199,22 @@ void DebugRenderer::destroy()
 	vkDestroyDescriptorSetLayout(GfxDevice::device, m_im3d_set_layout, nullptr);
 }
 
-void DebugRenderer::begin_frame()
+void DebugRenderer::begin_frame(DebugRendererRenderInfo* info)
 {
 	Im3d::AppData& ad = Im3d::GetAppData();
 
-	ad.m_deltaTime = 1.0f / 60.0f;
+	ad.m_deltaTime = 1.0f / 75.0f;
 	ad.m_viewportSize = Im3d::Vec2(m_r2->depth_image.size.width, m_r2->depth_image.size.height);
 	ad.m_viewOrigin = Im3d::Vec3(m_r2->m_scene_data_cpu.camPos.x, m_r2->m_scene_data_cpu.camPos.y, m_r2->m_scene_data_cpu.camPos.z);
 	ad.m_viewDirection = Im3d::Vec3(0.0f, 0.0f, -1.0f);
 	ad.m_worldUp = Im3d::Vec3(0.0f, 1.0f, 0.0f);
 	ad.m_projOrtho = false;
+
+	if (info)
+	{
+		ad.m_worldUp = Im3d::Vec3(info->world_up.x, info->world_up.y, info->world_up.z);
+		ad.m_viewDirection = Im3d::Vec3(info->view_direction.x, info->view_direction.y, info->view_direction.z);
+	}
 
 	Im3d::NewFrame();
 }

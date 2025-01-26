@@ -349,9 +349,6 @@ GPUMeshBuffer Renderer2::upload_mesh(std::vector<uint32_t> indices, std::vector<
 
 void Renderer2::draw_internal(VkCommandBuffer cmd, RenderTarget rt, CameraRenderData crd)
 {
-
-
-
 	m_scene_data_cpu.viewProj = crd.projection * crd.view;
 	m_scene_data_cpu.view = crd.view;
 	m_scene_data_cpu.proj = crd.projection;
