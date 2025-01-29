@@ -41,6 +41,9 @@ public:
 	std::vector<float> get_grab_state();
 	glm::vec2 get_movement_input();
 
+	Vec3 get_headset_forward();
+	Vec3 get_headset_right();
+
 	bool get_interaction_button_down();
 	bool get_interaction_button();
 	bool get_interaction_button_up();
@@ -87,4 +90,8 @@ private:
 
 	// last grab state
 	float m_lastGrabState[2] = { 0, 0 };
+
+	XrSpace m_hmd_space;
+	Vec3 m_hmd_forward;
+	Vec3 m_hmd_right;
 };

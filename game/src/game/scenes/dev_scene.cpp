@@ -19,12 +19,17 @@
 
 #include <game/components/physics_component.h>
 #include <core/level.h>
+#include <game/components/light_component.h>
 
 static Level level;
 static Model lamp;
 
+static std::shared_ptr<Sound> amb;
+
 void DevScene::init()
 {
+	amb = g_engine.asset->load_sound("audio/amb_cave.wav");
+	g_engine.audio->play_sound(amb);
 	
 	const auto player = create("player");
 	player->position = glm::vec3(0, 1, 1);
@@ -56,12 +61,18 @@ void DevScene::init()
 
 	level = core::load_level("level/demo/demo.level", this);
 
-	lamp = engine.asset->load_model_json("models/env/lamp/env_industrial_light.model");
-	auto ent = create("lamp");
-	ent->position = glm::vec3(0, 0, 2);
-	ent->scale = glm::vec3(0.01f);
-	ent->rotation = glm::quat(glm::vec3(0, glm::radians(180.0f), 0));
-	ent->add<MeshComponent>(MeshComponent(&lamp));
+	
+	auto light = create("light");
+	light->position = glm::vec3(-4.194f, 1.044f, 4.528f);
+	light->rotation = glm::quat(0.707f, 0.7f, -0.06f, 0.437f);
+
+	light->add<LightComponent>(LightComponent(LightType::Spot, glm::vec3(1, 1, 1), 205.0f, 100.0f));
+
+	//light = create("light2");
+	//light->position = glm::vec3(0, 10.0f, -2.0f);
+	//light->rotation = glm::quat(glm::radians(glm::vec3(90.0f, 180.0f, 0.0f)));
+
+	//light->add<LightComponent>(LightComponent(LightType::Spot, glm::vec3(1, 1, 1), 205.0f, 100.0f));
 }
 
 void DevScene::update()

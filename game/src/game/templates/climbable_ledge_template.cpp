@@ -27,9 +27,10 @@ Entity* game::tmpl::create_climbable_ledge(Vec3 position, Scene& scn, PlayerComp
 
 	ent->add<PhysicsComponent>(PhysicsComponent(obj_settings));
 
-	ent->scale = Vec3(0.01f);
+	ent->scale = Vec3(0.2f, 0.1f, 0.2f);
 	ent->position = position;
 	ent->add<ClimbableLedgeInteractable>();
+	ent->add<MeshComponent>(MeshComponent("models/env/ledge/ledge.model"));
 
 	return ent;
 }

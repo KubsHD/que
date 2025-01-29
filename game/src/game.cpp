@@ -70,6 +70,7 @@ Game::Game()
 	change_scene<DevScene>();
 }
 
+
 Game::~Game()
 {
 	AssetManager::Destroy();
@@ -84,19 +85,20 @@ void Game::run()
 		{
 			platform->poll();
 
+
 			ImGui::NewFrame();
 			ImGui::ShowDemoWindow();
 
 			g_engine.render->debug->begin_frame();
 
 			update();
-
 	
 
-			Vec3 pos = Vec3(0, 0, 0);
+
+	/*		Vec3 pos = Vec3(0, 0, 0);
 			Quat rot = Quat(0, 0, 0, 1);
 			Vec3 scale = Vec3(1, 1, 1);
-			Im3d::Gizmo("Gizmo", &pos[0], &rot[0], &scale[0]);
+			Im3d::Gizmo("Gizmo", &pos[0], &rot[0], &scale[0]);*/
 
 
 			g_engine.render->debug->end_frame();

@@ -32,6 +32,11 @@ static std::string FromXrPath(XrInstance instance, XrPath path) {
 
 XrInput::XrInput(XrInstance instance, XrSession* session) : m_xrInstance(instance), m_session(session)
 {
+	XrReferenceSpaceCreateInfo viewSpaceCreateInfo{ XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
+	viewSpaceCreateInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW; // Create the view space
+	viewSpaceCreateInfo.poseInReferenceSpace = { {0, 0, 0, 1}, {0, 0, 0} };  // Identity pose
+
+	xrCreateReferenceSpace(*session, &viewSpaceCreateInfo, &m_hmd_space);
 }
 
 void XrInput::create_action_set()
@@ -185,6 +190,34 @@ void XrInput::poll_actions(XrTime time, XrSpace local_space)
 	actionStateGetInfo.action = m_interactionAction;
 	actionStateGetInfo.subactionPath = m_handPaths[1];
 	OPENXR_CHECK(xrGetActionStateBoolean(*m_session, &actionStateGetInfo, &m_interactionState), "Failed to get Boolean State of Interaction action.");
+
+	// HMD
+
+	XrSpaceLocation spaceLocation{ XR_TYPE_SPACE_LOCATION };
+	OPENXR_CHECK(xrLocateSpace(m_hmd_space, local_space, time, &spaceLocation), "Failed to get hmd space");
+
+	if (spaceLocation.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT) {
+		// Extract orientation as a quaternion
+		XrQuaternionf orientation = spaceLocation.pose.orientation;
+
+		// Compute the forward vector (transforming 0, 0, -1 by the quaternion)
+		XrVector3f forward;
+		forward.x = 2 * (orientation.x * orientation.z + orientation.w * orientation.y);
+		forward.y = 2 * (orientation.y * orientation.z - orientation.w * orientation.x);
+		forward.z = 1 - 2 * (orientation.x * orientation.x + orientation.y * orientation.y);
+
+		// get right vector
+		XrVector3f right;
+
+		right.x = 1 - 2 * (orientation.y * orientation.y + orientation.z * orientation.z);
+		right.y = 2 * (orientation.x * orientation.y + orientation.w * orientation.z);
+		right.z = 2 * (orientation.x * orientation.z - orientation.w * orientation.y);
+
+
+		m_hmd_forward = -glm::vec3(forward.x, forward.y, forward.z);
+		m_hmd_right = glm::vec3(right.x, right.y, right.z);
+		// 'forward' now contains the forward direction in world coordinates.
+	}
 }
 
 void XrInput::record_actions()
@@ -232,6 +265,16 @@ glm::vec2 XrInput::get_movement_input()
 	return glm::to_glm(vel);
 }
 
+Vec3 XrInput::get_headset_forward()
+{
+	return m_hmd_forward;
+}
+
+Vec3 XrInput::get_headset_right()
+{
+	return m_hmd_right;
+}
+
 bool XrInput::get_interaction_button_down()
 {
 	return m_interactionState.changedSinceLastSync && m_interactionState.currentState;
@@ -250,7 +293,7 @@ bool XrInput::get_interaction_button_up()
 
 bool XrInput::get_grab_button_down(ControllerType type)
 {
-	return m_grabState[type].changedSinceLastSync && m_grabState[type].currentState;
+	return m_grabState[type].changedSinceLastSync && m_grabState[type].currentState == 1;
 }
 
 bool XrInput::get_grab_button(ControllerType type)
@@ -260,6 +303,6 @@ bool XrInput::get_grab_button(ControllerType type)
 
 bool XrInput::get_grab_button_up(ControllerType type)
 {
-	return m_grabState[type].changedSinceLastSync && !m_grabState[type].currentState;
+	return m_grabState[type].changedSinceLastSync && m_grabState[type].currentState == 0;
 }
 

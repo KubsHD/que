@@ -385,7 +385,7 @@ void Renderer2::draw_internal(VkCommandBuffer cmd, RenderTarget rt, CameraRender
 	VkExtent2D _windowExtent = { rt.size.x, rt.size.y };
 	VkRenderingInfo render_info = vkinit::rendering_info(_windowExtent, &colorAttachment, &depthAttachment);
 
-	//m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
+	m_shadow_renderer.render(cmd, m_reg, m_scene_data_cpu.camPos);
 
 	m_scene_data_cpu.lightMtx = m_shadow_renderer.light_mtx;
 
@@ -495,9 +495,12 @@ void Renderer2::draw_internal(VkCommandBuffer cmd, RenderTarget rt, CameraRender
 	vkCmdBeginRendering(cmd, &render_info);
 
 	sky.draw(*this, cmd);
-	debug->render(cmd, render_info);
 
-	imgui_renderer->render(cmd);
+	if (g_engine.config.r_show_debug)
+		debug->render(cmd, render_info);
+
+	if (g_engine.config.r_show_imgui)
+		imgui_renderer->render(cmd);
 
 	vkCmdEndRendering(cmd);
 	// debug pass end

@@ -6,6 +6,7 @@
 #include <lib/imgui/imgui.h>
 #include "uuid.h"
 #include "components/components.h"
+#include <common/glm_helpers.h>
 
 Entity* Scene::create(String name, Entity* parent)
 {
@@ -17,6 +18,7 @@ Entity* Scene::create(String name, Entity* parent)
 
 	ent->position = Vec3(0);
 	ent->rotation = glm::quat_identity<float, glm::defaultp>();
+	ent->euler_rotation = Vec3(0);
 
 	ent->internal_entity = engine.reg->create();
 
@@ -74,6 +76,8 @@ void Scene::update()
 	for (int i = 0; i < m_entities.size(); i++)
 	{
 		auto ent = m_entities[i];
+
+		// euler rotation
 
 	/*	if (ent->parent != nullptr)
 		{
@@ -135,6 +139,8 @@ static void draw_component(T comp)
 	//}
 }
 
+
+
 static void draw_entity(Entity* ent)
 {
 
@@ -144,11 +150,13 @@ static void draw_entity(Entity* ent)
 		// draw position and rotation
 		ImGui::DragFloat3("Position", &ent->position.x, 0.01f);
 		ImGui::DragFloat4("Rotation", &ent->rotation.x, 0.01f);
-		// euler rotation
-		glm::vec3 euler = glm::degrees(glm::eulerAngles(ent->rotation));
-		ImGui::DragFloat3("Rotation Euler", &euler.x, 0.01f);
-		ent->rotation = glm::quat(glm::radians(euler));
+
+
+		//auto euler = glm::degrees(glm::to_ypr(ent->rotation));
+		//ImGui::DragFloat3("Rotation Euler", &euler.x, 0.01f, 0.0f, 180.0f);
 		ImGui::DragFloat3("Scale", &ent->scale.x, 0.01f);
+
+		//ent->rotation = glm::quat(glm::radians(euler));
 
 		if (ImGui::TreeNode("Components"))
 		{

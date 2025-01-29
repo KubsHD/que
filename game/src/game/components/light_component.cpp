@@ -21,7 +21,7 @@ void LightComponent::init()
 {
 	if (type == LightType::Spot)
 	{
-		angle = glm::radians(25.0f);
+		angle = glm::radians(38.0f);
 	}
 
 	g_engine.reg->emplace<core_light_component>(this->entity->internal_entity, type, color, intensity, range, glm::vec3(0,0,0), angle);

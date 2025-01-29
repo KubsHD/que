@@ -7,6 +7,12 @@
 
 class Renderer2;
 
+struct engine_config {
+	bool r_show_debug = false;
+	bool r_show_imgui = false;
+	float fmod_default_volume = 0.3f;	
+};
+
 struct engine_wrapper {
 	AudioSystem* audio;
 	AssetManager* asset;
@@ -14,6 +20,7 @@ struct engine_wrapper {
 	XrInput* input;
 	Renderer2* render;
 	entt::registry* reg;
+	engine_config config;
 };
 
 extern engine_wrapper g_engine;

@@ -217,6 +217,9 @@ public:
 	Quat rotation;
 	Quat local_rotation;
 
+	Vec3 euler_rotation;
+	Vec3 local_euler_rotation;
+
 	Vec3 scale;
 	Vec3 local_scale;
 

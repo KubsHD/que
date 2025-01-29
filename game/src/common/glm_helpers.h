@@ -63,4 +63,15 @@ namespace glm {
 		projectionMatrix[3] = { 0.0f, 0.0f, -(farZ * (nearZ + nearZ)) / (farZ - nearZ), 0.0f };
 		return projectionMatrix;
 	}
+
+	inline glm::vec3 to_ypr(glm::quat const& q)
+	{
+	
+		glm::mat4 m = mat4_cast(q);
+		
+		float y, p, r;
+		glm::extractEulerAngleYXZ(m, y, p, r);
+
+		return glm::vec3{ y, p, r };
+	}
 }

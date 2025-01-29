@@ -11,23 +11,36 @@
 
 void PlayerComponent::init()
 {
+	m_footstep_sounds.push_back(g_engine.asset->load_sound("audio/sfx_footstep_1.wav"));
+	m_footstep_sounds.push_back(g_engine.asset->load_sound("audio/sfx_footstep_2.wav"));
+	m_footstep_sounds.push_back(g_engine.asset->load_sound("audio/sfx_footstep_3.wav"));
+	m_footstep_sounds.push_back(g_engine.asset->load_sound("audio/sfx_footstep_4.wav"));
 }
 
 void PlayerComponent::update()
 {
 	auto vel = g_engine.input->get_movement_input();
 
-	m_forward = /*glm::normalize(glm::to_glm(pose.orientation)) * */glm::vec3(0.0f, 0.0f, -1.0f);
-	auto right = /*glm::normalize(glm::to_glm(pose.orientation)) **/ glm::vec3(1.0f, 0.0f, 0.0f);;
-	auto forward = m_forward;
+	auto right = g_engine.input->get_headset_right();
+	auto forward = g_engine.input->get_headset_forward();
 
-
-	//entity->position = entity->position + (vel.y * forward * m_speed) + vel.x * right * m_speed;
-
-	Vec3 move_dir = (vel.x * right * m_speed) + (vel.y * forward * m_speed);
+	Vec3 move_dir = vel.y * forward * m_speed + vel.x * right * m_speed;
 	move_dir.y = 0;
 
-	//LOG_INFO("vel: " + std::to_string(move_dir.x) + " " + std::to_string(move_dir.y) + " " + std::to_string(move_dir.z));
+	if (move_dir.x != 0 || move_dir.z != 0)
+	{
+		if (m_footstep_timer > m_footstep_interval)
+		{
+			m_footstep_timer = 0.0f;
+			auto sound = m_footstep_sounds[rand() % m_footstep_sounds.size()];
+
+			g_engine.audio->play_sound(sound);
+		}
+		else
+		{
+			m_footstep_timer += 0.16f;
+		}
+	}
 
 	m_cc->move(move_dir);
 
@@ -38,4 +51,5 @@ void PlayerComponent::draw_inspector()
 {
 	ImGui::DragFloat("View Height", &viewHeightM);
 	ImGui::DragFloat("Speed", &m_speed);
+	ImGui::DragFloat("Footstep Interval", &m_footstep_interval);
 }

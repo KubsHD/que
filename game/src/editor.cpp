@@ -102,26 +102,26 @@ void Editor::editor_ui()
 	}
 
 
-	ImGui::SetNextWindowPos(ImVec2(100, 500), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(200, 400), ImGuiCond_FirstUseEver);
-	if (ImGui::Begin("Assets"))
-	{
-		// iterate over all assets in model directory all build a draggable list of them
-		for (auto& p : std::filesystem::recursive_directory_iterator(AssetManager::get_asset_dir() / "models"))
-		{
-			if (p.path().extension() == ".model")
-			{
-				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-				{
-					ImGui::SetDragDropPayload("ASSET", p.path().string().c_str(), p.path().string().size() + 1);
-					ImGui::Button(p.path().filename().string().c_str());
-					ImGui::EndDragDropSource();
-				}
-			}
-		}
+	//ImGui::SetNextWindowPos(ImVec2(100, 500), ImGuiCond_FirstUseEver);
+	//ImGui::SetNextWindowSize(ImVec2(200, 400), ImGuiCond_FirstUseEver);
+	//if (ImGui::Begin("Assets"))
+	//{
+	//	// iterate over all assets in model directory all build a draggable list of them
+	//	for (auto& p : std::filesystem::recursive_directory_iterator(AssetManager::get_asset_dir() / "models"))
+	//	{
+	//		if (p.path().extension() == ".model")
+	//		{
+	//			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+	//			{
+	//				ImGui::SetDragDropPayload("ASSET", p.path().string().c_str(), p.path().string().size() + 1);
+	//				ImGui::Button(p.path().filename().string().c_str());
+	//				ImGui::EndDragDropSource();
+	//			}
+	//		}
+	//	}
 
-		ImGui::End();
-	}
+	//	ImGui::End();
+	//}
 
 
 	// draw gizmo at 0, 0, 0
@@ -144,7 +144,7 @@ void Editor::run()
 		ImGui_ImplSDL3_NewFrame();
 
 		ImGui::NewFrame();
-		ImGui::ShowDemoWindow();
+		//ImGui::ShowDemoWindow();
 
 		g_engine.render->debug->begin_frame();
 

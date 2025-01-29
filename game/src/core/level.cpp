@@ -92,6 +92,8 @@ Level core::load_level(String path, Scene* scene)
 			//prop->rotation = glm::quat(glm::radians(ser::vec3_deserialize(ent["rotation"])));
 			//prop->scale = ser::vec3_deserialize(ent["scale"]);
 			prop->scale = Vec3(0.01f);
+			// rotate 180 degrees
+			prop->rotation = glm::angleAxis(glm::radians(180.0f), Vec3(0, 1, 0));
 
 			const String lamp_model_path = "models/env/lamp/env_industrial_light.model";
 

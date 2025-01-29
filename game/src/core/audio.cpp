@@ -4,6 +4,22 @@
 
 #include <fmod_errors.h>
 #include <common/DebugOutput.h>
+#include "engine_wrapper.h"
+
+
+
+
+
+static std::unordered_map<String, std::shared_ptr<Sound>> sounds;
+
+
+
+
+
+FMOD_VECTOR tmp;
+FMOD_VECTOR forward = { 0.0f, 0.0f, -1.0f };
+FMOD_VECTOR up = { 0.0f, 1.0f, 0.0f };
+
 
 void fmod_call(FMOD_RESULT result)
 {
@@ -17,16 +33,20 @@ AudioSystem::AudioSystem()
 {
 	fmod_call(FMOD::System_Create(&m_system));
 	fmod_call(m_system->init(512, FMOD_INIT_NORMAL, 0));
+
+	fmod_call(m_system->getMasterChannelGroup(&m_master_group));
+
+	set_master_volume(g_engine.config.fmod_default_volume);
 }
 
 AudioSystem::~AudioSystem()
 {
-
+	for (auto& snd : sounds)
+	{
+		snd.second->sound->release();
+	}
+	m_system->release();
 }
-
-FMOD_VECTOR tmp;
-FMOD_VECTOR forward = { 0.0f, 0.0f, 1.0f };
-FMOD_VECTOR up = { 0.0f, 1.0f, 0.0f };
 
 void AudioSystem::update(glm::vec3 listener_position)
 {
@@ -42,6 +62,11 @@ void AudioSystem::update(glm::vec3 listener_position)
 
 Sound* AudioSystem::create_sound(String path, SoundType type)
 {
+	if (sounds.find(path) != sounds.end())
+	{
+		return sounds[path].get();
+	}
+
 	Sound* snd = new Sound();
 
 	fmod_call(m_system->createSound(path.c_str(), type == SoundType::SPATIAL ? FMOD_3D : FMOD_DEFAULT, nullptr, &snd->sound));
@@ -74,4 +99,9 @@ void AudioSystem::play_sound(String path)
 void AudioSystem::play_sound(std::shared_ptr<Sound> sound)
 {
 	fmod_call(m_system->playSound(sound->sound, nullptr, false, &sound->chnl));
+}
+
+void AudioSystem::set_master_volume(float volume)
+{
+	m_master_group->setVolume(volume);
 }

@@ -72,7 +72,8 @@ Texture2D tex_emission : register(t4);
 [[vk::combinedImageSampler]]
 SamplerState tex_emission_sm : register(s4);
 
-#define BLOOM_STRENGTH 10.0
+#define BLOOM_STRENGTH 2.0
+#define AMBIENT_STRENGTH 0.01
 
 float3 calc_point_light(PointLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float metallic, float roughness, float3 F0)
 {
@@ -131,7 +132,7 @@ float3 calc_spot_light(SpotLight light, float3 normal, float3 fragPos, float3 vi
 		kD *= 1.0 - metallic;
 
 		float NdotL = max(dot(normal, lightDir), 0.0);        
-		return ((kD * albedo / PI + specular) * radiance * NdotL) + emission * BLOOM_STRENGTH;/* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/
+		return ((kD * albedo / PI + specular) * radiance * NdotL);/* + tex_emission.Sample(tex_emission_sm, input.texCoord).xyz*/
 	}
 	else
 	{
@@ -169,7 +170,7 @@ float3 calc_dir_light(float3 normal, float3 fragPos, float3 viewDir, float3 albe
 	kD *= 1.0 - metallic;
 
     float NdotL = max(dot(normal, lightDir), 0.0);        
-    return ((kD * albedo / PI + specular) * radiance * NdotL) + emission * BLOOM_STRENGTH;
+    return ((kD * albedo / PI + specular) * radiance * NdotL);
 }
 
 float4 ps_main(VSOutput input): SV_Target {
@@ -208,10 +209,11 @@ float4 ps_main(VSOutput input): SV_Target {
 	}
 
 	// post directional light
-	
+
+	Lo += emission * BLOOM_STRENGTH;
 
 	//float3 irradiance = tex_sky.Sample(tex_sky_sm, norm).rgb;
-	float3 ambient = float3(0.03, 0.03, 0.03) * albedo * ao;
+	float3 ambient = float3(AMBIENT_STRENGTH, AMBIENT_STRENGTH, AMBIENT_STRENGTH) * albedo * ao;
     float3 color = ambient + Lo;
 
     //float shadow = ShadowCalculation(input.fragPosLightSpace);

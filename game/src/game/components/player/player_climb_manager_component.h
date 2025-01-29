@@ -24,6 +24,12 @@ private:
 
 	Vector<ControllerComponent*> m_controllers_attached_to_ledge;
 
+	String m_ledge_grab_sfx = "audio/sfx_ledge_grab.wav";
+	String m_ledge_letgo_sfx = "audio/sfx_ledge_letgo.wav";
+
+	std::shared_ptr<Sound> m_ledge_grab_sound;
+	std::shared_ptr<Sound> m_ledge_letgo_sound;
+
 	Vec3 m_player_offset = Vec3(0.0f);
 	Vec3 m_prev_player_offset = Vec3(0.0f);
 };

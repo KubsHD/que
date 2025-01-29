@@ -21,6 +21,10 @@ void PlayerClimbManager::init()
 
 	m_player = entity->get<PlayerComponent>();
 	m_cc = entity->get<CharacterController>();
+
+	m_ledge_grab_sound = g_engine.asset->load_sound(m_ledge_grab_sfx);
+	m_ledge_letgo_sound = g_engine.asset->load_sound(m_ledge_letgo_sfx);
+
 }
 
 
@@ -51,6 +55,8 @@ void PlayerClimbManager::draw_inspector()
 	ImGui::Text("Player offset: %f %f %f", m_prev_player_offset.x, m_prev_player_offset.y, m_prev_player_offset.z);
 }
 
+
+
 void PlayerClimbManager::report_controller_attached_to_ledge(ControllerComponent* cc)
 {
 	// disable player gravity 
@@ -61,12 +67,17 @@ void PlayerClimbManager::report_controller_attached_to_ledge(ControllerComponent
 	cc->set_frozen(true);
 	m_cc->set_gravity(false);
 
+	LOG_INFO("Controller attached to ledge");
+
+	g_engine.audio->play_sound(m_ledge_grab_sound);
 }
 
 void PlayerClimbManager::report_controller_detached_from_ledge(ControllerComponent* cc)
 {
 	if (std::find(m_controllers_attached_to_ledge.begin(), m_controllers_attached_to_ledge.end(), cc) != m_controllers_attached_to_ledge.end())
 	{
+		g_engine.audio->play_sound(m_ledge_letgo_sound);
+
 		m_controllers_attached_to_ledge.erase(std::remove(m_controllers_attached_to_ledge.begin(), m_controllers_attached_to_ledge.end(), cc), m_controllers_attached_to_ledge.end());
 		cc->set_frozen(false);
 	}
