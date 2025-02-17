@@ -5,7 +5,9 @@
 
 class ControllerComponent;
 
-DEFINE_COMPONENT(InteractableComponent)
+class InteractableComponent : public Component
+{
+	DEFINE_COMPONENT_BODY(InteractableComponent);
 public:
 	virtual void on_interact(ControllerComponent* cc) = 0;
 	virtual void on_interact_hold(ControllerComponent* cc);

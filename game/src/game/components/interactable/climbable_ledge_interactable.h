@@ -10,7 +10,9 @@ class PlayerComponent;
 class ControllerComponent;
 class PlayerClimbManager;
 
-DEFINE_COMPONENT_DERIVED(ClimbableLedgeInteractable, InteractableComponent)
+class ClimbableLedgeInteractable : public InteractableComponent
+{
+	DEFINE_COMPONENT_DERIVED_BODY(ClimbableLedgeInteractable, InteractableComponent);
 public:
 	void init() override;
 

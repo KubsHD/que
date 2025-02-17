@@ -26,8 +26,6 @@
 #include "camera.h"
 
 
-tracy::VkCtx* ctx;
-
 Renderer2::Renderer2(RenderTarget rt_info, entt::registry& reg) : m_reg(reg)
 {
 	init_internal(rt_info, reg);
@@ -67,7 +65,8 @@ void Renderer2::init_internal(RenderTarget rt_info, entt::registry & reg)
 
 	VULKAN_CHECK_NOMSG(vkAllocateCommandBuffers(GfxDevice::device, &cmdAllocInfo, &frame.main_command_buffer));
 
-	ctx = TracyVkContext(GfxDevice::physical_device, GfxDevice::device, m_queue, frame.main_command_buffer);
+	QUE_INIT_GPU_PROFILER(GfxDevice::physical_device, GfxDevice::device, m_queue, frame.main_command_buffer);
+
 
 	offscren_color = GfxDevice::create_image(VkExtent2D{ (uint32_t)rt_info.size.x, (uint32_t)rt_info.size.y }, color_format, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
@@ -142,7 +141,7 @@ Renderer2::~Renderer2()
 	vkDestroySemaphore(GfxDevice::device, frame.render_semaphore, nullptr);
 	vkDestroyCommandPool(GfxDevice::device, frame.command_pool, nullptr);
 
-	TracyVkDestroy(ctx);
+	QUE_DESTROY_GPU_PROFILER;
 }
 
 void Renderer2::update()
@@ -260,7 +259,7 @@ void Renderer2::draw(RenderTarget& rt, CameraRenderData view)
 
 	vkutil::transition_image(cmd, rt.image.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-	TracyVkCollect(ctx, cmd);
+	QUE_GPU_COLLECT(cmd);
 
 	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
 
@@ -292,7 +291,7 @@ void Renderer2::draw_xr(RenderTarget rt, CameraRenderData crd)
 
 	draw_internal(cmd, rt, crd);
 
-	TracyVkCollect(ctx, cmd);
+	QUE_GPU_COLLECT(cmd);
 
 	VULKAN_CHECK_NOMSG(vkEndCommandBuffer(cmd));
 
@@ -413,7 +412,7 @@ void Renderer2::draw_internal(VkCommandBuffer cmd, RenderTarget rt, CameraRender
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 	{
-		TracyVkZone(ctx, cmd, "Render");
+		QUE_GPU_ZONE(cmd, "Render");
 
 
 		{

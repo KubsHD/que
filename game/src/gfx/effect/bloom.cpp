@@ -7,9 +7,7 @@
 #include <common/vk_initializers.h>
 #include <gfx/rhi/vk_image.h>
 #include <tracy/TracyVulkan.hpp>
-
-extern tracy::VkCtx* ctx;
-
+#include <core/profiler.h>
 
 struct BloomPushConstants {
 	Vec2 srcResolution;
@@ -206,7 +204,7 @@ void BloomEffect::init(Renderer2* r2)
 
 void BloomEffect::render(VkCommandBuffer cmd, GPUImage input, GPUImage output)
 {
-	TracyVkZone(ctx, cmd, "Bloom");
+	QUE_GPU_ZONE(cmd, "Bloom");
 
 	VkImageView src_image = input.view;
 	pc.srcResolution = original_size;

@@ -8,7 +8,7 @@
 class Renderer2;
 
 struct engine_config {
-	bool r_show_debug = false;
+	bool r_show_debug = true;
 	bool r_show_imgui = false;
 	float fmod_default_volume = 0.3f;	
 };

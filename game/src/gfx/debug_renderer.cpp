@@ -4,27 +4,28 @@
 #include "renderer2.h"
 #include <common/vk_initializers.h>
 #include <tracy/TracyVulkan.hpp>
+#include <core/profiler.h>
 
 #define MAX_VTX 10000000
 
-extern tracy::VkCtx* ctx;
-
-struct  DrawData {
+struct DrawData
+{
 	uint32_t offset;
 	glm::mat4 viewProj;
 	glm::vec2 viewport;
 };
 
-struct test {
+struct test
+{
 	uint32_t offset;
 };
 
-void DebugRenderer::init(Renderer2* r2)
+void DebugRenderer::init(Renderer2 *r2)
 {
 	m_r2 = r2;
 
 	{
-		DescriptorLayoutBuilder	builder;
+		DescriptorLayoutBuilder builder;
 		builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 		m_im3d_set_layout = builder.build(GfxDevice::device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -37,7 +38,6 @@ void DebugRenderer::init(Renderer2* r2)
 			PipelineBuilder::load_shader_module("shader/debug/im3d_triangles.vs_c", GfxDevice::device);
 		const auto ps =
 			PipelineBuilder::load_shader_module("shader/debug/im3d_triangles.ps_c", GfxDevice::device);
-
 
 		PipelineBuilder builder;
 		builder.set_shaders(vs, ps);
@@ -52,14 +52,14 @@ void DebugRenderer::init(Renderer2* r2)
 		pipeline_layout_info.pPushConstantRanges = &range;
 		pipeline_layout_info.pushConstantRangeCount = 1;
 
-		auto sets = { m_im3d_set_layout };
+		auto sets = {m_im3d_set_layout};
 
 		pipeline_layout_info.pSetLayouts = sets.begin();
 		pipeline_layout_info.setLayoutCount = sets.size();
 
 		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &m_triangles_pipeline.layout));
 
-		//use the triangle layout we created
+		// use the triangle layout we created
 		builder.pipeline_layout = m_triangles_pipeline.layout;
 		builder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 		builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
@@ -68,20 +68,18 @@ void DebugRenderer::init(Renderer2* r2)
 		builder.disable_blending();
 		builder.enable_depthtest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-		//connect the image format we will draw into, from draw image
+		// connect the image format we will draw into, from draw image
 		builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
 
 		builder.rasterizer.depthBiasEnable = VK_TRUE;
 
-
-		//finally build the pipeline
+		// finally build the pipeline
 		m_triangles_pipeline.pipeline = builder.build_pipeline(GfxDevice::device);
 
-		//clean structures
+		// clean structures
 		vkDestroyShaderModule(GfxDevice::device, vs, nullptr);
 		vkDestroyShaderModule(GfxDevice::device, ps, nullptr);
 	}
-
 
 	{
 		// lines
@@ -105,14 +103,14 @@ void DebugRenderer::init(Renderer2* r2)
 		pipeline_layout_info.pPushConstantRanges = &range;
 		pipeline_layout_info.pushConstantRangeCount = 1;
 
-		auto sets = {  m_im3d_set_layout };
+		auto sets = {m_im3d_set_layout};
 
 		pipeline_layout_info.pSetLayouts = sets.begin();
 		pipeline_layout_info.setLayoutCount = sets.size();
 
 		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &m_lines_pipeline.layout));
 
-		//use the triangle layout we created
+		// use the triangle layout we created
 		builder.pipeline_layout = m_lines_pipeline.layout;
 		builder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
 		builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
@@ -121,19 +119,18 @@ void DebugRenderer::init(Renderer2* r2)
 		builder.disable_blending();
 		builder.enable_depthtest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-		//connect the image format we will draw into, from draw image
+		// connect the image format we will draw into, from draw image
 		builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
 		builder.rasterizer.depthBiasEnable = VK_TRUE;
 
-		//finally build the pipeline
+		// finally build the pipeline
 		m_lines_pipeline.pipeline = builder.build_pipeline(GfxDevice::device);
 
-		//clean structures
+		// clean structures
 		vkDestroyShaderModule(GfxDevice::device, vs, nullptr);
 		vkDestroyShaderModule(GfxDevice::device, ps, nullptr);
 		vkDestroyShaderModule(GfxDevice::device, gs, nullptr);
 	}
-
 
 	{
 		// points
@@ -141,7 +138,7 @@ void DebugRenderer::init(Renderer2* r2)
 			PipelineBuilder::load_shader_module("shader/debug/im3d_points.vs_c", GfxDevice::device);
 		const auto ps =
 			PipelineBuilder::load_shader_module("shader/debug/im3d_points.ps_c", GfxDevice::device);
-	
+
 		PipelineBuilder builder;
 		builder.set_shaders(vs, ps);
 
@@ -155,14 +152,14 @@ void DebugRenderer::init(Renderer2* r2)
 		pipeline_layout_info.pPushConstantRanges = &range;
 		pipeline_layout_info.pushConstantRangeCount = 1;
 
-		auto sets = { m_im3d_set_layout };
+		auto sets = {m_im3d_set_layout};
 
 		pipeline_layout_info.pSetLayouts = sets.begin();
 		pipeline_layout_info.setLayoutCount = sets.size();
 
 		VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &m_points_pipeline.layout));
 
-		//use the triangle layout we created
+		// use the triangle layout we created
 		builder.pipeline_layout = m_points_pipeline.layout;
 		builder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
 		builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
@@ -171,18 +168,17 @@ void DebugRenderer::init(Renderer2* r2)
 		builder.disable_blending();
 		builder.enable_depthtest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-		//connect the image format we will draw into, from draw image
+		// connect the image format we will draw into, from draw image
 		builder.set_depth_format(VK_FORMAT_D32_SFLOAT);
 		builder.rasterizer.depthBiasEnable = VK_TRUE;
 
-		//finally build the pipeline
+		// finally build the pipeline
 		m_points_pipeline.pipeline = builder.build_pipeline(GfxDevice::device);
 
-		//clean structures
+		// clean structures
 		vkDestroyShaderModule(GfxDevice::device, vs, nullptr);
 		vkDestroyShaderModule(GfxDevice::device, ps, nullptr);
 	}
-
 
 	m_im3d_buffer = GfxDevice::create_buffer(sizeof(Im3d::VertexData) * MAX_VTX, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 }
@@ -199,9 +195,9 @@ void DebugRenderer::destroy()
 	vkDestroyDescriptorSetLayout(GfxDevice::device, m_im3d_set_layout, nullptr);
 }
 
-void DebugRenderer::begin_frame(DebugRendererRenderInfo* info)
+void DebugRenderer::begin_frame(DebugRendererRenderInfo *info)
 {
-	Im3d::AppData& ad = Im3d::GetAppData();
+	Im3d::AppData &ad = Im3d::GetAppData();
 
 	ad.m_deltaTime = 1.0f / 75.0f;
 	ad.m_viewportSize = Im3d::Vec2(m_r2->depth_image.size.width, m_r2->depth_image.size.height);
@@ -219,21 +215,22 @@ void DebugRenderer::begin_frame(DebugRendererRenderInfo* info)
 	Im3d::NewFrame();
 }
 
-void DebugRenderer::render(VkCommandBuffer cmd, VkRenderingInfo& info)
+void DebugRenderer::render(VkCommandBuffer cmd, VkRenderingInfo &info)
 {
 
-	if (Im3d::GetDrawListCount() == 0) {
+	if (Im3d::GetDrawListCount() == 0)
+	{
 		return;
 	}
 
-	TracyVkZone(ctx, cmd, "Debug");
+	QUE_GPU_ZONE(cmd, "Debug");
 
 	fill_buffer();
 
-	const auto* draw_lists = Im3d::GetDrawLists();
+	const auto *draw_lists = Im3d::GetDrawLists();
 	const auto draw_list_count = Im3d::GetDrawListCount();
 
-	//vkCmdBeginRendering(cmd, &info);
+	// vkCmdBeginRendering(cmd, &info);
 
 	DescriptorWriter writer;
 	writer.write_buffer(0, m_im3d_buffer.buffer, sizeof(Im3d::VertexData) * MAX_VTX, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -250,8 +247,7 @@ void DebugRenderer::render(VkCommandBuffer cmd, VkRenderingInfo& info)
 		dd.viewProj = m_r2->m_scene_data_cpu.viewProj;
 		dd.viewport = glm::vec2(info.renderArea.extent.width, info.renderArea.extent.height);
 
-
-		const Im3d::DrawList& draw_list = draw_lists[i];
+		const Im3d::DrawList &draw_list = draw_lists[i];
 
 		switch (draw_lists->m_primType)
 		{
@@ -291,7 +287,7 @@ void DebugRenderer::render(VkCommandBuffer cmd, VkRenderingInfo& info)
 		offset += draw_list.m_vertexCount;
 	}
 
-	//vkCmdEndRendering(cmd);
+	// vkCmdEndRendering(cmd);
 }
 
 void DebugRenderer::end_frame()
@@ -301,21 +297,20 @@ void DebugRenderer::end_frame()
 
 void DebugRenderer::draw_box(Vec3 pos, Vec3 scale, Vec4 color /*= Colors::default_color*/)
 {
-
 }
 
 void DebugRenderer::fill_buffer()
 {
-	auto* draw_lists = Im3d::GetDrawLists();
+	auto *draw_lists = Im3d::GetDrawLists();
 	const auto draw_list_count = Im3d::GetDrawListCount();
 
 	size_t offset = 0;
 
 	for (int i = 0; i < draw_list_count; i++)
 	{
-		const Im3d::DrawList& draw_list = draw_lists[i];
+		const Im3d::DrawList &draw_list = draw_lists[i];
 
-		GfxDevice::upload_buffer(m_im3d_buffer, offset, (void*)draw_list.m_vertexData, draw_list.m_vertexCount * sizeof(Im3d::VertexData));
+		GfxDevice::upload_buffer(m_im3d_buffer, offset, (void *)draw_list.m_vertexData, draw_list.m_vertexCount * sizeof(Im3d::VertexData));
 
 		offset += sizeof(Im3d::VertexData) * draw_list.m_vertexCount;
 	}
