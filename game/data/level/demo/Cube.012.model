@@ -1,0 +1,12 @@
+{
+    "file": "Cube.012.fbx",
+    "materials": [
+        {
+            "id": 0,
+            "shader": "lit",
+            "diffuse": "texture_02_w.png",
+            "normal": "",
+            "orm": ""
+        }
+    ]
+}

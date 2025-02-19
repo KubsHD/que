@@ -1,0 +1,35 @@
+{
+    "file": "glosnik.fbx",
+    "materials": [
+        {
+            "id": 0,
+            "shader": "unlit",
+            "color": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "id": 1,
+            "shader": "lit",
+            "diffuse": "Plastic012A_2K-PNG_Color.png",
+            "normal": "Plastic012A_2K-PNG_NormalGL.png",
+            "orm": "Plastic012A_2K-PNG_ORM.png"
+        },
+        {
+            "id": 2,
+            "shader": "lit",
+            "diffuse": "Metal_Grill_007_basecolor.jpg",
+            "normal": "Metal_Grill_007_normal.jpg",
+            "orm": "Metal_Grill_007_ORM.png"
+        },
+        {
+            "id": 3,
+            "shader": "lit",
+            "diffuse": "Metal009_2K-PNG_Color.png",
+            "normal": "Metal009_2K-PNG_NormalGL.png",
+            "orm": "Metal009_2K-PNG_ORM.png"
+        }
+    ]
+}

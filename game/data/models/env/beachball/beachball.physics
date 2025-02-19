@@ -1,0 +1,15 @@
+{
+    "file": "beachball.model",
+    "type": "sphere",
+    "radius": 0.5,
+}
+
+{
+    "file": "beachball.model",
+    "type": "box",
+    "size": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+    }
+}

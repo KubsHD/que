@@ -1,0 +1,17 @@
+{
+    "file": "Industrial Light.fbx",
+    "materials": [
+        {
+            "id": 0,
+            "shader": "lit",
+            "emission": "Industrial_Light_EMI.png"
+        },
+        {
+            "id": 1,
+            "shader": "lit",
+            "diffuse": "Industrial_Light_ALB.png",
+            "normal": "Industrial_Light_NORM.png",
+            "orm": "Industrial_Light_ORM.png"
+        }
+    ]
+}

@@ -1,0 +1,12 @@
+{
+    "file": "beachball.fbx",
+    "materials": [
+        {
+            "id": 0,
+            "shader": "lit",
+            "diffuse": "beachball.jpg",
+            "normal": "",
+            "orm": ""
+        }
+    ]
+}

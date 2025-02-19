@@ -1,0 +1,514 @@
+{
+    "name": "demo",
+    "objects": [
+        {
+            "model": "Plane.model",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.model",
+            "position": {
+                "x": 1.4722,
+                "y": 3.75,
+                "z": -2.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "col": true
+        },
+        {
+            "model": "Cube.001.model",
+            "position": {
+                "x": 4.5222,
+                "y": 5.0,
+                "z": -0.5525
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 0.2,
+                "z": 1.0
+            },
+            "col": true
+        },
+        {
+            "model": "Cube.002.model",
+            "position": {
+                "x": -1.5139,
+                "y": 1.25,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 0.1414,
+                "y": 0.0932,
+                "z": 0.0932
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.003.model",
+            "position": {
+                "x": -0.6389,
+                "y": 1.9,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 0.1414,
+                "y": 0.0932,
+                "z": 0.0932
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.004.model",
+            "position": {
+                "x": 0.1611,
+                "y": 2.8,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 0.1414,
+                "y": 0.0932,
+                "z": 0.0932
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.005.model",
+            "position": {
+                "x": 0.9361,
+                "y": 3.7,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 0.1414,
+                "y": 0.0932,
+                "z": 0.0932
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.006.model",
+            "position": {
+                "x": 2.2611,
+                "y": 4.85,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 0.1414,
+                "y": 0.0932,
+                "z": 0.0932
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.007.model",
+            "position": {
+                "x": 2.8222,
+                "y": 5.8,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 0.1414,
+                "y": 0.0932,
+                "z": 0.0932
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.008.model",
+            "position": {
+                "x": 3.5222,
+                "y": 6.5,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 0.1414,
+                "y": 0.0932,
+                "z": 0.0932
+            },
+            "col": false
+        },
+        {
+            "model": "Plane.001.model",
+            "position": {
+                "x": -0.0,
+                "y": 12.6172,
+                "z": 10.7634
+            },
+            "rotation": {
+                "x": 180.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.009.model",
+            "position": {
+                "x": -0.7665,
+                "y": 7.3247,
+                "z": 4.0734
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "col": true
+        },
+        {
+            "model": "Cube.011.model",
+            "position": {
+                "x": 1.7,
+                "y": 4.1,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 0.1414,
+                "y": 0.0932,
+                "z": 0.0932
+            },
+            "col": false
+        },
+        {
+            "model": "Cube.012.model",
+            "position": {
+                "x": 4.5222,
+                "y": 5.0,
+                "z": 1.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "col": true
+        },
+        {
+            "model": "Cube.013.model",
+            "position": {
+                "x": 1.5,
+                "y": 7.3,
+                "z": 7.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": -270.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "col": true
+        },
+        {
+            "model": "Cube.014.model",
+            "position": {
+                "x": 4.5,
+                "y": 9.302,
+                "z": 9.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "col": true
+        },
+        {
+            "model": "Cube.015.model",
+            "position": {
+                "x": 0.5,
+                "y": 12.5,
+                "z": 22.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": -0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "col": false
+        }
+    ],
+    "entities": [
+        {
+            "name": "grabbable",
+            "position": {
+                "x": -1.4861,
+                "y": 1.25,
+                "z": -0.95
+            }
+        },
+        {
+            "name": "grabbable.001",
+            "position": {
+                "x": -0.6611,
+                "y": 1.9,
+                "z": -0.95
+            }
+        },
+        {
+            "name": "grabbable.002",
+            "position": {
+                "x": 0.1389,
+                "y": 2.8,
+                "z": -0.95
+            }
+        },
+        {
+            "name": "grabbable.003",
+            "position": {
+                "x": 0.9639,
+                "y": 3.7,
+                "z": -0.95
+            }
+        },
+        {
+            "name": "grabbable.004",
+            "position": {
+                "x": 2.2389,
+                "y": 4.85,
+                "z": -0.95
+            }
+        },
+        {
+            "name": "grabbable.005",
+            "position": {
+                "x": 2.8,
+                "y": 5.8,
+                "z": -0.95
+            }
+        },
+        {
+            "name": "grabbable.006",
+            "position": {
+                "x": 3.5,
+                "y": 6.5,
+                "z": -0.95
+            }
+        },
+        {
+            "name": "grabbable.007",
+            "position": {
+                "x": 1.7,
+                "y": 4.1,
+                "z": -0.95
+            }
+        },
+        {
+            "name": "grabbable.008",
+            "position": {
+                "x": 5.0,
+                "y": 10.5,
+                "z": 10.0
+            }
+        },
+        {
+            "name": "prop_lamp",
+            "position": {
+                "x": -2.0,
+                "y": 8.5,
+                "z": 7.5
+            }
+        },
+        {
+            "name": "prop_lamp.001",
+            "position": {
+                "x": -3.0,
+                "y": 0.0,
+                "z": 2.5
+            }
+        },
+        {
+            "name": "grabbable.010",
+            "position": {
+                "x": 5.0,
+                "y": 10.5,
+                "z": 10.0
+            }
+        },
+        {
+            "name": "grabbable.009",
+            "position": {
+                "x": 5.0,
+                "y": 11.0,
+                "z": 11.5
+            }
+        },
+        {
+            "name": "grabbable.011",
+            "position": {
+                "x": 5.0,
+                "y": 10.5,
+                "z": 13.0
+            }
+        },
+        {
+            "name": "grabbable.012",
+            "position": {
+                "x": 5.0,
+                "y": 12.0,
+                "z": 15.0
+            }
+        },
+        {
+            "name": "grabbable.013",
+            "position": {
+                "x": 5.0,
+                "y": 12.0,
+                "z": 16.0
+            }
+        },
+        {
+            "name": "grabbable.014",
+            "position": {
+                "x": 5.0,
+                "y": 11.5,
+                "z": 17.0
+            }
+        },
+        {
+            "name": "grabbable.015",
+            "position": {
+                "x": 5.0,
+                "y": 12.0,
+                "z": 18.0
+            }
+        },
+        {
+            "name": "grabbable.016",
+            "position": {
+                "x": 5.0,
+                "y": 11.5,
+                "z": 19.0
+            }
+        },
+        {
+            "name": "grabbable.017",
+            "position": {
+                "x": 5.0,
+                "y": 12.5,
+                "z": 20.0
+            }
+        },
+        {
+            "name": "grabbable.018",
+            "position": {
+                "x": 5.0,
+                "y": 13.0,
+                "z": 21.0
+            }
+        },
+        {
+            "name": "grabbable.019",
+            "position": {
+                "x": 5.0,
+                "y": 12.0,
+                "z": 22.5
+            }
+        },
+        {
+            "name": "grabbable.020",
+            "position": {
+                "x": 1.0,
+                "y": 11.0,
+                "z": 23.0
+            }
+        }
+    ]
+}

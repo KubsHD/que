@@ -1,0 +1,12 @@
+{
+    "file": "table.fbx",
+    "materials": [
+        {
+            "id": 0,
+            "shader": "lit",
+            "diffuse": "wood_planks_diff_2k.png",
+            "normal": "",
+            "orm": ""
+        }
+    ]
+}
