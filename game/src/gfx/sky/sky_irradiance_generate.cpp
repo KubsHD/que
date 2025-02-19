@@ -5,6 +5,7 @@
 #include <gfx/mesh.h>
 #include <common/vk_initializers.h>
 #include <gfx/renderer2.h>
+#include <gfx/rhi/vk_helper.h>
 
 namespace pipeline {
 

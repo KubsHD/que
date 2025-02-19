@@ -22,6 +22,7 @@
 #include <gfx/renderer2.h>
 #include <asset/file/texture.h>
 #include <lib/dds-ktx.h>
+#include <asset/asset_manager.h>
 
 namespace gfx {
 
@@ -225,7 +226,7 @@ namespace gfx {
         }
 	}
 
-	void generate_irradiance_map(GraphicsAPI_Vulkan& gapi, Sky& s, Model cube, GraphicsAPI::Pipeline sky_render_pipeline)
+	void generate_irradiance_map(gfx::Sky& s, Model cube, GPUPipeline sky_render_pipeline)
 	{
 		QUE_PROFILE;
 
@@ -243,7 +244,7 @@ namespace gfx {
 		VmaAllocationCreateInfo vai{};
 		vai.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
 
-		VULKAN_CHECK_NOMSG(vmaCreateImage(gapi.GetAllocator(), &imageCreateInfo, &vai, &s.skyIrradiance.image, &s.skyIrradiance.allocation, nullptr));
+		VULKAN_CHECK_NOMSG(vmaCreateImage(GfxDevice::allocator, &imageCreateInfo, &vai, &s.skyIrradiance.image, &s.skyIrradiance.allocation, nullptr));
 
 
 		// create cubemap view
@@ -260,12 +261,12 @@ namespace gfx {
 		sky_cubemap_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		VULKAN_CHECK_NOMSG(vkCreateImageView(GfxDevice::device, &sky_cubemap_view_info, nullptr, &s.skyIrradiance.view));
 
-		gapi.SetDebugName("sky irradiance", s.skyIrradiance.image);
-		gapi.SetDebugName("sky irradiance view", s.skyIrradiance.view);
+		GfxDevice::set_debug_name(s.skyIrradiance.image, "sky irradiance");
+		GfxDevice::set_debug_name(s.skyIrradiance.view, "sky irradiance view");
 
 		// change image layout for rendering
 
-		gapi.immediate_submit([&](VkCommandBuffer cmd) {
+		GfxDevice::immediate_submit([&](VkCommandBuffer cmd) {
 			vkutil::transition_image(cmd, s.skyIrradiance.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 		});
 
@@ -287,23 +288,6 @@ namespace gfx {
 			VULKAN_CHECK_NOMSG(vkCreateImageView(GfxDevice::device, &ivinfo, nullptr, &cubemapViews[i]));
 		}
 
-		for (int i = 0; i < 6; i++)
-		{
-			VkImageView attachments[1];
-			attachments[0] = cubemapViews[i];
-
-			VkFramebufferCreateInfo fbufCreateInfo{};
-			fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			fbufCreateInfo.renderPass = sky_render_pipeline.renderPass;
-			fbufCreateInfo.attachmentCount = 1;
-			fbufCreateInfo.pAttachments = attachments;
-			fbufCreateInfo.width = 512;
-			fbufCreateInfo.height = 512;
-			fbufCreateInfo.layers = 1;
-
-			VULKAN_CHECK_NOMSG(vkCreateFramebuffer(GfxDevice::device, &fbufCreateInfo, nullptr, &framebuffers[i]));
-		}
-
 		// rendering to cube sides
 
 		glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -323,10 +307,10 @@ namespace gfx {
 
 		// prepare buffer 
 		gfx::SceneData sd;
-		VkBuffer sd_buf = gapi.CreateBuffer({ GraphicsAPI::BufferCreateInfo::Type::UNIFORM, 0, sizeof(gfx::SceneData), nullptr });
+		GPUBuffer sd_buf = GfxDevice::create_buffer(sizeof(gfx::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-		gapi.immediate_submit([&](VkCommandBuffer cmd) {
-			gapi.SetDebugName("irradiance cmd", cmd);
+		GfxDevice::immediate_submit([&](VkCommandBuffer cmd) {
+			GfxDevice::set_debug_name(cmd, "irradiance cmd");
 
 			VkClearValue clearValues[2];
 			clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
@@ -334,16 +318,9 @@ namespace gfx {
 
 			for (int i = 0; i < 6; i++)
 			{
-				VkRenderPassBeginInfo renderPassBeginInfo{};
-				renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-				renderPassBeginInfo.renderPass = sky_render_pipeline.renderPass;
-				renderPassBeginInfo.framebuffer = framebuffers[i];
-				renderPassBeginInfo.renderArea.extent.width = 512;
-				renderPassBeginInfo.renderArea.extent.height = 512;
-				renderPassBeginInfo.clearValueCount = 1;
-				renderPassBeginInfo.pClearValues = clearValues;
+				VkRenderingInfo renderInfo = vkinit::rendering_info({ 512, 512 }, nullptr, nullptr);
 
-				vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRendering(cmd, &renderInfo);
 
 				vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, sky_render_pipeline.pipeline);
 
@@ -361,9 +338,9 @@ namespace gfx {
 				VkDescriptorSetAllocateInfo descSetAI;
 				descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 				descSetAI.pNext = nullptr;
-				descSetAI.descriptorPool = gapi.GetDescriptorPool();
+				//descSetAI.descriptorPool = 
 				descSetAI.descriptorSetCount = 1;
-				descSetAI.pSetLayouts = sky_render_pipeline.descriptorSetLayouts.data();
+				//descSetAI.pSetLayouts = sky_render_pipeline.descriptorSetLayouts.data();
 				VULKAN_CHECK(vkAllocateDescriptorSets(GfxDevice::device, &descSetAI, &set), "Failed to allocate DescriptorSet.");
 
 
@@ -381,7 +358,7 @@ namespace gfx {
 
 
 				VkDescriptorBufferInfo descBufferInfo{};
-				descBufferInfo.buffer = sd_buf;
+				descBufferInfo.buffer = sd_buf.buffer;
 				descBufferInfo.offset = 0;
 				descBufferInfo.range = sizeof(gfx::SceneData);
 				writeDescSet.pBufferInfo = &descBufferInfo;
@@ -428,12 +405,12 @@ namespace gfx {
 				vkCmdBindIndexBuffer(cmd, cube.meshes[0].index_buffer, 0, VK_INDEX_TYPE_UINT32);
 				vkCmdDrawIndexed(cmd, cube.meshes[0].index_count, 1, 0, 0, 0);*/
 
-				vkCmdEndRenderPass(cmd);
+				vkCmdEndRendering(cmd);
 			}
 			});
 
 		// change to image layout ready to be used in a shader
-		gapi.immediate_submit([&](VkCommandBuffer cmd) {
+		GfxDevice::immediate_submit([&](VkCommandBuffer cmd) {
 			vkutil::transition_image(cmd, s.skyIrradiance.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		});
 

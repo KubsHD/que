@@ -35,12 +35,8 @@ private:
 	VkBuffer m_sceneData;
 	VkBuffer m_instanceData;
 
-	GraphicsAPI::Pipeline m_pipeline;
-	GraphicsAPI::Pipeline m_sky_render_pipeline;
-
 	entt::registry m_registry;
 
-	std::shared_ptr<AssetSystem> m_asset_manager;
 	std::unique_ptr<Renderer2> m_renderer;
 	std::unique_ptr<PhysicsSystem> m_physics_system;
 	std::unique_ptr<AudioSystem> m_audio_system;

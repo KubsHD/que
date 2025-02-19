@@ -8,6 +8,7 @@
 #include <gfx/rhi/vk_image.h>
 #include <tracy/TracyVulkan.hpp>
 #include <core/profiler.h>
+#include <gfx/rhi/vk_helper.h>
 
 struct BloomPushConstants {
 	Vec2 srcResolution;

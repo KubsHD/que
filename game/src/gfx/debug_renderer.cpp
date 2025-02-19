@@ -5,6 +5,7 @@
 #include <common/vk_initializers.h>
 #include <tracy/TracyVulkan.hpp>
 #include <core/profiler.h>
+#include "rhi/vk_helper.h"
 
 #define MAX_VTX 10000000
 

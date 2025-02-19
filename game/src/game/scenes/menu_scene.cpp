@@ -2,7 +2,6 @@
 
 #include "menu_scene.h"
 
-#include <core/asset.h>
 #include <game/components/mesh_component.h>
 #include <game/templates/controller_template.h>
 #include <gfx/renderer2.h>

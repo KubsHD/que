@@ -2,6 +2,7 @@
 #include "dir_light_pipeline.h"
 #include "builder.h"
 #include <common/vk_initializers.h>
+#include <gfx/rhi/vk_helper.h>
 
 GPUPipeline pipeline::create_dir_light_pipeline(Renderer2& ren)
 {

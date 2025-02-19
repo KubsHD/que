@@ -1,7 +1,6 @@
 #include "pch.h"
 
 #include "level.h"
-#include "asset.h"
 
 #include <game/components/mesh_component.h>
 #include <game/components/physics_component.h>

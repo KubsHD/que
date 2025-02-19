@@ -12,7 +12,6 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <core/audio.h>
-#include <core/asset.h>
 #include <core/physics.h>
 
 

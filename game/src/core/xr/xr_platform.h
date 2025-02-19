@@ -2,11 +2,9 @@
 
 #include "pch.h"
 
-#include <common/GraphicsAPI_Vulkan.h>
 #include <common/OpenXRDebugUtils.h>
 #include <common/xr_linear_algebra.h>
 
-#include <core/asset.h>
 #include <core/ecs.h>
 #include <core/xr/xr_input.h>
 #include <gfx/renderer2.h>

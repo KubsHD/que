@@ -4,7 +4,6 @@
 
 #include "physics_util.h"
 #include "physics.h"
-#include "asset.h"
 #include <lib/json.hpp>
 #include <common/serialization.h>
 #include <asset/asset_manager.h>

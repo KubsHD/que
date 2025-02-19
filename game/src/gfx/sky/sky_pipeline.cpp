@@ -7,6 +7,7 @@
 #include <gfx/rhi/vk_descriptor.h>
 #include <common/vk_initializers.h>
 #include <gfx/renderer2.h>
+#include <gfx/rhi/vk_helper.h>
 
 namespace pipeline
 {

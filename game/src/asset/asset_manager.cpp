@@ -363,19 +363,17 @@ Model AssetManager::load_model(Path path)
 
 		if (mesh->mMaterialIndex >= 0)
 		{
-			if (mod.materials.find(mesh->mMaterialIndex) == mod.materials.end())
-			{
-				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+			
+			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-				MAT_Unlit::Resoruces res;
+			MAT_Unlit::Resoruces res;
 
-				res.diffuse = try_to_load_texture_type(scene, material, aiTextureType_DIFFUSE, model_directory.string());
-				res.diffuse_sampler = m_renderer_reference->default_sampler_linear;
+			res.diffuse = try_to_load_texture_type(scene, material, aiTextureType_DIFFUSE, model_directory.string());
+			res.diffuse_sampler = m_renderer_reference->default_sampler_linear;
 
-				MaterialInstance mat = m_renderer_reference->mat_unlit.write(GfxDevice::device, res, &m_renderer_reference->global_descriptor_allocator);
+			MaterialInstance mat = m_renderer_reference->mat_unlit.write(GfxDevice::device, res, &m_renderer_reference->global_descriptor_allocator);
 
-				mod.materials2.emplace(mesh->mMaterialIndex, mat);
-			}
+			mod.materials2.emplace(mesh->mMaterialIndex, mat);
 
 			internal_mesh.material_index = mesh->mMaterialIndex;
 		}

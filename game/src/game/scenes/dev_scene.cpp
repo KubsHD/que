@@ -1,8 +1,6 @@
 #include "pch.h"
 
 #include "dev_scene.h"
-#include <core/asset.h>
-#include "game_app.h"
 #include <core/physics_util.h>
 #include <game/components/mesh_component.h>
 #include <common/serialization.h>
