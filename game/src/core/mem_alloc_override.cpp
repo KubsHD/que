@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#if _DEBUG & XR_OS_WINDOWS
+#if _DEBUG && XR_OS_WINDOWS
 #include <tracy/Tracy.hpp>
 
 #include <cstdlib>

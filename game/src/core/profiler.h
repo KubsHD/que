@@ -30,7 +30,9 @@ void tracy_init_ctx(VkPhysicalDevice physical_device, VkDevice device, VkQueue q
 
 #define QUE_GPU_COLLECT(cmd) TracyVkCollect(tracy_get_ctx(), cmd);
 #define QUE_GPU_ZONE(cmd, x) TracyVkZone(tracy_get_ctx(), cmd, x);
+
 #else
+
 #define QUE_PROFILE
 #define QUE_PROFILE_FRAME
 #define QUE_PROFILE_SECTION(x)
@@ -44,4 +46,5 @@ void tracy_init_ctx(VkPhysicalDevice physical_device, VkDevice device, VkQueue q
 
 #define QUE_GPU_COLLECT(cmd)
 #define QUE_GPU_ZONE(cmd, x)
+
 #endif
