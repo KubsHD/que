@@ -143,20 +143,12 @@ static void draw_component(T comp)
 
 static void draw_entity(Entity* ent)
 {
-
-
 	if (ImGui::TreeNode(ent->id.c_str(), "%s : %s", ent->name.c_str(), ent->id.c_str()))
 	{
 		// draw position and rotation
 		ImGui::DragFloat3("Position", &ent->position.x, 0.01f);
 		ImGui::DragFloat4("Rotation", &ent->rotation.x, 0.01f);
-
-
-		//auto euler = glm::degrees(glm::to_ypr(ent->rotation));
-		//ImGui::DragFloat3("Rotation Euler", &euler.x, 0.01f, 0.0f, 180.0f);
 		ImGui::DragFloat3("Scale", &ent->scale.x, 0.01f);
-
-		//ent->rotation = glm::quat(glm::radians(euler));
 
 		if (ImGui::TreeNode("Components"))
 		{
@@ -167,22 +159,6 @@ static void draw_entity(Entity* ent)
 					compo->draw_inspector();
 					ImGui::TreePop();
 				}
-
-				//	////draw_component(compo);
-				//	//auto cls = compo->get_class();
-				//	//if (ImGui::TreeNode(cls->name.c_str()))
-				//	//{
-				//	//	for (auto field : cls->fields)
-				//	//	{
-				//	//		if (field.type == nullptr) break;
-
-				//	//		if (field.type->hash == Hash("int"))
-				//	//		{
-				//	//			int* value = reinterpret_cast<int*>(&compo) + field.offset;
-				//	//			ImGui::InputInt(field.name.c_str(), value);
-				//	//		}
-				//	//	}
-				//	//	ImGui::TreePop();
 			}
 
 			ImGui::TreePop();

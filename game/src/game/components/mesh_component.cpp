@@ -19,7 +19,6 @@ MeshComponent::MeshComponent(String path)
 
 void MeshComponent::init()
 {
-	// todo
 	assert(m_model.meshes.size() > 0);
 	entity->scene->engine.render->register_mesh(this);
 }

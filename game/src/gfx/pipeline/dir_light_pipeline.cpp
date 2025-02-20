@@ -27,7 +27,6 @@ GPUPipeline pipeline::create_dir_light_pipeline(Renderer2& ren)
 
 	VULKAN_CHECK_NOMSG(vkCreatePipelineLayout(GfxDevice::device, &pipeline_layout_info, nullptr, &pipeline.layout));
 
-	//use the triangle layout we created
 	builder.pipeline_layout = pipeline.layout;
 	builder.set_shaders(vs, ps);
 	builder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
@@ -37,7 +36,6 @@ GPUPipeline pipeline::create_dir_light_pipeline(Renderer2& ren)
 	builder.disable_blending();
 	builder.enable_depthtest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-		//connect the image format we will draw into, from draw image
 	builder.set_depth_format(VK_FORMAT_D16_UNORM);
 
 	builder.rasterizer.depthBiasEnable = VK_TRUE;
@@ -52,10 +50,8 @@ GPUPipeline pipeline::create_dir_light_pipeline(Renderer2& ren)
 	auto data = Vertex2::get_attributes_descriptions();
 	builder.vertex_input_info.pVertexAttributeDescriptions = data.data();
 
-	//finally build the pipeline
 	pipeline.pipeline = builder.build_pipeline(GfxDevice::device);
 
-	//clean structures
 	vkDestroyShaderModule(GfxDevice::device, vs, nullptr);
 	vkDestroyShaderModule(GfxDevice::device, ps, nullptr);
 
