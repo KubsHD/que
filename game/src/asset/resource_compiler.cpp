@@ -2,13 +2,15 @@
 
 #include "resource_compiler.h"
 
+#if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <shellapi.h>
 #include <Shlwapi.h>
+#endif
+
 #include <core/types.h>
 
-#include <fmod/win/fsbank/inc/fsbank.h>
 #include <dxc/dxcapi.h>
 #include "file/shader_bundle.h"
 #include <wrl/client.h>
@@ -25,23 +27,21 @@
 #include "compiler/nvtt_blob_output.h"
 #include "util.h"
 
-using namespace Microsoft::WRL;
+#include <dxc/WinAdapter.h>
 
 void compile_sound(String path)
 {
 	//FSBank_Init(FSBANK_FSBVERSION_FSB5, FSBANK_INIT_NORMAL, 16, ".fscache");
 
 	
-	FSBANK_SUBSOUND s;
-	s.numFiles = 1;
 
 
 	//FSBank_Build(&s, 1, FSBANK_FORMAT_FADPCM, FSBANK_BUILD_FSB5_DONTWRITENAMES, 0);
 }
 
-ComPtr<IDxcUtils> pUtils;
-ComPtr<IDxcCompiler3> pCompiler;
-ComPtr<IDxcIncludeHandler> pIncludeHandler;
+CComPtr<IDxcUtils> pUtils;
+CComPtr<IDxcCompiler3> pCompiler;
+CComPtr<IDxcIncludeHandler> pIncludeHandler;
 
 
 
@@ -55,7 +55,7 @@ IDxcBlob* compile_shader(fs::path entry, ShaderType type)
 
 	auto parent_path = entry.parent_path();
 
-	ComPtr<IDxcBlobEncoding> pSource;
+	CComPtr<IDxcBlobEncoding> pSource;
 	pUtils->CreateBlob(str.data(), str.size(), CP_UTF8, pSource.GetAddressOf());
 
 	std::vector<LPCWSTR> arguments;
@@ -112,9 +112,9 @@ void compile_shaders(std::vector<fs::path> paths)
 	fs::path shader_cache_path = ".cache/shaders";
 	fs::create_directory(shader_cache_path);
 
-	DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(pUtils.GetAddressOf()));
-	DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(pCompiler.GetAddressOf()));
-	pUtils->CreateDefaultIncludeHandler(pIncludeHandler.GetAddressOf());
+	DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&pUtils.GetAddressOf()));
+	DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler.GetAddressOf()));
+	pUtils->CreateDefaultIncludeHandler(&pIncludeHandler);
 
 	for (const auto& entry : paths)
 	{

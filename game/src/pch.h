@@ -1,10 +1,47 @@
 #pragma once
 
+#include <iostream>
+
+
+// Platform headers
+#if defined(_WIN32)
+#define XR_USE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <Windows.h>
+#include <Unknwn.h>
+#endif
+
+#if defined(XR_OS_ANDROID)
+#define XR_USE_PLATFORM_ANDROID
+#define VK_USE_PLATFORM_ANDROID
+#include <jni.h>
+#endif
+
+#if defined(__APPLE__)
+#define VK_USE_PLATFORM_MACOS_MVK
+#define XR_USE_GRAPHICS_API_VULKAN
+#endif
+
+#define VK_NO_PROTOTYPES
+
+#include <vulkan/vulkan.h>
+#include <vulkan/vk_enum_string_helper.h>
+#include <lib/vk_mem_alloc.h>
+#include <lib/VkBootstrap.h>
+
+
+#include <openxr/openxr.h>
+#include <openxr/openxr_platform.h>
+
+#include <core/types.h>
+
 #include <lib/volk.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>
 
@@ -82,29 +119,3 @@
 
 
 
-// Platform headers
-#if defined(_WIN32)
-#define XR_USE_PLATFORM_WIN32
-#define VK_USE_PLATFORM_WIN32_KHR
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <Windows.h>
-#include <Unknwn.h>
-#endif
-
-#if defined(XR_OS_ANDROID)
-#define XR_USE_PLATFORM_ANDROID
-#define VK_USE_PLATFORM_ANDROID
-#include <jni.h>
-#endif
-
-#include <vulkan/vulkan.h>
-#include <vulkan/vk_enum_string_helper.h>
-#include <lib/vk_mem_alloc.h>
-#include <lib/VkBootstrap.h>
-
-
-#include <openxr/openxr.h>
-#include <openxr/openxr_platform.h>
-
-#include <core/types.h>

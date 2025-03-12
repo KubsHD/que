@@ -11,6 +11,7 @@
 #include <asset/util.h>
 #include <core/profiler.h>
 
+
 void compile_skies(fs::path source_data_path, std::vector<fs::path> paths, fs::path output_path)
 {
 	QUE_PROFILE;

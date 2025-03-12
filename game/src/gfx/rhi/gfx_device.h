@@ -7,7 +7,6 @@
 
 #define NUM_FRAMES 3
 
-
 struct GPUBuffer {
 	VkBuffer buffer;
 	VmaAllocation allocation;
