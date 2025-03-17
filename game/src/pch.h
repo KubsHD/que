@@ -35,7 +35,6 @@
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 
-#include <core/types.h>
 
 #include <lib/volk.h>
 
@@ -53,6 +52,7 @@
 #include <filesystem>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include <lib/imgui/imgui.h>
 #include <lib/netimgui/NetImgui_Api.h>
 #include <lib/im3d/im3d.h>
 #include <lib/tiny_gltf.h>

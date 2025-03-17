@@ -6,45 +6,50 @@
 #include <memory.h>
 #include <glm/glm.hpp>
 
-enum GraphicsAPI_Type : uint8_t {
-	UNKNOWN,
-	D3D11,
-	D3D12,
-	OPENGL,
-	OPENGL_ES,
-	VULKAN
-};
+namespace que {
+	enum GraphicsAPI_Type : uint8_t {
+		UNKNOWN,
+		D3D11,
+		D3D12,
+		OPENGL,
+		OPENGL_ES,
+		VULKAN
+	};
 
-enum TextureType {
-	TT_DIFFUSE = 0,
-	TT_NORMAL = 1,
-	TT_HDRI = 2
-};
+	enum TextureType {
+		TT_DIFFUSE = 0,
+		TT_NORMAL = 1,
+		TT_HDRI = 2
+	};
 
 
-using String = std::string;
+	using String = std::string;
 
-template<typename T>
-using Vector = std::vector<T>;
+	template<typename T>
+	using Vector = std::vector<T>;
 
-using Vec2 = glm::vec2;
+	using Vec2 = glm::vec2;
 
-using Vec3 = glm::vec3;
+	using Vec3 = glm::vec3;
 
-using Vec4 = glm::vec4;
+	using Vec4 = glm::vec4;
 
-using Path = std::filesystem::path;
+	using Path = std::filesystem::path;
 
-using Quat = glm::quat;
+	using Quat = glm::quat;
 
-template<typename T, typename V>
-using Map = std::unordered_map<T, V>;
+	template<typename T, typename V>
+	using Map = std::unordered_map<T, V>;
 
-// filesystem
+	// filesystem
 
-namespace fs = std::filesystem;
+	namespace fs = std::filesystem;
 
-using Path = fs::path;
+	using Path = fs::path;
 
-template<typename T>
-using ref = std::shared_ptr<T>;
+	template<typename T>
+	using ref = std::shared_ptr<T>;
+}
+
+using namespace que;
+

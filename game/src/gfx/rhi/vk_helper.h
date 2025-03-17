@@ -22,7 +22,6 @@
         }                                                                                          \
     }
 
-
 namespace vkh {
     VkFenceCreateInfo fence_create_info(VkFenceCreateFlags flags = 0);
     VkSemaphoreCreateInfo sem_create_info(VkSemaphoreCreateFlags flags = 0);

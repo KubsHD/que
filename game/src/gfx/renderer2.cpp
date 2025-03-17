@@ -18,11 +18,10 @@
 #include <core/profiler.h>
 #include "sky/sky.h"
 
-#include <NGFX_Injection.h>
-
 #include "debug_renderer.h"
 
 #include <tracy/TracyVulkan.hpp>
+#include <gfx/rhi/vk_helper.h>
 #include "camera.h"
 
 
@@ -181,8 +180,8 @@ void Renderer2::load_default_resources()
 
 void Renderer2::wait_for_frame()
 {
-	VULKAN_CHECK_NOMSG(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
-	VULKAN_CHECK_NOMSG(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
+	VULKAN_CHECK(vkWaitForFences(GfxDevice::device, 1, &frame.main_fence, true, UINT64_MAX), "Failed to wait for Fence");
+	VULKAN_CHECK(vkResetFences(GfxDevice::device, 1, &frame.main_fence), "Failed to reset Fence.")
 }
 
 int _frameNumber = 0;

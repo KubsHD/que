@@ -1,5 +1,7 @@
 #pragma once
 
+#define NETIMGUI_IMGUI_CALLBACK_ENABLED 0
+
 //=================================================================================================
 // Enable code compilation for this library
 // Note: Useful to disable 'netImgui' on unsupported builds while keeping functions declared

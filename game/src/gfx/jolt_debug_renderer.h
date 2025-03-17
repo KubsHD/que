@@ -19,6 +19,7 @@ class JoltDebugRenderer: public JPH::DebugRenderer {
 	void init(Renderer2* r2);
 public:
 	JoltDebugRenderer();
+	~JoltDebugRenderer() override;
 
 	struct BatchImpl : public JPH::RefTargetVirtual {
 	private:

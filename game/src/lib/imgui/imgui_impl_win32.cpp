@@ -17,7 +17,7 @@
 // - Introduction, links and more at the top of imgui.cpp
 
 #include "imgui.h"
-#ifndef XR_OS_ANDROID
+#if !defined(XR_OS_ANDROID) && !defined(__APPLE__)
 #ifndef IMGUI_DISABLE
 #include "imgui_impl_win32.h"
 #ifndef WIN32_LEAN_AND_MEAN

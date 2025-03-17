@@ -7,7 +7,6 @@
 #include <gfx/rhi/gfx_device.h>
 #include "xr_wrapper.h"
 #include <common/vk_initializers.h>
-#include <base/numerics/safe_conversions.h>
 
 #include <entt/entt.hpp>
 #include <common/glm_helpers.h>

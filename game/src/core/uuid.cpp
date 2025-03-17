@@ -21,7 +21,7 @@ String ID::get_uuid()
 	return s;
 }
 
-#elif APPLE
+#elif __APPLE__
 
 
 #include <CoreFoundation/CoreFoundation.h>

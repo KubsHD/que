@@ -2,8 +2,7 @@
 
 #include "sky_compiler.h"
 
-#include <lib/dds-ktx.h>
-#include <nvtt/nvtt.h>
+#include <cuttlefish/Texture.h>
 #include "nvtt_blob_output.h"
 #include <asset/file/texture.h>
 #include <lib/md5.h>
@@ -37,34 +36,24 @@ void compile_skies(fs::path source_data_path, std::vector<fs::path> paths, fs::p
 		{
 			QUE_PROFILE_SECTION("Sky Processing");
 
-			nvtt::Context context;
+			cuttlefish::Image image;
+			image.load(asset_relative_path.string().c_str());
 
-			NvttBlob blob;
+			cuttlefish::Texture texture;
 
-			nvtt::CompressionOptions compression_options;
-			compression_options.setFormat(nvtt::Format_BC6S);
+			texture.setImage(image);
+			texture.convert(cuttlefish::Texture::Format::BC6H, cuttlefish::Texture::Type::Float);
 
-			nvtt::OutputOptions output_options;
-			output_options.setOutputHandler(&blob);
 
-			nvtt::Surface surface;
-			surface.load(path.string().c_str());
-
-			nvtt::CubeSurface cube_surface;
-			cube_surface.fold(surface, nvtt::CubeLayout_HorizontalCross);
-
-			context.outputHeader(cube_surface, 1, compression_options, output_options);
-			context.compress(cube_surface, 0, compression_options, output_options);
+//todo
 
 			C_Texture ct{};
 
 			std::strcpy(ct.header.hash, hash.c_str());
 
-			ct.dds_blob = malloc(blob.size);
-			ct.blob_size = blob.size;
-			memcpy(ct.dds_blob, blob.data, blob.size);
-
-
+			// ct.dds_blob = malloc(blob.size);
+			// ct.blob_size = blob.size;
+			// memcpy(ct.dds_blob, blob.data, blob.size);
 
 			std::ofstream out(cache_path / asset_relative_path, std::ios::binary);
 			ct.serialize(out);

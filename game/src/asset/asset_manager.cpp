@@ -17,6 +17,8 @@
 #define DDSKTX_IMPLEMENT
 #include <lib/dds-ktx.h>
 
+#include "common/msg_box_util.h"
+
 fs::path root_path;
 std::string cache_path;
 
@@ -232,43 +234,45 @@ GPUImage AssetManager::load_texture(String path, TextureType type)
 {
 	QUE_PROFILE;
 	QUE_PROFILE_TAG("Image path", path.c_str());
-	
-	if (auto cached = try_cache_load(path, m_image_cache))
-	{
-		return *cached;
-	}
 
-	auto bytes = AssetManager::read_all_bytes(path);
+	GPUImage img;
 
-	stbi_set_flip_vertically_on_load(true);
-
-	VkFormat format;
-
-	// https://www.reddit.com/r/vulkan/comments/wksa4z/strange_issue_with_normal_maps_in_pbr_shader/
-	if (type == TT_DIFFUSE)
-		format = VK_FORMAT_R8G8B8A8_SRGB;
-	else if (type == TT_NORMAL)
-		format = VK_FORMAT_R8G8B8A8_UNORM;
-	else if (type == TT_HDRI)
-		format = VK_FORMAT_R32G32B32A32_SFLOAT;
-
-	assert(format != VK_FORMAT_UNDEFINED);
-
-	int texWidth, texHeight, texChannels;
-
-	void* pixel_ptr;
-
-	if (type == TT_HDRI)
-	{
-		float* temp = stbi_loadf_from_memory((stbi_uc*)bytes.data(), bytes.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		pixel_ptr = temp;
-	}
-	else
-		pixel_ptr = stbi_load_from_memory((stbi_uc*)bytes.data(), bytes.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-	GPUImage img = GfxDevice::create_image(pixel_ptr, VkExtent2D{ (uint32_t)texWidth, (uint32_t)texHeight }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, true);
-
-	m_image_cache.emplace(path, std::make_shared<GPUImage>(img));
+	// if (auto cached = try_cache_load(path, m_image_cache))
+	// {
+	// 	return *cached;
+	// }
+	//
+	// auto bytes = AssetManager::read_all_bytes(path);
+	//
+	// stbi_set_flip_vertically_on_load(true);
+	//
+	// VkFormat format;
+	//
+	// // https://www.reddit.com/r/vulkan/comments/wksa4z/strange_issue_with_normal_maps_in_pbr_shader/
+	// if (type == TT_DIFFUSE)
+	// 	format = VK_FORMAT_R8G8B8A8_SRGB;
+	// else if (type == TT_NORMAL)
+	// 	format = VK_FORMAT_R8G8B8A8_UNORM;
+	// else if (type == TT_HDRI)
+	// 	format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	//
+	// assert(format != VK_FORMAT_UNDEFINED);
+	//
+	// int texWidth, texHeight, texChannels;
+	//
+	// void* pixel_ptr;
+	//
+	// if (type == TT_HDRI)
+	// {
+	// 	float* temp = stbi_loadf_from_memory((stbi_uc*)bytes.data(), bytes.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	// 	pixel_ptr = temp;
+	// }
+	// else
+	// 	pixel_ptr = stbi_load_from_memory((stbi_uc*)bytes.data(), bytes.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	//
+	// GPUImage img = GfxDevice::create_image(pixel_ptr, VkExtent2D{ (uint32_t)texWidth, (uint32_t)texHeight }, format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, true);
+	//
+	// m_image_cache.emplace(path, std::make_shared<GPUImage>(img));
 
 	return img;
 }
@@ -390,7 +394,7 @@ Model AssetManager::load_model_json(Path path)
 	QUE_PROFILE;
 
 	if (!fs::exists(root_path / path))
-		MessageBoxExA(NULL, path.string().c_str(), "Model file does not exist", MB_ICONERROR, MB_OK);
+		MsgBoxUtil::Show("Model file does not exist", path.string().c_str());
 
 	if (auto cached = try_cache_load(path.string(), m_model_cache))
 	{

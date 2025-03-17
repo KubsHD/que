@@ -21,3 +21,4 @@ deps/fmod
 game/data/raw
 tools/TrenchBroom*
 game/data/materials
+deps/ngsdk/.DS_Store

@@ -13,7 +13,6 @@
 
 #include <dxc/dxcapi.h>
 #include "file/shader_bundle.h"
-#include <wrl/client.h>
 #include <lib/md5.h>
 #include <codecvt>
 #include <asset/file/shader_bundle.h>
@@ -21,13 +20,15 @@
 #include <asset/resource_compiler.h>
 #include <asset/asset_manager.h>
 
-#include <nvtt/nvtt.h>
 #include <core/profiler.h>
 #include "compiler/sky_compiler.h"
 #include "compiler/nvtt_blob_output.h"
 #include "util.h"
 
 #include <dxc/WinAdapter.h>
+
+#include "cuttlefish/Image.h"
+#include "cuttlefish/Texture.h"
 
 void compile_sound(String path)
 {
@@ -56,7 +57,7 @@ IDxcBlob* compile_shader(fs::path entry, ShaderType type)
 	auto parent_path = entry.parent_path();
 
 	CComPtr<IDxcBlobEncoding> pSource;
-	pUtils->CreateBlob(str.data(), str.size(), CP_UTF8, pSource.GetAddressOf());
+	pUtils->CreateBlob(str.data(), str.size(), CP_UTF8, &pSource);
 
 	std::vector<LPCWSTR> arguments;
 	// -E for the entry point (eg. 'main')
@@ -79,19 +80,19 @@ IDxcBlob* compile_shader(fs::path entry, ShaderType type)
 		arguments.push_back(L"vs_6_0");
 
 	arguments.push_back(L"-I");
-	arguments.push_back(parent_path.c_str());
+	//arguments.push_back(parent_path.c_str());
 
 	DxcBuffer sourceBuffer;
 	sourceBuffer.Ptr = pSource->GetBufferPointer();
 	sourceBuffer.Size = pSource->GetBufferSize();
 	sourceBuffer.Encoding = 0;
 
-	ComPtr<IDxcResult> pCompileResult;
-	auto hr = pCompiler->Compile(&sourceBuffer, arguments.data(), (UINT32)arguments.size(), pIncludeHandler.Get(), IID_PPV_ARGS(&pCompileResult));
+	CComPtr<IDxcResult> pCompileResult;
+	//auto hr = pCompiler->Compile(&sourceBuffer, arguments.data(), (UINT32)arguments.size(), pIncludeHandler.Get(), IID_PPV_ARGS(&pCompileResult));
 
 	// print errors
-	ComPtr<IDxcBlobEncoding> errors;
-	pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
+	CComPtr<IDxcBlobEncoding> errors;
+	//pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
 
 	if (errors != nullptr && errors->GetBufferSize() > 0)
 	{
@@ -100,7 +101,7 @@ IDxcBlob* compile_shader(fs::path entry, ShaderType type)
 	}
 
 	IDxcBlob* outputBlob;
-	hr = pCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&outputBlob), nullptr);
+	//hr = pCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&outputBlob), nullptr);
 
 	return outputBlob;
 }
@@ -111,9 +112,9 @@ void compile_shaders(std::vector<fs::path> paths)
 
 	fs::path shader_cache_path = ".cache/shaders";
 	fs::create_directory(shader_cache_path);
-
-	DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&pUtils.GetAddressOf()));
-	DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler.GetAddressOf()));
+	//
+	// DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&pUtils));
+	// DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler.GetAddressOf()));
 	pUtils->CreateDefaultIncludeHandler(&pIncludeHandler);
 
 	for (const auto& entry : paths)
@@ -198,36 +199,25 @@ void compile_shaders(std::vector<fs::path> paths)
 	bundle.serialize(out);
 }
 
-
+struct NvttBlob {};
 
 ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 {
 	QUE_PROFILE;
 
-	nvtt::Context context;
-	context.enableCudaAcceleration(true);
 
-	ref<NvttBlob> blob = std::make_shared<NvttBlob>();
-
-	nvtt::Surface image;
+	cuttlefish::Image image;
 	image.load(path.string().c_str());
-	image.flipY();
+	image.flipVertical();
 
 	auto descriptor_path = path;
 	descriptor_path.replace_extension("tex");
 
 
 
+		cuttlefish::Texture tex;
+	tex.setImage(image);
 
-
-	int mipCount = image.countMipmaps();
-
-	nvtt::OutputOptions outputOptions;
-	outputOptions.setContainer(nvtt::Container::Container_DDS10);
-	outputOptions.setOutputHandler(blob.get());
-
-	nvtt::CompressionOptions compressionOptions;
-	compressionOptions.setFormat(nvtt::Format_BC7);
 
 	// if normal map use other settings
 	if (fs::exists(descriptor_path))
@@ -237,31 +227,35 @@ ref<NvttBlob> compile_texture(fs::path path, fs::path output_path)
 
 		if (str == "normal")
 		{
-			image.setNormalMap(true);
-			compressionOptions.setFormat(nvtt::Format_BC5);
+			image.createNormalMap();
+			tex.convert(cuttlefish::Texture::Format::BC5, cuttlefish::Texture::Type::SNorm);
+
+		}
+		else {
+			tex.convert(cuttlefish::Texture::Format::BC7, cuttlefish::Texture::Type::SNorm);
 		}
 	}
 
-	context.outputHeader(image, mipCount, compressionOptions, outputOptions);
-	
-	for (int mip = 0; mip < mipCount; mip++)
-	{
-		if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
-			abort();
-
-		if (mip == mipCount - 1)
-			break;
-
-		image.toLinearFromSrgb();
-		image.premultiplyAlpha();
-
-		image.buildNextMipmap(nvtt::MipmapFilter_Box);
-
-		image.demultiplyAlpha();
-		image.toSrgb();
-	}	
-
-	return blob;
+	// context.outputHeader(image, mipCount, compressionOptions, outputOptions);
+	//
+	// for (int mip = 0; mip < mipCount; mip++)
+	// {
+	// 	if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
+	// 		abort();
+	//
+	// 	if (mip == mipCount - 1)
+	// 		break;
+	//
+	// 	image.toLinearFromSrgb();
+	// 	image.premultiplyAlpha();
+	//
+	// 	image.buildNextMipmap(nvtt::MipmapFilter_Box);
+	//
+	// 	image.demultiplyAlpha();
+	// 	image.toSrgb();
+	// }
+	//
+	// return blob;
 }
 
 void compile_texture_worker(fs::path source_path, fs::path source_asset_path, fs::path cache_path)
@@ -286,10 +280,10 @@ void compile_texture_worker(fs::path source_path, fs::path source_asset_path, fs
 
 
 	auto tex = compile_texture(source_asset_path, cache_path / asset_relative_path);
-
-	ct.dds_blob = malloc(tex->size);
-	ct.blob_size = tex->size;
-	memcpy(ct.dds_blob, tex->data, tex->size);
+	//
+	// ct.dds_blob = malloc(tex->size);
+	// ct.blob_size = tex->size;
+	// memcpy(ct.dds_blob, tex->data, tex->size);
 
 	std::ofstream out(cache_path / asset_relative_path, std::ios::binary);
 	ct.serialize(out);

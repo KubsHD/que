@@ -34,6 +34,9 @@ JoltDebugRenderer::JoltDebugRenderer()
 	DebugRenderer::Initialize();
 }
 
+JoltDebugRenderer::~JoltDebugRenderer() {
+}
+
 void JoltDebugRenderer::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
 {
 	Im3d::DrawLine(joltToIm3d(inFrom), joltToIm3d(inTo), 1.f, joltToIm3d(inColor));

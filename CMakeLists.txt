@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.30)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_OSX_DEPLOYMENT_TARGET 11)
+set(CPP_RTTI_ENABLED ON)
+
 project(Que LANGUAGES CXX C)
 include(FetchContent)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_STANDARD 99)
+add_compile_definitions(JPH_DEBUG_RENDERER JPH_OBJECT_STREAM)
+
 
 find_package(Vulkan REQUIRED)
 
@@ -24,6 +29,14 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(entt)
+
+FetchContent_Declare(
+        tracy
+        GIT_REPOSITORY https://github.com/wolfpld/tracy
+        GIT_TAG master
+)
+
+FetchContent_MakeAvailable(tracy)
 
 FetchContent_Declare(
         JoltPhysics
@@ -61,6 +74,14 @@ set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(assimp)
+
+fetchcontent_declare(
+        Cuttlefish
+        GIT_REPOSITORY "https://github.com/akb825/Cuttlefish"
+        GIT_TAG master
+)
+
+FetchContent_MakeAvailable(Cuttlefish)
 
 add_subdirectory(deps/fmod)
 add_subdirectory(game)

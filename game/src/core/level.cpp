@@ -71,12 +71,12 @@ Level core::load_level(String path, Scene* scene)
 	{
 		auto ent_name = ent["name"].get<String>();
 
-		if (ent_name._Starts_with("grabbable"))
+		if (ent_name.starts_with("grabbable"))
 		{
 			game::tmpl::create_climbable_ledge(ser::vec3_deserialize(ent["position"]), *scene, nullptr);
 		}
 
-		if (ent_name._Starts_with("spot"))
+		if (ent_name.starts_with("spot"))
 		{
 			auto light = scene->create("spot_light");
 			light->position = ser::vec3_deserialize(ent["position"]);
@@ -84,7 +84,7 @@ Level core::load_level(String path, Scene* scene)
 			light->add<LightComponent>(LightComponent(LightType::Spot, ser::vec3_deserialize(ent["color"]), ent["intensity"], ent["range"]));
 		}
 
-		if (ent_name._Starts_with("prop_lamp"))
+		if (ent_name.starts_with("prop_lamp"))
 		{
 			auto prop = scene->create("prop_lamp");
 			prop->position = ser::vec3_deserialize(ent["position"]);

@@ -3,6 +3,7 @@
 #include <common/DebugOutput.h>
 
 void App_Main();
+bool run_editor = false;
 
 #if defined(XR_OS_WINDOWS)
 
@@ -176,6 +177,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #endif
 
+#if defined(__APPLE__)
+
+
+int main(int argc, char** argv) {
+
+	// check if game is run with -ed flag
+	for (int i = 0; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-ed") == 0)
+		{
+			run_editor = true;
+			break;
+		}
+	}
+
+	App_Main();
+
+	return 0;
+}
+
+#endif
 
 #include <game.h>
 #include <editor.h>
@@ -185,16 +207,6 @@ void App_Main()
 	LOG_INFO("Que MAIN");
 
 
-	// check if game is run with -ed flag
-	bool run_editor = false;
-	for (int i = 0; i < __argc; i++)
-	{
-		if (strcmp(__argv[i], "-ed") == 0)
-		{
-			run_editor = true;
-			break;
-		}
-	}
 
 	if (run_editor)
 	{
